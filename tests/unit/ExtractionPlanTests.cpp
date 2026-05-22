@@ -10,6 +10,13 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 	azteca::ExtractionPlan plan;
 	plan.target.qualified_name = "Service::handle";
 	plan.target.signature = "Result(Id)";
+	auto evidence = azteca::PlanEvidence{
+	    .rule_id = "LR-001",
+	    .reason = "receiver field read",
+	    .certainty = "certain",
+	    .conservative = false,
+	    .source_range = {},
+	};
 	plan.receiver_state.push_back({
 	    .name = "enabled_",
 	    .type = "bool",
@@ -17,6 +24,7 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 	    .is_mutable = false,
 	    .access_specifier = "private",
 	    .location = {},
+	    .evidence = evidence,
 	});
 	plan.dependency_ports.push_back({
 	    .kind = azteca::DependencyKind::kQuery,
@@ -25,12 +33,14 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 	    .return_type = "bool",
 	    .argument_types = {"Id"},
 	    .location = {},
+	    .evidence = evidence,
 	});
 	plan.paths.push_back({
 	    .name = "return_ok",
 	    .observations = {"repo_exists"},
 	    .effects = {},
 	    .operations = {},
+	    .evidence = evidence,
 	});
 	plan.gtest_preview.sample_test_path = "tests/service_handle.sample_test.cpp";
 	plan.gtest_preview.lines = {"auto s = azteca_gen::scenario::service_handle{};"};
@@ -48,6 +58,8 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 	EXPECT_NE(json.find("\"paths\""), std::string::npos);
 	EXPECT_NE(json.find("\"gtest_preview\""), std::string::npos);
 	EXPECT_NE(json.find("\"diagnostics\""), std::string::npos);
+	EXPECT_NE(json.find("\"rule_id\""), std::string::npos);
+	EXPECT_NE(json.find("\"source_range\""), std::string::npos);
 }
 
 TEST(InspectReport, TextShowsCoreInspectSections)
@@ -62,6 +74,7 @@ TEST(InspectReport, TextShowsCoreInspectSections)
 	    .is_mutable = false,
 	    .access_specifier = "private",
 	    .location = {},
+	    .evidence = {},
 	});
 	plan.gtest_preview.sample_test_path = "tests/account_withdraw.sample_test.cpp";
 	plan.gtest_preview.lines = {"auto result = s.call(/* args */);"};
@@ -72,6 +85,57 @@ TEST(InspectReport, TextShowsCoreInspectSections)
 	EXPECT_NE(text.find("Dependency observations:"), std::string::npos);
 	EXPECT_NE(text.find("Path-wise test burden:"), std::string::npos);
 	EXPECT_NE(text.find("Google Test preview:"), std::string::npos);
+}
+
+TEST(MmirValidation, RejectsUnclassifiedCall)
+{
+	azteca::MmirFunction function;
+	function.target_name = "C::m";
+	function.nodes.push_back({
+	    .kind = azteca::MmirNodeKind::kCall,
+	    .label = "unknown",
+	    .location = {.file = "fixture.cpp", .line = 1, .column = 1},
+	    .source_range =
+	        {
+	            .begin = {.file = "fixture.cpp", .line = 1, .column = 1},
+	            .end = {.file = "fixture.cpp", .line = 1, .column = 8},
+	        },
+	    .semantic_id = {},
+	    .original_symbol = {},
+	    .rule_id = "CALL-UNCLASSIFIED",
+	    .reason = "call was not classified",
+	    .conservative = false,
+	});
+
+	azteca::Diagnostics diagnostics;
+	EXPECT_FALSE(azteca::validate_mmir(function, diagnostics));
+	ASSERT_FALSE(diagnostics.entries().empty());
+	EXPECT_EQ(diagnostics.entries().front().code, "AZTECA_MMIR_UNCLASSIFIED_CALL");
+}
+
+TEST(MmirValidation, AcceptsClassifiedBoundaryCall)
+{
+	azteca::MmirFunction function;
+	function.target_name = "C::m";
+	function.nodes.push_back({
+	    .kind = azteca::MmirNodeKind::kBoundaryCall,
+	    .label = "repo_exists",
+	    .location = {.file = "fixture.cpp", .line = 2, .column = 3},
+	    .source_range =
+	        {
+	            .begin = {.file = "fixture.cpp", .line = 2, .column = 3},
+	            .end = {.file = "fixture.cpp", .line = 2, .column = 19},
+	        },
+	    .semantic_id = "repo_exists",
+	    .original_symbol = "Repo::exists",
+	    .rule_id = "DEP-MEMBER-QUERY",
+	    .reason = "const non-void member object call is a query",
+	    .conservative = false,
+	});
+
+	azteca::Diagnostics diagnostics;
+	EXPECT_TRUE(azteca::validate_mmir(function, diagnostics));
+	EXPECT_TRUE(diagnostics.entries().empty());
 }
 
 } // namespace

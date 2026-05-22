@@ -1,8 +1,114 @@
-#include "azteca/MethodSpec.hpp"
+#include "MethodSelector.hpp"
+
+#include <clang/AST/Type.h>
+
+#include <sstream>
 
 namespace azteca
 {
+namespace
+{
 
-// Phase A method selection currently lives in InspectFrontend.cpp with the AST traversal.
+[[nodiscard]] std::string type_string(clang::ASTContext const& context, clang::QualType type)
+{
+	clang::PrintingPolicy policy(context.getLangOpts());
+	policy.SuppressTagKeyword = true;
+	policy.SuppressUnwrittenScope = true;
+	return type.getAsString(policy);
+}
+
+[[nodiscard]] std::string canonical_type_string(
+    clang::ASTContext const& context, clang::QualType type)
+{
+	return type_string(context, type.getCanonicalType());
+}
+
+} // namespace
+
+std::string method_signature(clang::ASTContext const& context, clang::CXXMethodDecl const& method)
+{
+	std::ostringstream output;
+	output << type_string(context, method.getReturnType()) << '(';
+	for (auto index = unsigned{0}; index < method.getNumParams(); ++index)
+	{
+		if (index != 0U)
+		{
+			output << ", ";
+		}
+		output << type_string(context, method.getParamDecl(index)->getType());
+	}
+	output << ')';
+	if (method.isConst())
+	{
+		output << " const";
+	}
+	switch (method.getRefQualifier())
+	{
+		case clang::RQ_None:
+			break;
+		case clang::RQ_LValue:
+			output << " &";
+			break;
+		case clang::RQ_RValue:
+			output << " &&";
+			break;
+	}
+	return output.str();
+}
+
+bool method_matches_spec(
+    MethodSpec const& spec, clang::ASTContext const& context, clang::CXXMethodDecl const& method)
+{
+	auto const* parent = method.getParent();
+	if (parent == nullptr)
+	{
+		return false;
+	}
+
+	if (parent->getQualifiedNameAsString() != spec.qualified_class_name)
+	{
+		return false;
+	}
+
+	if (method.getNameAsString() != spec.method_name)
+	{
+		return false;
+	}
+
+	if (method.getNumParams() != spec.parameter_types.size())
+	{
+		return false;
+	}
+
+	if (method.isConst() != spec.is_const)
+	{
+		return false;
+	}
+
+	if ((spec.ref_qualifier == RefQualifier::kNone && method.getRefQualifier() != clang::RQ_None) ||
+	    (spec.ref_qualifier == RefQualifier::kLValue &&
+	        method.getRefQualifier() != clang::RQ_LValue) ||
+	    (spec.ref_qualifier == RefQualifier::kRValue &&
+	        method.getRefQualifier() != clang::RQ_RValue))
+	{
+		return false;
+	}
+
+	for (auto index = std::size_t{0}; index < spec.parameter_types.size(); ++index)
+	{
+		auto expected = normalize_type_for_match(spec.parameter_types[index]);
+		auto actual = normalize_type_for_match(canonical_type_string(
+		    context, method.getParamDecl(static_cast<unsigned>(index))->getType()));
+		auto actual_spelled = normalize_type_for_match(
+		    type_string(context, method.getParamDecl(static_cast<unsigned>(index))->getType()));
+
+		if (expected != actual && expected != actual_spelled)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
 
 } // namespace azteca

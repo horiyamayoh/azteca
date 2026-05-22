@@ -23,6 +23,28 @@ std::string SourceLocation::to_string() const
 	return output.str();
 }
 
+bool SourceRange::is_valid() const noexcept
+{
+	return begin.is_valid();
+}
+
+std::string SourceRange::to_string() const
+{
+	if (!is_valid())
+	{
+		return "";
+	}
+
+	if (!end.is_valid())
+	{
+		return begin.to_string();
+	}
+
+	std::ostringstream output;
+	output << begin.to_string() << '-' << end.line << ':' << end.column;
+	return output.str();
+}
+
 void Diagnostics::add(DiagnosticSeverity severity, std::string code, std::string message)
 {
 	add(severity, std::move(code), std::move(message), {});
@@ -78,6 +100,8 @@ std::string to_string(FieldAccess access)
 			return "write";
 		case FieldAccess::kReadWrite:
 			return "read/write";
+		case FieldAccess::kAddress:
+			return "address";
 	}
 
 	return "read";

@@ -199,7 +199,8 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			std::cout << azteca::render_text_report(*result.plan);
+			std::cout << azteca::render_text_report(
+			    *result.plan, azteca::ReportOptions{.verbose = options->verbose});
 		}
 	}
 

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "azteca/Diagnostics.hpp"
 #include "azteca/SourceLocation.hpp"
 
 namespace azteca
@@ -31,6 +32,12 @@ struct MmirNode
 	MmirNodeKind kind{MmirNodeKind::kUnsupported};
 	std::string label;
 	SourceLocation location;
+	SourceRange source_range;
+	std::string semantic_id;
+	std::string original_symbol;
+	std::string rule_id;
+	std::string reason;
+	bool conservative{false};
 };
 
 struct MmirFunction
@@ -40,5 +47,6 @@ struct MmirFunction
 };
 
 [[nodiscard]] std::string to_string(MmirNodeKind kind);
+[[nodiscard]] bool validate_mmir(MmirFunction const& function, Diagnostics& diagnostics);
 
 } // namespace azteca

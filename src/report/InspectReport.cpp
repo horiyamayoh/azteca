@@ -70,6 +70,56 @@ void append_location(std::ostringstream& output, SourceLocation const& location)
 	output << "}";
 }
 
+void append_source_range(std::ostringstream& output, SourceRange const& range)
+{
+	output << "{";
+	output << "\"begin\": ";
+	append_location(output, range.begin);
+	output << ", \"end\": ";
+	append_location(output, range.end);
+	output << "}";
+}
+
+void append_evidence(std::ostringstream& output, PlanEvidence const& evidence)
+{
+	output << "\"rule_id\": ";
+	append_json_string(output, evidence.rule_id);
+	output << ", \"reason\": ";
+	append_json_string(output, evidence.reason);
+	output << ", \"certainty\": ";
+	append_json_string(output, evidence.certainty);
+	output << ", \"conservative\": " << (evidence.conservative ? "true" : "false");
+	output << ", \"source_range\": ";
+	append_source_range(output, evidence.source_range);
+}
+
+void append_verbose_evidence(std::ostringstream& output, PlanEvidence const& evidence)
+{
+	if (evidence.rule_id.empty() && evidence.reason.empty() && !evidence.source_range.is_valid())
+	{
+		return;
+	}
+
+	output << "      rule: " << (evidence.rule_id.empty() ? "unknown" : evidence.rule_id);
+	if (!evidence.reason.empty())
+	{
+		output << " - " << evidence.reason;
+	}
+	output << '\n';
+
+	output << "      certainty: " << (evidence.certainty.empty() ? "unknown" : evidence.certainty);
+	if (evidence.conservative)
+	{
+		output << " (conservative)";
+	}
+	output << '\n';
+
+	if (evidence.source_range.is_valid())
+	{
+		output << "      source: " << evidence.source_range.to_string() << '\n';
+	}
+}
+
 [[nodiscard]] std::vector<DependencyPort> ports_of_kind(
     ExtractionPlan const& plan, DependencyKind kind)
 {
@@ -82,7 +132,8 @@ void append_location(std::ostringstream& output, SourceLocation const& location)
 	return ports;
 }
 
-void append_port_lines(std::ostringstream& output, std::vector<DependencyPort> const& ports)
+void append_port_lines(
+    std::ostringstream& output, std::vector<DependencyPort> const& ports, bool verbose)
 {
 	if (ports.empty())
 	{
@@ -107,12 +158,21 @@ void append_port_lines(std::ostringstream& output, std::vector<DependencyPort> c
 			output << " -> " << port.return_type;
 		}
 		output << '\n';
+		if (verbose)
+		{
+			append_verbose_evidence(output, port.evidence);
+		}
 	}
 }
 
 } // namespace
 
 std::string render_text_report(ExtractionPlan const& plan)
+{
+	return render_text_report(plan, {});
+}
+
+std::string render_text_report(ExtractionPlan const& plan, ReportOptions const& options)
 {
 	std::ostringstream output;
 
@@ -132,24 +192,29 @@ std::string render_text_report(ExtractionPlan const& plan)
 		{
 			output << "  - " << field.type << ' ' << field.name << ' ' << to_string(field.access)
 			       << '\n';
+			if (options.verbose)
+			{
+				append_verbose_evidence(output, field.evidence);
+			}
 		}
 	}
 	output << '\n';
 
 	output << "Dependency observations:\n";
-	append_port_lines(output, ports_of_kind(plan, DependencyKind::kQuery));
+	append_port_lines(output, ports_of_kind(plan, DependencyKind::kQuery), options.verbose);
 	output << '\n';
 
 	output << "Observable effects:\n";
-	append_port_lines(output, ports_of_kind(plan, DependencyKind::kEffect));
+	append_port_lines(output, ports_of_kind(plan, DependencyKind::kEffect), options.verbose);
 	output << '\n';
 
 	output << "Operations:\n";
-	append_port_lines(output, ports_of_kind(plan, DependencyKind::kOperation));
+	append_port_lines(output, ports_of_kind(plan, DependencyKind::kOperation), options.verbose);
 	output << '\n';
 
 	output << "Recursive helper candidates:\n";
-	append_port_lines(output, ports_of_kind(plan, DependencyKind::kRecursiveCandidate));
+	append_port_lines(
+	    output, ports_of_kind(plan, DependencyKind::kRecursiveCandidate), options.verbose);
 	output << '\n';
 
 	output << "Generated shapes:\n";
@@ -162,6 +227,10 @@ std::string render_text_report(ExtractionPlan const& plan)
 		for (auto const& shape : plan.shape_candidates)
 		{
 			output << "  - " << shape.name << " from " << shape.source_dependency << '\n';
+			if (options.verbose)
+			{
+				append_verbose_evidence(output, shape.evidence);
+			}
 			for (auto const& member : shape.observed_members)
 			{
 				output << "    - " << member << '\n';
@@ -180,6 +249,10 @@ std::string render_text_report(ExtractionPlan const& plan)
 		for (auto const& requirement : plan.object_ref_requirements)
 		{
 			output << "  - " << requirement.reason << ": " << requirement.expression << '\n';
+			if (options.verbose)
+			{
+				append_verbose_evidence(output, requirement.evidence);
+			}
 		}
 	}
 	output << '\n';
@@ -194,6 +267,10 @@ std::string render_text_report(ExtractionPlan const& plan)
 		for (auto const& path : plan.paths)
 		{
 			output << "  " << path.name << ":\n";
+			if (options.verbose)
+			{
+				append_verbose_evidence(output, path.evidence);
+			}
 			output << "    observations: ";
 			if (path.observations.empty())
 			{
@@ -305,6 +382,8 @@ std::string render_json_report(ExtractionPlan const& plan)
 		append_json_string(output, field.access_specifier);
 		output << ", \"location\": ";
 		append_location(output, field.location);
+		output << ", ";
+		append_evidence(output, field.evidence);
 		output << "}";
 		output << (index + 1U == plan.receiver_state.size() ? "\n" : ",\n");
 	}
@@ -328,6 +407,8 @@ std::string render_json_report(ExtractionPlan const& plan)
 			append_string_array(output, port.argument_types);
 			output << ", \"location\": ";
 			append_location(output, port.location);
+			output << ", ";
+			append_evidence(output, port.evidence);
 			output << "}";
 			output << (index + 1U == ports.size() ? "\n" : ",\n");
 		}
@@ -351,6 +432,8 @@ std::string render_json_report(ExtractionPlan const& plan)
 		append_json_string(output, port.return_type);
 		output << ", \"argument_types\": ";
 		append_string_array(output, port.argument_types);
+		output << ", ";
+		append_evidence(output, port.evidence);
 		output << "}";
 		output << (index + 1U == recursive_ports.size() ? "\n" : ",\n");
 	}
@@ -366,6 +449,8 @@ std::string render_json_report(ExtractionPlan const& plan)
 		append_json_string(output, shape.source_dependency);
 		output << ", \"observed_members\": ";
 		append_string_array(output, shape.observed_members);
+		output << ", ";
+		append_evidence(output, shape.evidence);
 		output << "}";
 		output << (index + 1U == plan.shape_candidates.size() ? "\n" : ",\n");
 	}
@@ -381,6 +466,8 @@ std::string render_json_report(ExtractionPlan const& plan)
 		append_json_string(output, requirement.expression);
 		output << ", \"location\": ";
 		append_location(output, requirement.location);
+		output << ", ";
+		append_evidence(output, requirement.evidence);
 		output << "}";
 		output << (index + 1U == plan.object_ref_requirements.size() ? "\n" : ",\n");
 	}
@@ -398,6 +485,8 @@ std::string render_json_report(ExtractionPlan const& plan)
 		append_string_array(output, path.effects);
 		output << ", \"operations\": ";
 		append_string_array(output, path.operations);
+		output << ", ";
+		append_evidence(output, path.evidence);
 		output << "}";
 		output << (index + 1U == plan.paths.size() ? "\n" : ",\n");
 	}

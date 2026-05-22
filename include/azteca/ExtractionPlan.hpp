@@ -16,6 +16,16 @@ enum class FieldAccess : std::uint8_t
 	kRead,
 	kWrite,
 	kReadWrite,
+	kAddress,
+};
+
+struct PlanEvidence
+{
+	std::string rule_id;
+	std::string reason;
+	std::string certainty{"certain"};
+	bool conservative{false};
+	SourceRange source_range;
 };
 
 struct TargetInfo
@@ -34,6 +44,7 @@ struct ReceiverField
 	bool is_mutable{false};
 	std::string access_specifier;
 	SourceLocation location;
+	PlanEvidence evidence;
 };
 
 enum class DependencyKind : std::uint8_t
@@ -52,6 +63,7 @@ struct DependencyPort
 	std::string return_type;
 	std::vector<std::string> argument_types;
 	SourceLocation location;
+	PlanEvidence evidence;
 };
 
 struct ShapeCandidate
@@ -59,6 +71,7 @@ struct ShapeCandidate
 	std::string name;
 	std::string source_dependency;
 	std::vector<std::string> observed_members;
+	PlanEvidence evidence;
 };
 
 struct ObjectRefRequirement
@@ -66,6 +79,7 @@ struct ObjectRefRequirement
 	std::string reason;
 	std::string expression;
 	SourceLocation location;
+	PlanEvidence evidence;
 };
 
 struct PathBurden
@@ -74,6 +88,7 @@ struct PathBurden
 	std::vector<std::string> observations;
 	std::vector<std::string> effects;
 	std::vector<std::string> operations;
+	PlanEvidence evidence;
 };
 
 struct GTestPreview

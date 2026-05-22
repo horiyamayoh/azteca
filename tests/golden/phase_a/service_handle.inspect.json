@@ -14,7 +14,15 @@
       "access": "read",
       "mutable": false,
       "access_specifier": "private",
-      "location": { "file": "<fixture>/service.cpp", "line": 54, "column": 7 }
+      "location": { "file": "<fixture>/service.cpp", "line": 54, "column": 7 },
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 34, "column": 8 },
+        "end": { "file": "<fixture>/service.cpp", "line": 34, "column": 16 }
+      }
     }
   ],
   "dependency_observations": [
@@ -24,7 +32,15 @@
       "original_callee": "Policy::allow",
       "return_type": "bool",
       "argument_types": ["Id"],
-      "location": { "file": "<fixture>/service.cpp", "line": 44, "column": 16 }
+      "location": { "file": "<fixture>/service.cpp", "line": 44, "column": 16 },
+      "rule_id": "DEP-MEMBER-QUERY",
+      "reason": "const non-void member object call is a query",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 44, "column": 8 },
+        "end": { "file": "<fixture>/service.cpp", "line": 44, "column": 25 }
+      }
     },
     {
       "kind": "query",
@@ -32,7 +48,15 @@
       "original_callee": "Repo::exists",
       "return_type": "bool",
       "argument_types": ["Id"],
-      "location": { "file": "<fixture>/service.cpp", "line": 39, "column": 14 }
+      "location": { "file": "<fixture>/service.cpp", "line": 39, "column": 14 },
+      "rule_id": "DEP-MEMBER-QUERY",
+      "reason": "const non-void member object call is a query",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 39, "column": 8 },
+        "end": { "file": "<fixture>/service.cpp", "line": 39, "column": 24 }
+      }
     }
   ],
   "observable_effects": [
@@ -42,7 +66,15 @@
       "original_callee": "Notifier::send",
       "return_type": "void",
       "argument_types": ["Id"],
-      "location": { "file": "<fixture>/service.cpp", "line": 49, "column": 13 }
+      "location": { "file": "<fixture>/service.cpp", "line": 49, "column": 13 },
+      "rule_id": "DEP-MEMBER-EFFECT",
+      "reason": "void or ignored-return member object call is an effect",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 49, "column": 3 },
+        "end": { "file": "<fixture>/service.cpp", "line": 49, "column": 21 }
+      }
     }
   ],
   "operations": [],
@@ -50,24 +82,61 @@
   "shape_candidates": [],
   "object_ref_requirements": [],
   "paths": [
-    { "name": "return_disabled", "observations": [], "effects": [], "operations": [] },
+    {
+      "name": "return_disabled",
+      "observations": [],
+      "effects": [],
+      "operations": [],
+      "rule_id": "PATH-DFS",
+      "reason": "return path accumulated by DFS",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 36, "column": 4 },
+        "end": { "file": "<fixture>/service.cpp", "line": 36, "column": 19 }
+      }
+    },
     {
       "name": "return_not_found",
       "observations": ["repo_exists"],
       "effects": [],
-      "operations": []
+      "operations": [],
+      "rule_id": "PATH-DFS",
+      "reason": "return path accumulated by DFS",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 41, "column": 4 },
+        "end": { "file": "<fixture>/service.cpp", "line": 41, "column": 20 }
+      }
     },
     {
       "name": "return_denied",
       "observations": ["repo_exists", "policy_allow"],
       "effects": [],
-      "operations": []
+      "operations": [],
+      "rule_id": "PATH-DFS",
+      "reason": "return path accumulated by DFS",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 46, "column": 4 },
+        "end": { "file": "<fixture>/service.cpp", "line": 46, "column": 17 }
+      }
     },
     {
       "name": "return_ok",
       "observations": ["repo_exists", "policy_allow"],
       "effects": ["notifier_send"],
-      "operations": []
+      "operations": [],
+      "rule_id": "PATH-DFS",
+      "reason": "return path accumulated by DFS",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 50, "column": 3 },
+        "end": { "file": "<fixture>/service.cpp", "line": 50, "column": 12 }
+      }
     }
   ],
   "gtest_preview": {

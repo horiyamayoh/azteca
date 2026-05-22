@@ -15,4 +15,13 @@ struct SourceLocation
 	[[nodiscard]] std::string to_string() const;
 };
 
+struct SourceRange
+{
+	SourceLocation begin;
+	SourceLocation end;
+
+	[[nodiscard]] bool is_valid() const noexcept;
+	[[nodiscard]] std::string to_string() const;
+};
+
 } // namespace azteca

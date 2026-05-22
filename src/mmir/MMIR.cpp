@@ -38,4 +38,49 @@ std::string to_string(MmirNodeKind kind)
 	return "Unsupported";
 }
 
+bool validate_mmir(MmirFunction const& function, Diagnostics& diagnostics)
+{
+	auto valid = true;
+
+	for (auto const& node : function.nodes)
+	{
+		if (!node.source_range.is_valid() && !node.location.is_valid())
+		{
+			diagnostics.add(DiagnosticSeverity::kError, "AZTECA_MMIR_LOCATION_MISSING",
+			    "MMIR node has no source location: " + to_string(node.kind));
+			valid = false;
+		}
+
+		if (node.kind == MmirNodeKind::kFieldRef && node.semantic_id.empty())
+		{
+			diagnostics.add(DiagnosticSeverity::kError, "AZTECA_MMIR_FIELD_DECL_MISSING",
+			    "MMIR FieldRef has no field identity", node.location);
+			valid = false;
+		}
+
+		if (node.kind == MmirNodeKind::kBoundaryCall && node.original_symbol.empty())
+		{
+			diagnostics.add(DiagnosticSeverity::kError, "AZTECA_MMIR_BOUNDARY_CALLEE_MISSING",
+			    "MMIR BoundaryCall has no original callee", node.location);
+			valid = false;
+		}
+
+		if (node.kind == MmirNodeKind::kCall)
+		{
+			diagnostics.add(DiagnosticSeverity::kError, "AZTECA_MMIR_UNCLASSIFIED_CALL",
+			    "MMIR contains an unclassified call", node.location);
+			valid = false;
+		}
+
+		if (node.kind == MmirNodeKind::kUnsupported && node.label == "bare this")
+		{
+			diagnostics.add(DiagnosticSeverity::kError, "AZTECA_MMIR_BARE_THIS",
+			    "MMIR contains a bare this expression", node.location);
+			valid = false;
+		}
+	}
+
+	return valid;
+}
+
 } // namespace azteca
