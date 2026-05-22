@@ -1,0 +1,84 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "dev-clang",
+      "displayName": "Dev Clang",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/dev-clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "AZTECA_ENABLE_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "ci-clang",
+      "displayName": "CI Clang",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/ci-clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "AZTECA_ENABLE_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "asan-clang",
+      "displayName": "ASan UBSan Clang",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/asan-clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++-18",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "AZTECA_ENABLE_WARNINGS_AS_ERRORS": "ON",
+        "AZTECA_ENABLE_SANITIZERS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev-clang",
+      "configurePreset": "dev-clang"
+    },
+    {
+      "name": "ci-clang",
+      "configurePreset": "ci-clang"
+    },
+    {
+      "name": "asan-clang",
+      "configurePreset": "asan-clang"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "dev-clang",
+      "configurePreset": "dev-clang",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "ci-clang",
+      "configurePreset": "ci-clang",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "asan-clang",
+      "configurePreset": "asan-clang",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

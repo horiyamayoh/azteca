@@ -1,6 +1,9 @@
 build/
 cmake-build-*/
 azteca-out/
+node_modules/
+.npm/
+.cache/
 
 CMakeCache.txt
 CMakeFiles/
@@ -8,6 +11,8 @@ CTestTestfile.cmake
 Testing/
 cmake_install.cmake
 compile_commands.json
+.ninja_deps
+.ninja_log
 
 *.o
 *.obj

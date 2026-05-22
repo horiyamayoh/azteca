@@ -37,6 +37,8 @@ docs/
 
 ## 主要文書
 
+- `development.md`: 開発基盤、ローカルコマンド、品質ゲート、テスト追加ルール。
+
 - `design/00_project_charter.md`  
   プロジェクト憲章。
 

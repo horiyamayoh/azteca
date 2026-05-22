@@ -277,25 +277,25 @@ return self.x + env.global_rate;
 
 Semantic Envelopeは、構文に応じて自動的に拡張される。
 
-| 検出された構文・意味 | 追加されるEnvelope | 生成方針 |
-|---|---|---|
-| `this->x` / implicit member access | field state | `self.x` |
-| `&this->x` | addressable cell | `self.x.ref()` |
-| reference member access | addressable cell | alias preserving ref |
-| `return this` | object identity | `self.object_ref()` |
-| `this == other` | object identity | object_ref comparison |
-| `external(this)` | object identity + dependency boundary + effect | `deps.external(self.object_ref())` |
-| virtual call | dynamic type + dispatch | explicit dispatch table |
-| `dynamic_cast` | dynamic type | generated type test |
-| `typeid(*this)` | dynamic type | generated type info |
-| `delete this` | lifetime + destructor kernel + effect | mark destroyed |
-| `this->~C()` | lifetime + destructor kernel | mark destroyed |
-| placement new on `this` | lifetime + constructor kernel | reinitialize self |
-| `reinterpret_cast<char*>(this)` | byte view | representation boundary |
-| `memcpy(this, ...)` | byte view or lifetime boundary | representation mutation |
-| global read/write | env/global model | `env.name` |
-| external call | deps/effect | generated dependency |
-| unmodeled inline asm | boundary or not-meaningful | report |
+| 検出された構文・意味               | 追加されるEnvelope                             | 生成方針                           |
+| ---------------------------------- | ---------------------------------------------- | ---------------------------------- |
+| `this->x` / implicit member access | field state                                    | `self.x`                           |
+| `&this->x`                         | addressable cell                               | `self.x.ref()`                     |
+| reference member access            | addressable cell                               | alias preserving ref               |
+| `return this`                      | object identity                                | `self.object_ref()`                |
+| `this == other`                    | object identity                                | object_ref comparison              |
+| `external(this)`                   | object identity + dependency boundary + effect | `deps.external(self.object_ref())` |
+| virtual call                       | dynamic type + dispatch                        | explicit dispatch table            |
+| `dynamic_cast`                     | dynamic type                                   | generated type test                |
+| `typeid(*this)`                    | dynamic type                                   | generated type info                |
+| `delete this`                      | lifetime + destructor kernel + effect          | mark destroyed                     |
+| `this->~C()`                       | lifetime + destructor kernel                   | mark destroyed                     |
+| placement new on `this`            | lifetime + constructor kernel                  | reinitialize self                  |
+| `reinterpret_cast<char*>(this)`    | byte view                                      | representation boundary            |
+| `memcpy(this, ...)`                | byte view or lifetime boundary                 | representation mutation            |
+| global read/write                  | env/global model                               | `env.name`                         |
+| external call                      | deps/effect                                    | generated dependency               |
+| unmodeled inline asm               | boundary or not-meaningful                     | report                             |
 
 ## 例: this escapeを即unsupportedにしない
 

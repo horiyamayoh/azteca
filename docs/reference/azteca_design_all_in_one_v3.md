@@ -1,14 +1,16 @@
 # Azteca Design Documents V3 - All in One
 
-This file concatenates all V3 design documents.
+This file is generated from `docs/README.md`, `docs/design/`, `docs/planning/`,
+`docs/review/`, and `docs/adr/`.
 
+`docs/development.md` is intentionally excluded because it is operational developer
+guidance, not design source of truth.
 
+Run `npm run docs:reference` after editing design documents.
 
 ---
 
-
-# File: README.md
-
+# File: docs/README.md
 
 # Azteca Design Documents V3
 
@@ -36,48 +38,62 @@ V3では、V2の「単一公開抽出モデル」「Semantic Envelope」「MMIR�
 - GoogleMockは中核には置かない。必要に応じて連携可能だが、アステカの本流はScenario APIである。
 - `azteca inspect` は、抽出可能性だけでなく、必要なscenario入力、生成shape、observable effects、経路ごとのstub burdenを表示する。
 
+## フォルダ構成
+
+```text
+docs/
+  design/      V3の設計仕様
+  planning/    実装計画とロードマップ
+  adr/         採択済みArchitecture Decision Records
+  review/      総点検・自己検証
+  reference/   結合済み通読版
+```
+
 ## 主要文書
 
-- `00_project_charter.md`  
+- `development.md`: 開発基盤、ローカルコマンド、品質ゲート、テスト追加ルール。
+
+- `design/00_project_charter.md`
   プロジェクト憲章。
 
-- `01_semantic_contract.md`  
+- `design/01_semantic_contract.md`
   fake this禁止、AST/Semaベース、意味保存範囲、安全契約。
 
-- `06_dependency_model.md`  
+- `design/06_dependency_model.md`
   依存処理のV3版。recursive extraction / boundary port / transcript / shape / object_ref を統合。
 
-- `10_test_strategy.md`  
+- `design/10_test_strategy.md`
   アステカ自身のテスト戦略と、生成Google Testの検証戦略。
 
-- `20_runtime_contract.md`  
+- `design/20_runtime_contract.md`
   scenario、query、effect、operation、object_ref、shape、missing observation診断を含むランタイム契約。
 
-- `22_dependency_transcript_and_stubbing.md`  
+- `design/22_dependency_transcript_and_stubbing.md`
   大量依存問題を解く中心文書。
 
-- `23_gtest_integration.md`  
+- `design/23_gtest_integration.md`
   Google Testを標準ランナーにする設計。
 
-- `24_total_review_and_self_verification.md`  
+- `review/24_total_review_and_self_verification.md`
   ユーザー要求に対する総点検、齟齬検査、実装開始可否判断。
+
+## 実装計画
+
+- `planning/12_implementation_plan.md`
+- `planning/18_implementation_roadmap.md`
 
 ## ADR追加
 
-- `12_adr/0010_gtest_as_default_runner.md`
-- `12_adr/0011_dependency_transcript_over_handwritten_fakes.md`
+- `adr/0010_gtest_as_default_runner.md`
+- `adr/0011_dependency_transcript_over_handwritten_fakes.md`
 
 ## 通読用
 
-`azteca_design_all_in_one_v3.md` に全設計書を結合している。
-
-
+`reference/azteca_design_all_in_one_v3.md` に全設計書を結合している。
 
 ---
 
-
-# File: 00_project_charter.md
-
+# File: docs/design/00_project_charter.md
 
 # 00. Project Charter
 
@@ -209,21 +225,21 @@ Aztecaの主要利用者は次である。
 
 ## 9. 用語
 
-| 用語 | 意味 |
-|---|---|
-| target method | 抽出対象の非staticメンバ関数 |
-| Heart mode | ASTから明示レシーバ関数を生成するモード |
-| Live mode | 正規構築オブジェクトで元メソッドを呼ぶモード |
-| receiver | 元の暗黙 `this` を置き換える明示引数 |
-| self model | receiverが参照するテスト用状態構造体 |
-| dependency model | 他メソッド・外部関数・global等の依存表現 |
-| lowering | AST上の意味構造を生成コードへ変換すること |
-| kernel | 生成されたテスト用関数本体 |
-| driver | kernelまたはLive callを実行するテストハーネス |
-| manifest | 抽出結果、分類、生成物を記録するJSON |
-| classification | Heart可能、Live必須、未対応などの分類 |
-| raw this escape | `this` が外部へ `C*` 等として流出すること |
-| fallback | Heart modeで扱えない場合の代替策 |
+| 用語             | 意味                                          |
+| ---------------- | --------------------------------------------- |
+| target method    | 抽出対象の非staticメンバ関数                  |
+| Heart mode       | ASTから明示レシーバ関数を生成するモード       |
+| Live mode        | 正規構築オブジェクトで元メソッドを呼ぶモード  |
+| receiver         | 元の暗黙 `this` を置き換える明示引数          |
+| self model       | receiverが参照するテスト用状態構造体          |
+| dependency model | 他メソッド・外部関数・global等の依存表現      |
+| lowering         | AST上の意味構造を生成コードへ変換すること     |
+| kernel           | 生成されたテスト用関数本体                    |
+| driver           | kernelまたはLive callを実行するテストハーネス |
+| manifest         | 抽出結果、分類、生成物を記録するJSON          |
+| classification   | Heart可能、Live必須、未対応などの分類         |
+| raw this escape  | `this` が外部へ `C*` 等として流出すること     |
+| fallback         | Heart modeで扱えない場合の代替策              |
 
 ## 10. 初期MVPスコープ
 
@@ -267,13 +283,9 @@ Aztecaの主要利用者は次である。
 - C++ draft non-static member functions: https://eel.is/c++draft/class.mfct.non.static
 - C++ draft object lifetime: https://eel.is/c++draft/basic.life
 
-
-
 ---
 
-
-# File: 01_semantic_contract.md
-
+# File: docs/design/01_semantic_contract.md
 
 # 01. Semantic Contract V3
 
@@ -425,13 +437,9 @@ Aztecaが主張するのは次である。
 
 黙って危険な近似をしてはならない。
 
-
-
 ---
 
-
-# File: 02_architecture.md
-
+# File: docs/design/02_architecture.md
 
 # 02. Architecture V3
 
@@ -651,13 +659,9 @@ Phase G:
 5. kernel/scenario runtimeはGoogle Test非依存に保つ。
 ```
 
-
-
 ---
 
-
-# File: 03_extraction_pipeline.md
-
+# File: docs/design/03_extraction_pipeline.md
 
 # 03. Extraction Pipeline V3
 
@@ -813,15 +817,15 @@ Loweringでは、MMIRをC++コードへ変換する。
 
 対応例:
 
-| 元意味 | 生成意味 |
-|---|---|
-| field read/write | `self.x` |
-| same-class pure helper | recursive kernel |
-| external non-void call | `ports.xxx.call(...)` |
-| external void call | `ports.xxx.record(...)` |
-| return this | `self.object_ref()` |
-| virtual call | dispatch query/operation |
-| dependency object property | shape field |
+| 元意味                     | 生成意味                 |
+| -------------------------- | ------------------------ |
+| field read/write           | `self.x`                 |
+| same-class pure helper     | recursive kernel         |
+| external non-void call     | `ports.xxx.call(...)`    |
+| external void call         | `ports.xxx.record(...)`  |
+| return this                | `self.object_ref()`      |
+| virtual call               | dispatch query/operation |
+| dependency object property | shape field              |
 
 ## 10. Google Test Generation
 
@@ -862,13 +866,9 @@ TEST(C_m, sample) {
 7. extractでscenario付きkernelを生成する。
 ```
 
-
-
 ---
 
-
-# File: 04_receiver_model.md
-
+# File: docs/design/04_receiver_model.md
 
 # 04. Receiver Model
 
@@ -1440,13 +1440,9 @@ C_f_self snapshot(C const& obj);
 - private static memberはdependency化。
 - bit-fieldはpartial扱い。
 
-
-
 ---
 
-
-# File: 05_lowering_rules.md
-
+# File: docs/design/05_lowering_rules.md
 
 # 05. Lowering Rules
 
@@ -1474,13 +1470,13 @@ Tests: 必須fixture
 
 ## 3. 分類語彙
 
-| 用語 | 意味 |
-|---|---|
-| accept | Heart modeで変換可能 |
-| dependency | 依存注入または再帰抽出が必要 |
-| model | 明示モデル追加で変換可能 |
-| live | Live modeが必要 |
-| unsupported | 現在未対応 |
+| 用語        | 意味                         |
+| ----------- | ---------------------------- |
+| accept      | Heart modeで変換可能         |
+| dependency  | 依存注入または再帰抽出が必要 |
+| model       | 明示モデル追加で変換可能     |
+| live        | Live modeが必要              |
+| unsupported | 現在未対応                   |
 
 ## LR-001: implicit data member read
 
@@ -2221,7 +2217,7 @@ heart_partial_with_modeling
 
 - `return_this_partial.cpp`
 
-## LR-022: return *this
+## LR-022: return \*this
 
 ### Before
 
@@ -2272,7 +2268,7 @@ RTTIと実オブジェクトの動的型が必要。
 
 - `dynamic_cast_this_live.cpp`
 
-## LR-024: typeid(*this)
+## LR-024: typeid(\*this)
 
 ### Before
 
@@ -2696,13 +2692,9 @@ coroutine
 advanced template/dependent constructs
 ```
 
-
-
 ---
 
-
-# File: 06_dependency_model.md
-
+# File: docs/design/06_dependency_model.md
 
 # 06. Dependency Model V3
 
@@ -2721,20 +2713,20 @@ V3では、依存問題の基本方針を次のように改める。
 
 ## 2. 依存の基本分類
 
-| ID | 種類 | 例 | V3既定方針 |
-|---|---|---|---|
-| D1 | same-class pure helper | `fee(x)` | 可能なら再帰抽出 |
-| D2 | same-class boundary-like helper | `notify(x)` | query/effect/operation port |
-| D3 | base-class nonvirtual method | `B::g()` | 再帰抽出またはport |
-| D4 | virtual method | `compute(x)` | dispatch query port |
-| D5 | static member function | `C::normalize(x)` | pureなら再帰/直接、外部性があればport |
-| D6 | free function | `normalize(x)` | pureなら直接、外部性があればport |
-| D7 | global read/write | `global_limit` | env portまたはeffect |
-| D8 | member object method | `repo_.load(id)` | dependency transcript port |
-| D9 | external resource | file/socket/db/time/random | query/effect/operation port |
-| D10 | returned dependency object | `repo_.load(id)->amount()` | Shapeまたはexpression-level query |
-| D11 | object identity dependency | `return this`, `external(this)` | `object_ref` |
-| D12 | template helper | `helper<T>(x)` | specialization単位 |
+| ID  | 種類                            | 例                              | V3既定方針                            |
+| --- | ------------------------------- | ------------------------------- | ------------------------------------- |
+| D1  | same-class pure helper          | `fee(x)`                        | 可能なら再帰抽出                      |
+| D2  | same-class boundary-like helper | `notify(x)`                     | query/effect/operation port           |
+| D3  | base-class nonvirtual method    | `B::g()`                        | 再帰抽出またはport                    |
+| D4  | virtual method                  | `compute(x)`                    | dispatch query port                   |
+| D5  | static member function          | `C::normalize(x)`               | pureなら再帰/直接、外部性があればport |
+| D6  | free function                   | `normalize(x)`                  | pureなら直接、外部性があればport      |
+| D7  | global read/write               | `global_limit`                  | env portまたはeffect                  |
+| D8  | member object method            | `repo_.load(id)`                | dependency transcript port            |
+| D9  | external resource               | file/socket/db/time/random      | query/effect/operation port           |
+| D10 | returned dependency object      | `repo_.load(id)->amount()`      | Shapeまたはexpression-level query     |
+| D11 | object identity dependency      | `return this`, `external(this)` | `object_ref`                          |
+| D12 | template helper                 | `helper<T>(x)`                  | specialization単位                    |
 
 ## 3. 依存処理の優先順位
 
@@ -3109,13 +3101,9 @@ Dependency Model V3の契約は次の通り。
 8. Google Testで自然にassertできるScenario APIを生成する。
 ```
 
-
-
 ---
 
-
-# File: 07_live_mode.md
-
+# File: docs/design/07_live_mode.md
 
 # 07. Live Validation Model
 
@@ -3225,13 +3213,9 @@ Live Validationは、以下を解決しない。
 
 これらはDependency Transcript、record/replay、または明示境界で扱う。
 
-
-
 ---
 
-
-# File: 08_codegen_spec.md
-
+# File: docs/design/08_codegen_spec.md
 
 # 08. Code Generation Specification V3
 
@@ -3641,13 +3625,9 @@ Preservation:
 6. 生成テストはCMake/CTestで実行可能。
 ```
 
-
-
 ---
 
-
-# File: 09_cli_and_outputs.md
-
+# File: docs/design/09_cli_and_outputs.md
 
 # 09. CLI and Outputs V3
 
@@ -3954,13 +3934,9 @@ C::~C()
 5. 独自runnerは標準CLI体験に出さない。
 ```
 
-
-
 ---
 
-
-# File: 10_test_strategy.md
-
+# File: docs/design/10_test_strategy.md
 
 # 10. Test Strategy V3
 
@@ -4320,13 +4296,9 @@ Phase C:
   query/effect/operation/scenario/missing observationがGoogle Testで検証できる。
 ```
 
-
-
 ---
 
-
-# File: 11_unsupported_and_fallbacks.md
-
+# File: docs/design/11_unsupported_and_fallbacks.md
 
 # 11. Unsupported and Fallbacks
 
@@ -4338,44 +4310,44 @@ Aztecaは「できない」で終わらせない。変換不能な理由を分�
 
 ## 2. 分類表
 
-| 構文・意味 | Heart mode | Live mode | 備考 |
-|---|---:|---:|---|
-| field read/write | yes | yes | 基本対応 |
-| private field | yes | yes | Heartではselfへ写像 |
-| same-class nonvirtual call | yes | yes | 再帰抽出またはstub |
-| free function call | yes | yes | direct or inject |
-| global read | yes, warn | yes | 再現性注意 |
-| global write | yes, warn | yes | テスト干渉注意 |
-| base field | partial | yes | base self model |
-| virtual call | partial | yes | dispatch table |
-| `return this` | partial | yes | self pointerへ型写像 |
-| `return *this` | partial | yes | self referenceへ型写像 |
-| `external(this)` | no by default | yes | raw this escape |
-| `reinterpret_cast<char*>(this)` | no | yes | layout依存 |
-| `dynamic_cast` involving this | no by default | yes | RTTI依存 |
-| `typeid(*this)` polymorphic | no by default | yes | 動的型依存 |
-| `delete this` | no | yes | lifetime/storage ownership |
-| `this->~C()` | no | yes | lifetime終了 |
-| placement new into `this` | no | yes | lifetime再開始 |
-| bit-field | partial | yes | 初期版は部分対応外 |
-| anonymous union | partial | yes | active member model必要 |
-| constructor | future partial | yes | init kernel設計が必要 |
-| destructor | future partial | yes | resource意味論注意 |
-| template method | specialization only | yes | 具体化単位 |
-| coroutine | no initial | yes | frame/lifetime複雑 |
-| module | no initial | yes | build integration課題 |
+| 構文・意味                      |          Heart mode | Live mode | 備考                       |
+| ------------------------------- | ------------------: | --------: | -------------------------- |
+| field read/write                |                 yes |       yes | 基本対応                   |
+| private field                   |                 yes |       yes | Heartではselfへ写像        |
+| same-class nonvirtual call      |                 yes |       yes | 再帰抽出またはstub         |
+| free function call              |                 yes |       yes | direct or inject           |
+| global read                     |           yes, warn |       yes | 再現性注意                 |
+| global write                    |           yes, warn |       yes | テスト干渉注意             |
+| base field                      |             partial |       yes | base self model            |
+| virtual call                    |             partial |       yes | dispatch table             |
+| `return this`                   |             partial |       yes | self pointerへ型写像       |
+| `return *this`                  |             partial |       yes | self referenceへ型写像     |
+| `external(this)`                |       no by default |       yes | raw this escape            |
+| `reinterpret_cast<char*>(this)` |                  no |       yes | layout依存                 |
+| `dynamic_cast` involving this   |       no by default |       yes | RTTI依存                   |
+| `typeid(*this)` polymorphic     |       no by default |       yes | 動的型依存                 |
+| `delete this`                   |                  no |       yes | lifetime/storage ownership |
+| `this->~C()`                    |                  no |       yes | lifetime終了               |
+| placement new into `this`       |                  no |       yes | lifetime再開始             |
+| bit-field                       |             partial |       yes | 初期版は部分対応外         |
+| anonymous union                 |             partial |       yes | active member model必要    |
+| constructor                     |      future partial |       yes | init kernel設計が必要      |
+| destructor                      |      future partial |       yes | resource意味論注意         |
+| template method                 | specialization only |       yes | 具体化単位                 |
+| coroutine                       |          no initial |       yes | frame/lifetime複雑         |
+| module                          |          no initial |       yes | build integration課題      |
 
 ## 3. Fallback vocabulary
 
-| Fallback | 意味 |
-|---|---|
-| dependency injection | 外部呼び出しをstub/function object化する |
-| recursive extraction | 依存メソッドもHeart化する |
-| explicit model | RTTI/identity等をself modelへ明示する |
-| Live mode | 正規実オブジェクトで元メソッドを呼ぶ |
-| refactor target | 対象コードを純粋ロジックと外部依存へ分離する |
-| test hook | friend observer/factory等を明示的に追加する |
-| unsupported | 現在は扱わない |
+| Fallback             | 意味                                         |
+| -------------------- | -------------------------------------------- |
+| dependency injection | 外部呼び出しをstub/function object化する     |
+| recursive extraction | 依存メソッドもHeart化する                    |
+| explicit model       | RTTI/identity等をself modelへ明示する        |
+| Live mode            | 正規実オブジェクトで元メソッドを呼ぶ         |
+| refactor target      | 対象コードを純粋ロジックと外部依存へ分離する |
+| test hook            | friend observer/factory等を明示的に追加する  |
+| unsupported          | 現在は扱わない                               |
 
 ## 4. raw this escape
 
@@ -4452,7 +4424,7 @@ bool C_is_d(C_is_d_self const& self) {
 
 これはRTTIそのものではなく、テスト用モデルである。APIがRTTIを要求するならLive mode。
 
-## 6. typeid(*this)
+## 6. typeid(\*this)
 
 polymorphic型の`typeid(*this)`は実動的型に依存する。
 
@@ -4756,17 +4728,17 @@ Aztecaは`compute_score_only`をHeart化できる。
 
 ## 21. 優先対応表
 
-| 項目 | 優先度 | 理由 |
-|---|---:|---|
-| base class member | 高 | 一般的 |
-| loops/range-for | 高 | 一般的 |
-| overloaded operator | 中 | 型依存ロジックで必要 |
-| lambda this capture | 中 | 現代C++で一般的 |
-| virtual call dispatch | 中 | 抽象設計で必要 |
-| template specialization | 中 | 必須だが範囲制御必要 |
-| bit-field | 低〜中 | 組込み系で重要 |
-| constructor/destructor | 中 | 別pipelineが必要 |
-| coroutine | 低 | 初期スコープ外 |
+| 項目                    | 優先度 | 理由                 |
+| ----------------------- | -----: | -------------------- |
+| base class member       |     高 | 一般的               |
+| loops/range-for         |     高 | 一般的               |
+| overloaded operator     |     中 | 型依存ロジックで必要 |
+| lambda this capture     |     中 | 現代C++で一般的      |
+| virtual call dispatch   |     中 | 抽象設計で必要       |
+| template specialization |     中 | 必須だが範囲制御必要 |
+| bit-field               | 低〜中 | 組込み系で重要       |
+| constructor/destructor  |     中 | 別pipelineが必要     |
+| coroutine               |     低 | 初期スコープ外       |
 
 ## 22. Open questions
 
@@ -4780,218 +4752,9 @@ Aztecaは`compute_score_only`をHeart化できる。
 - 実オブジェクトなら正確に試験できるものはLive-required。
 - friend hookは自動挿入しない。
 
-
-
 ---
 
-
-# File: 12_implementation_plan.md
-
-
-# 12. Implementation Plan V3
-
-## 1. 目的
-
-この文書は、Azteca V3の実装着手時に使う具体的な開発計画を定義する。
-
-設計は実装開始に十分である。最初の成果物は完全な `extract` ではなく、`inspect` によるExtraction Plan表示である。
-
-## 2. Repository Layout
-
-```text
-azteca/
-  CMakeLists.txt
-  include/
-    azteca/
-      Diagnostics.hpp
-      MethodSpec.hpp
-      MMIR.hpp
-      ExtractionPlan.hpp
-      RuntimeContracts.hpp
-  src/
-    cli/
-    frontend/
-    resolve/
-    mmir/
-    collect/
-    plan/
-    lower/
-    codegen/
-    report/
-    runtime/
-    gtest/
-  tests/
-    unit/
-    fixtures/
-    golden/
-    integration/
-    negative/
-  docs/
-```
-
-## 3. Phase A: Inspect MVP
-
-### Goal
-
-対象メソッドをASTから見つけ、抽出計画を表示する。
-
-### Scope
-
-```text
-- compile_commands.json loading
-- MethodSelector
-- MethodInfo extraction
-- MMIR MVP
-- receiver field collection
-- dependency observation collection
-- query/effect/operation classification MVP
-- shape candidate MVP
-- path-wise stub burden MVP
-- Google Test preview report
-```
-
-### Non-scope
-
-```text
-- kernel generation
-- scenario runtime implementation
-- CMake generation
-- Google Test execution
-```
-
-### Example output
-
-```text
-Azteca can extract Account::withdraw(int).
-
-Generated Google Test:
-  tests/account.withdraw.sample_test.cpp
-
-Receiver state:
-  - int balance_ read/write
-  - bool locked_ read
-
-Dependency observations:
-  query fee(int) -> int
-
-Path-wise test burden:
-  locked:
-    observations: none
-  unlocked:
-    observations: fee
-```
-
-## 4. Phase B: Minimal Kernel + Google Test
-
-### Scope
-
-```text
-- self.hpp
-- kernel.hpp/cpp
-- scenario.hpp minimal
-- Google Test sample
-- CMakeLists.txt
-- manifest.json
-- report.md
-```
-
-### Supported syntax
-
-```text
-field read/write
-local variable
-argument
-if/else
-return
-arithmetic/logical expression
-simple private helper recursive extraction
-simple query dependency
-```
-
-### Done
-
-```text
-cmake -S azteca-out -B azteca-out/build
-cmake --build azteca-out/build
-ctest --test-dir azteca-out/build --output-on-failure
-```
-
-## 5. Phase C: Dependency Transcript Runtime
-
-### Scope
-
-```text
-azteca::query
-azteca::effect
-azteca::operation
-azteca::missing_observation
-scenario.when API
-scenario.effects API
-Google Test adapter
-```
-
-### Done
-
-```text
-- non-void dependency returns configured value
-- missing dependency throws missing_observation
-- void dependency records effect
-- operation returns value and records effect
-- generated Google Test verifies effects
-```
-
-## 6. Phase D: Shape and Expression-level Ports
-
-### Scope
-
-```text
-- returned dependency object shape
-- optional-like shape wrapping
-- expression-level query port
-- object_ref for identity-preserving cases
-```
-
-## 7. Phase E onward
-
-```text
-E: Identity and addressability
-F: Dispatch and dynamic type
-G: Lifetime and representation
-H: Record/replay
-I: UX hardening and regression
-```
-
-## 8. First Issues
-
-```text
-Issue 1: Project bootstrap
-Issue 2: Compilation database loading
-Issue 3: Method selector
-Issue 4: MMIR MVP
-Issue 5: Receiver field collector
-Issue 6: Dependency observation collector
-Issue 7: Inspect report text/json
-Issue 8: Basic fixtures and Google Test unit tests
-```
-
-## 9. Definition of Done for Implementation Start
-
-```text
-- azteca --help works
-- azteca inspect can find CXXMethodDecl
-- inspect displays receiver fields
-- inspect displays dependency observations
-- inspect displays Google Test preview
-- unit tests run with Google Test
-```
-
-
-
----
-
-
-# File: 13_unified_extraction_policy.md
-
+# File: docs/design/13_unified_extraction_policy.md
 
 # 13. Unified Extraction Policy V3
 
@@ -5247,13 +5010,9 @@ Meaning:
 7. reportは次に書くべきscenario行を示す。
 ```
 
-
-
 ---
 
-
-# File: 14_semantic_envelope.md
-
+# File: docs/design/14_semantic_envelope.md
 
 # 14. Semantic Envelope
 
@@ -5534,25 +5293,25 @@ return self.x + env.global_rate;
 
 Semantic Envelopeは、構文に応じて自動的に拡張される。
 
-| 検出された構文・意味 | 追加されるEnvelope | 生成方針 |
-|---|---|---|
-| `this->x` / implicit member access | field state | `self.x` |
-| `&this->x` | addressable cell | `self.x.ref()` |
-| reference member access | addressable cell | alias preserving ref |
-| `return this` | object identity | `self.object_ref()` |
-| `this == other` | object identity | object_ref comparison |
-| `external(this)` | object identity + dependency boundary + effect | `deps.external(self.object_ref())` |
-| virtual call | dynamic type + dispatch | explicit dispatch table |
-| `dynamic_cast` | dynamic type | generated type test |
-| `typeid(*this)` | dynamic type | generated type info |
-| `delete this` | lifetime + destructor kernel + effect | mark destroyed |
-| `this->~C()` | lifetime + destructor kernel | mark destroyed |
-| placement new on `this` | lifetime + constructor kernel | reinitialize self |
-| `reinterpret_cast<char*>(this)` | byte view | representation boundary |
-| `memcpy(this, ...)` | byte view or lifetime boundary | representation mutation |
-| global read/write | env/global model | `env.name` |
-| external call | deps/effect | generated dependency |
-| unmodeled inline asm | boundary or not-meaningful | report |
+| 検出された構文・意味               | 追加されるEnvelope                             | 生成方針                           |
+| ---------------------------------- | ---------------------------------------------- | ---------------------------------- |
+| `this->x` / implicit member access | field state                                    | `self.x`                           |
+| `&this->x`                         | addressable cell                               | `self.x.ref()`                     |
+| reference member access            | addressable cell                               | alias preserving ref               |
+| `return this`                      | object identity                                | `self.object_ref()`                |
+| `this == other`                    | object identity                                | object_ref comparison              |
+| `external(this)`                   | object identity + dependency boundary + effect | `deps.external(self.object_ref())` |
+| virtual call                       | dynamic type + dispatch                        | explicit dispatch table            |
+| `dynamic_cast`                     | dynamic type                                   | generated type test                |
+| `typeid(*this)`                    | dynamic type                                   | generated type info                |
+| `delete this`                      | lifetime + destructor kernel + effect          | mark destroyed                     |
+| `this->~C()`                       | lifetime + destructor kernel                   | mark destroyed                     |
+| placement new on `this`            | lifetime + constructor kernel                  | reinitialize self                  |
+| `reinterpret_cast<char*>(this)`    | byte view                                      | representation boundary            |
+| `memcpy(this, ...)`                | byte view or lifetime boundary                 | representation mutation            |
+| global read/write                  | env/global model                               | `env.name`                         |
+| external call                      | deps/effect                                    | generated dependency               |
+| unmodeled inline asm               | boundary or not-meaningful                     | report                             |
 
 ## 例: this escapeを即unsupportedにしない
 
@@ -5784,13 +5543,9 @@ Semantic Envelopeが設計として成立したと言える条件:
 7. 利用者はそれでも `azteca extract` だけで始められる。
 ```
 
-
-
 ---
 
-
-# File: 15_method_meaning_ir.md
-
+# File: docs/design/15_method_meaning_ir.md
 
 # 15. Method Meaning IR
 
@@ -6176,13 +5931,9 @@ MVP:
 5. lowering ruleのテストが、AST直接ではなくMMIR期待値でも検証できる。
 ```
 
-
-
 ---
 
-
-# File: 16_universal_lowering_strategy.md
-
+# File: docs/design/16_universal_lowering_strategy.md
 
 # 16. Universal Lowering Strategy
 
@@ -6251,23 +6002,23 @@ features:
 
 ## Lowering方針一覧
 
-| Feature | Lowering | 例外条件 |
-|---|---|---|
-| field read/write | `self.field` | 型が生成不能な場合はopaque field |
-| field address | `cell<T>` | pointer arithmeticが任意メモリへ出る場合はboundary |
-| this identity | `object_ref<C>` | 実C*数値そのものが要求される場合はboundary |
-| return this | `object_ref<C>`戻り | 元シグネチャ維持が必須ならadapter生成 |
-| pass this | dependencyに`object_ref<C>`を渡す | calleeも抽出可能ならcalleeも変換 |
-| virtual call | dispatch table | dispatch先が不明でもstub dispatch |
-| dynamic_cast | type_tag test | private inheritance等は型グラフに基づき診断 |
-| delete this | lifetime effect | 実allocator検証は対象外 |
-| destructor call | destructor kernel | 未抽出資源解放はboundary |
-| placement new | constructor kernel + lifetime reinit | raw storage layout依存はboundary |
-| global read/write | env model | 実global使用も設定可能 |
-| external call | dependency boundary | 戻り値はtest sideで供給 |
-| byte representation | byte_view/boundary | ABI正確性は標準対象外 |
-| inline asm | boundary | 制御支配ならnot-meaningful |
-| coroutine | coroutine state model or boundary | 初期実装ではboundary |
+| Feature             | Lowering                             | 例外条件                                           |
+| ------------------- | ------------------------------------ | -------------------------------------------------- |
+| field read/write    | `self.field`                         | 型が生成不能な場合はopaque field                   |
+| field address       | `cell<T>`                            | pointer arithmeticが任意メモリへ出る場合はboundary |
+| this identity       | `object_ref<C>`                      | 実C\*数値そのものが要求される場合はboundary        |
+| return this         | `object_ref<C>`戻り                  | 元シグネチャ維持が必須ならadapter生成              |
+| pass this           | dependencyに`object_ref<C>`を渡す    | calleeも抽出可能ならcalleeも変換                   |
+| virtual call        | dispatch table                       | dispatch先が不明でもstub dispatch                  |
+| dynamic_cast        | type_tag test                        | private inheritance等は型グラフに基づき診断        |
+| delete this         | lifetime effect                      | 実allocator検証は対象外                            |
+| destructor call     | destructor kernel                    | 未抽出資源解放はboundary                           |
+| placement new       | constructor kernel + lifetime reinit | raw storage layout依存はboundary                   |
+| global read/write   | env model                            | 実global使用も設定可能                             |
+| external call       | dependency boundary                  | 戻り値はtest sideで供給                            |
+| byte representation | byte_view/boundary                   | ABI正確性は標準対象外                              |
+| inline asm          | boundary                             | 制御支配ならnot-meaningful                         |
+| coroutine           | coroutine state model or boundary    | 初期実装ではboundary                               |
 
 ## Direct Field Lowering
 
@@ -6710,13 +6461,9 @@ effects.record_inline_asm("source-span-id");
 7. 利用者はこれらをモード選択なしに使える。
 ```
 
-
-
 ---
 
-
-# File: 17_product_experience_and_governance.md
-
+# File: docs/design/17_product_experience_and_governance.md
 
 # 17. Product Experience and Governance V3
 
@@ -7032,302 +6779,9 @@ boundaries:
 7. reportは内部分類名ではなく、次に何を書けばよいかを示す。
 ```
 
-
-
 ---
 
-
-# File: 18_implementation_roadmap.md
-
-
-# 18. V3 Implementation Roadmap
-
-## 1. 目的
-
-この文書は、アステカを「単純な利用感を保ったまま、より多くのメソッドを抽出できるツール」へ進める実装ロードマップを定義する。
-
-V3では、依存関係問題とGoogle Test統合を正式にロードマップへ組み込む。
-
-```text
-Phase A: Inspect as Extraction Plan
-Phase B: Minimal Google Test Kernel Extraction
-Phase C: Dependency Transcript and Scenario Runtime
-Phase D: Shape and Expression-level Ports
-Phase E: Identity and Addressability
-Phase F: Dispatch and Dynamic Type
-Phase G: Lifetime and Representation
-Phase H: Record/Replay and Scale
-Phase I: UX Hardening and Regression
-```
-
-## 2. Phase A: Inspect as Extraction Plan
-
-### 目的
-
-コード生成前に、対象メソッドがどのように抽出されるかを説明できるようにする。
-
-### コマンド
-
-```bash
-azteca inspect -p build --method 'C::m(int)'
-```
-
-### 出力に含めるもの
-
-```text
-- receiver state
-- generated shapes候補
-- dependency observations
-- observable effects
-- object_ref要求
-- path-wise stub burden
-- generated Google Test preview
-```
-
-### 完了条件
-
-```text
-1. field read/writeを検出できる。
-2. same-class helperの再帰抽出候補を出せる。
-3. member object method callをquery/effect/operation候補に分類できる。
-4. this escapeをobject_ref要求として表示できる。
-5. 早期return経路ごとの必要queryを概算できる。
-```
-
-## 3. Phase B: Minimal Google Test Kernel Extraction
-
-### 目的
-
-単純なメソッドをkernelとして生成し、Google Test sampleで実行できるようにする。
-
-### 対応範囲
-
-```text
-- field read/write
-- local variable
-- argument
-- arithmetic/logical expression
-- if/else
-- return
-- const receiver
-- simple helper recursive extraction
-```
-
-### 生成物
-
-```text
-include/
-  C_m.self.hpp
-  C_m.kernel.hpp
-
-tests/
-  C_m.sample_test.cpp
-
-CMakeLists.txt
-azteca_report.md
-manifest.json
-```
-
-### 完了条件
-
-```text
-1. 生成コードがCMakeでビルドできる。
-2. Google Test sampleが実行できる。
-3. fake thisを使わない。
-4. self更新と戻り値をEXPECTで検証できる。
-```
-
-## 4. Phase C: Dependency Transcript and Scenario Runtime
-
-### 目的
-
-大量依存メソッドを、依存fakeクラスなしにテストできるようにする。
-
-### 対応範囲
-
-```text
-- query port
-- effect log
-- operation port
-- scenario.when.xxx(...).returns(...)
-- scenario.effects.xxx.expect_once(...)
-- missing observation diagnostics
-- generated scenario skeleton
-```
-
-### 生成例
-
-```cpp
-TEST(C_m, success_path) {
-    auto s = azteca_gen::scenario::C_m{};
-
-    s.self.enabled = true;
-    s.when.repo_exists(Id{1}).returns(true);
-    s.when.policy_allow(Id{1}).returns(true);
-
-    auto result = s.call(Id{1});
-
-    EXPECT_EQ(result, OK);
-    s.effects.notifier_send.expect_once(Id{1});
-}
-```
-
-### 完了条件
-
-```text
-1. non-void dependency callをqueryとして扱える。
-2. void dependency callをeffectとして記録できる。
-3. operationが戻り値供給と効果記録の両方を行える。
-4. 未設定queryに到達するとmissing observationが出る。
-5. 生成Google Testがscenario APIを使って通る。
-```
-
-## 5. Phase D: Shape and Expression-level Ports
-
-### 目的
-
-依存が返す巨大オブジェクトやメソッドチェーンを、本物の依存構築なしに扱う。
-
-### 対応範囲
-
-```text
-- returned object shape generation
-- optional/unique_ptr/shared_ptr-like wrapperのshape化
-- expression-level query port
-- shape equality / print support
-- inspectでshape field表示
-```
-
-### 完了条件
-
-```text
-1. repo.load(id)->amount() を OrderShape.amount にloweringできる。
-2. repo.find(id)->profile().age(now) を単一query portに畳める。
-3. 中間同一性が必要な場合は畳まずobject_refへ展開できる。
-```
-
-## 6. Phase E: Identity and Addressability
-
-### 目的
-
-`this` の同一性、`return this`、`external(this)`、メンバアドレス取得を抽出できるようにする。
-
-### 対応範囲
-
-```text
-- object_ref<C>
-- object_id generation
-- return this
-- this comparison
-- pass this to dependency
-- address-taken field
-- reference aliasing
-- simple pointer to field
-```
-
-### 完了条件
-
-```text
-1. return thisをobject_ref戻りにできる。
-2. external(this)をdeps.external(object_ref)にできる。
-3. &fieldをcell/refにできる。
-4. aliasによるfield更新が保存される。
-```
-
-## 7. Phase F: Dispatch and Dynamic Type
-
-### 目的
-
-virtual call、dynamic_cast、typeidを意味モデルとして抽出する。
-
-### 対応範囲
-
-```text
-- virtual method call -> dispatch query/operation
-- pure virtual call -> required dispatch observation
-- dynamic_cast<this> -> type_tag test
-- typeid(*this) -> type_tag info
-- derived shape view
-```
-
-## 8. Phase G: Lifetime and Representation
-
-### 目的
-
-delete this、explicit destructor、placement new、byte accessなどを、可能な限り意味モデルとして抽出する。
-
-### 対応範囲
-
-```text
-- lifetime_state
-- destructor kernel
-- delete effect
-- placement-new intent
-- byte_view for representation observation
-```
-
-完全なABI再現はしない。ユニットテスト上意味のある観測へ落とす。
-
-## 9. Phase H: Record/Replay and Scale
-
-### 目的
-
-大量依存メソッドのscenario作成負担をさらに下げる。
-
-### 対応範囲
-
-```text
-- dependency transcript recording
-- transcript to Google Test scenario generation
-- path seed generation
-- scenario minimization
-```
-
-record/replayは補助機能である。標準のunit testは人間が意図を確認して編集する。
-
-## 10. Phase I: UX Hardening and Regression
-
-### 目的
-
-実プロジェクトで継続使用できる品質にする。
-
-### 対応範囲
-
-```text
-- diagnostics polish
-- large fixture corpus
-- generated code style
-- CI integration
-- CMake package integration
-- regression minimization
-- reporting quality
-```
-
-## 11. 実装開始判断
-
-現時点で実装開始してよい。
-
-ただし、最初に作るものは `extract` の完全版ではなく、`inspect` である。
-
-```text
-Phase A first:
-  - MethodSelector
-  - FeatureCollector
-  - MMIR MVP
-  - Dependency observation collector
-  - Path-wise stub burden reporter
-  - Google Test preview reporter
-```
-
-この順であれば、設計が現実のASTに耐えるかを早期に検証できる。
-
-
-
----
-
-
-# File: 19_correctness_model.md
-
+# File: docs/design/19_correctness_model.md
 
 # 19. Correctness Model
 
@@ -7620,13 +7074,9 @@ snapshotは過剰に細かくしすぎない。意味のある単位で固定す
 5. 差分検証は任意の検証補助として位置づけられている。
 ```
 
-
-
 ---
 
-
-# File: 20_runtime_contract.md
-
+# File: docs/design/20_runtime_contract.md
 
 # 20. Runtime Contract V3
 
@@ -7944,13 +7394,9 @@ s.effects.bus_publish.expect_once(OrderApproved{id});
 8. generated Google Testはscenario APIを通じてkernelを試験する。
 ```
 
-
-
 ---
 
-
-# File: 21_end_to_end_examples.md
-
+# File: docs/design/21_end_to_end_examples.md
 
 # 21. End-to-End Examples V3
 
@@ -8294,13 +7740,9 @@ V3の例が示す方針:
 - fake thisもfake dependency classも作らない。
 ```
 
-
-
 ---
 
-
-# File: 22_dependency_transcript_and_stubbing.md
-
+# File: docs/design/22_dependency_transcript_and_stubbing.md
 
 # 22. Dependency Transcript and Stubbing
 
@@ -8660,13 +8102,9 @@ Dependency Transcript機能のMVPは、次を満たす。
 7. 依存fakeクラスを書かずにテストできる。
 ```
 
-
-
 ---
 
-
-# File: 23_gtest_integration.md
-
+# File: docs/design/23_gtest_integration.md
 
 # 23. Google Test Integration
 
@@ -8881,13 +8319,495 @@ azteca-out/
 6. 独自runnerなしで標準利用できる。
 ```
 
+---
 
+# File: docs/planning/12_implementation_plan.md
+
+# 12. Implementation Plan V3
+
+## 1. 目的
+
+この文書は、Azteca V3の実装着手時に使う具体的な開発計画を定義する。
+
+設計は実装開始に十分である。最初の成果物は完全な `extract` ではなく、`inspect` によるExtraction Plan表示である。
+
+## 2. Repository Layout
+
+```text
+azteca/
+  CMakeLists.txt
+  include/
+    azteca/
+      Diagnostics.hpp
+      MethodSpec.hpp
+      MMIR.hpp
+      ExtractionPlan.hpp
+      RuntimeContracts.hpp
+  src/
+    cli/
+    frontend/
+    resolve/
+    mmir/
+    collect/
+    plan/
+    lower/
+    codegen/
+    report/
+    runtime/
+    gtest/
+  tests/
+    unit/
+    fixtures/
+    golden/
+    integration/
+    negative/
+  docs/
+```
+
+## 3. Phase A: Inspect MVP
+
+### Goal
+
+対象メソッドをASTから見つけ、抽出計画を表示する。
+
+### Scope
+
+```text
+- compile_commands.json loading
+- MethodSelector
+- MethodInfo extraction
+- MMIR MVP
+- receiver field collection
+- dependency observation collection
+- query/effect/operation classification MVP
+- shape candidate MVP
+- path-wise stub burden MVP
+- Google Test preview report
+```
+
+### Non-scope
+
+```text
+- kernel generation
+- scenario runtime implementation
+- CMake generation
+- Google Test execution
+```
+
+### Example output
+
+```text
+Azteca can extract Account::withdraw(int).
+
+Generated Google Test:
+  tests/account.withdraw.sample_test.cpp
+
+Receiver state:
+  - int balance_ read/write
+  - bool locked_ read
+
+Dependency observations:
+  query fee(int) -> int
+
+Path-wise test burden:
+  locked:
+    observations: none
+  unlocked:
+    observations: fee
+```
+
+## 4. Phase B: Minimal Kernel + Google Test
+
+### Scope
+
+```text
+- self.hpp
+- kernel.hpp/cpp
+- scenario.hpp minimal
+- Google Test sample
+- CMakeLists.txt
+- manifest.json
+- report.md
+```
+
+### Supported syntax
+
+```text
+field read/write
+local variable
+argument
+if/else
+return
+arithmetic/logical expression
+simple private helper recursive extraction
+simple query dependency
+```
+
+### Done
+
+```text
+cmake -S azteca-out -B azteca-out/build
+cmake --build azteca-out/build
+ctest --test-dir azteca-out/build --output-on-failure
+```
+
+## 5. Phase C: Dependency Transcript Runtime
+
+### Scope
+
+```text
+azteca::query
+azteca::effect
+azteca::operation
+azteca::missing_observation
+scenario.when API
+scenario.effects API
+Google Test adapter
+```
+
+### Done
+
+```text
+- non-void dependency returns configured value
+- missing dependency throws missing_observation
+- void dependency records effect
+- operation returns value and records effect
+- generated Google Test verifies effects
+```
+
+## 6. Phase D: Shape and Expression-level Ports
+
+### Scope
+
+```text
+- returned dependency object shape
+- optional-like shape wrapping
+- expression-level query port
+- object_ref for identity-preserving cases
+```
+
+## 7. Phase E onward
+
+```text
+E: Identity and addressability
+F: Dispatch and dynamic type
+G: Lifetime and representation
+H: Record/replay
+I: UX hardening and regression
+```
+
+## 8. First Issues
+
+```text
+Issue 1: Project bootstrap
+Issue 2: Compilation database loading
+Issue 3: Method selector
+Issue 4: MMIR MVP
+Issue 5: Receiver field collector
+Issue 6: Dependency observation collector
+Issue 7: Inspect report text/json
+Issue 8: Basic fixtures and Google Test unit tests
+```
+
+## 9. Definition of Done for Implementation Start
+
+```text
+- azteca --help works
+- azteca inspect can find CXXMethodDecl
+- inspect displays receiver fields
+- inspect displays dependency observations
+- inspect displays Google Test preview
+- unit tests run with Google Test
+```
 
 ---
 
+# File: docs/planning/18_implementation_roadmap.md
 
-# File: 24_total_review_and_self_verification.md
+# 18. V3 Implementation Roadmap
 
+## 1. 目的
+
+この文書は、アステカを「単純な利用感を保ったまま、より多くのメソッドを抽出できるツール」へ進める実装ロードマップを定義する。
+
+V3では、依存関係問題とGoogle Test統合を正式にロードマップへ組み込む。
+
+```text
+Phase A: Inspect as Extraction Plan
+Phase B: Minimal Google Test Kernel Extraction
+Phase C: Dependency Transcript and Scenario Runtime
+Phase D: Shape and Expression-level Ports
+Phase E: Identity and Addressability
+Phase F: Dispatch and Dynamic Type
+Phase G: Lifetime and Representation
+Phase H: Record/Replay and Scale
+Phase I: UX Hardening and Regression
+```
+
+## 2. Phase A: Inspect as Extraction Plan
+
+### 目的
+
+コード生成前に、対象メソッドがどのように抽出されるかを説明できるようにする。
+
+### コマンド
+
+```bash
+azteca inspect -p build --method 'C::m(int)'
+```
+
+### 出力に含めるもの
+
+```text
+- receiver state
+- generated shapes候補
+- dependency observations
+- observable effects
+- object_ref要求
+- path-wise stub burden
+- generated Google Test preview
+```
+
+### 完了条件
+
+```text
+1. field read/writeを検出できる。
+2. same-class helperの再帰抽出候補を出せる。
+3. member object method callをquery/effect/operation候補に分類できる。
+4. this escapeをobject_ref要求として表示できる。
+5. 早期return経路ごとの必要queryを概算できる。
+```
+
+## 3. Phase B: Minimal Google Test Kernel Extraction
+
+### 目的
+
+単純なメソッドをkernelとして生成し、Google Test sampleで実行できるようにする。
+
+### 対応範囲
+
+```text
+- field read/write
+- local variable
+- argument
+- arithmetic/logical expression
+- if/else
+- return
+- const receiver
+- simple helper recursive extraction
+```
+
+### 生成物
+
+```text
+include/
+  C_m.self.hpp
+  C_m.kernel.hpp
+
+tests/
+  C_m.sample_test.cpp
+
+CMakeLists.txt
+azteca_report.md
+manifest.json
+```
+
+### 完了条件
+
+```text
+1. 生成コードがCMakeでビルドできる。
+2. Google Test sampleが実行できる。
+3. fake thisを使わない。
+4. self更新と戻り値をEXPECTで検証できる。
+```
+
+## 4. Phase C: Dependency Transcript and Scenario Runtime
+
+### 目的
+
+大量依存メソッドを、依存fakeクラスなしにテストできるようにする。
+
+### 対応範囲
+
+```text
+- query port
+- effect log
+- operation port
+- scenario.when.xxx(...).returns(...)
+- scenario.effects.xxx.expect_once(...)
+- missing observation diagnostics
+- generated scenario skeleton
+```
+
+### 生成例
+
+```cpp
+TEST(C_m, success_path) {
+    auto s = azteca_gen::scenario::C_m{};
+
+    s.self.enabled = true;
+    s.when.repo_exists(Id{1}).returns(true);
+    s.when.policy_allow(Id{1}).returns(true);
+
+    auto result = s.call(Id{1});
+
+    EXPECT_EQ(result, OK);
+    s.effects.notifier_send.expect_once(Id{1});
+}
+```
+
+### 完了条件
+
+```text
+1. non-void dependency callをqueryとして扱える。
+2. void dependency callをeffectとして記録できる。
+3. operationが戻り値供給と効果記録の両方を行える。
+4. 未設定queryに到達するとmissing observationが出る。
+5. 生成Google Testがscenario APIを使って通る。
+```
+
+## 5. Phase D: Shape and Expression-level Ports
+
+### 目的
+
+依存が返す巨大オブジェクトやメソッドチェーンを、本物の依存構築なしに扱う。
+
+### 対応範囲
+
+```text
+- returned object shape generation
+- optional/unique_ptr/shared_ptr-like wrapperのshape化
+- expression-level query port
+- shape equality / print support
+- inspectでshape field表示
+```
+
+### 完了条件
+
+```text
+1. repo.load(id)->amount() を OrderShape.amount にloweringできる。
+2. repo.find(id)->profile().age(now) を単一query portに畳める。
+3. 中間同一性が必要な場合は畳まずobject_refへ展開できる。
+```
+
+## 6. Phase E: Identity and Addressability
+
+### 目的
+
+`this` の同一性、`return this`、`external(this)`、メンバアドレス取得を抽出できるようにする。
+
+### 対応範囲
+
+```text
+- object_ref<C>
+- object_id generation
+- return this
+- this comparison
+- pass this to dependency
+- address-taken field
+- reference aliasing
+- simple pointer to field
+```
+
+### 完了条件
+
+```text
+1. return thisをobject_ref戻りにできる。
+2. external(this)をdeps.external(object_ref)にできる。
+3. &fieldをcell/refにできる。
+4. aliasによるfield更新が保存される。
+```
+
+## 7. Phase F: Dispatch and Dynamic Type
+
+### 目的
+
+virtual call、dynamic_cast、typeidを意味モデルとして抽出する。
+
+### 対応範囲
+
+```text
+- virtual method call -> dispatch query/operation
+- pure virtual call -> required dispatch observation
+- dynamic_cast<this> -> type_tag test
+- typeid(*this) -> type_tag info
+- derived shape view
+```
+
+## 8. Phase G: Lifetime and Representation
+
+### 目的
+
+delete this、explicit destructor、placement new、byte accessなどを、可能な限り意味モデルとして抽出する。
+
+### 対応範囲
+
+```text
+- lifetime_state
+- destructor kernel
+- delete effect
+- placement-new intent
+- byte_view for representation observation
+```
+
+完全なABI再現はしない。ユニットテスト上意味のある観測へ落とす。
+
+## 9. Phase H: Record/Replay and Scale
+
+### 目的
+
+大量依存メソッドのscenario作成負担をさらに下げる。
+
+### 対応範囲
+
+```text
+- dependency transcript recording
+- transcript to Google Test scenario generation
+- path seed generation
+- scenario minimization
+```
+
+record/replayは補助機能である。標準のunit testは人間が意図を確認して編集する。
+
+## 10. Phase I: UX Hardening and Regression
+
+### 目的
+
+実プロジェクトで継続使用できる品質にする。
+
+### 対応範囲
+
+```text
+- diagnostics polish
+- large fixture corpus
+- generated code style
+- CI integration
+- CMake package integration
+- regression minimization
+- reporting quality
+```
+
+## 11. 実装開始判断
+
+現時点で実装開始してよい。
+
+ただし、最初に作るものは `extract` の完全版ではなく、`inspect` である。
+
+```text
+Phase A first:
+  - MethodSelector
+  - FeatureCollector
+  - MMIR MVP
+  - Dependency observation collector
+  - Path-wise stub burden reporter
+  - Google Test preview reporter
+```
+
+この順であれば、設計が現実のASTに耐えるかを早期に検証できる。
+
+---
+
+# File: docs/review/24_total_review_and_self_verification.md
 
 # 24. Total Review and Self Verification
 
@@ -8913,18 +8833,18 @@ azteca-out/
 
 ## 3. 要求充足チェック
 
-| 要求 | V3での回答 | 判定 |
-|---|---|---|
-| インスタンス化なしにメソッドロジックを試験したい | ASTからMMIRへ落とし、self付きkernelを生成する | OK |
-| fake this禁止 | Semantic Contractで禁止。object_refは実ポインタではない | OK |
-| 壊れやすいABI hack禁止 | pointer-to-member偽変換、未構築storage呼び出しを禁止 | OK |
-| AST/Semaベース | Clang AST/Sema後情報から変換する | OK |
-| 複雑なmode選択を避ける | 公開入口は原則 `azteca extract` のみ | OK |
-| ほとんどすべてのメソッドへ拡張 | Semantic Envelopeにfield/object_ref/deps/effects/dispatch/type/lifetime/byteを追加可能 | OK |
-| 依存が多いメソッドを試験可能にする | Dependency Transcript、Scenario API、path-wise stub burden | OK |
-| fakeクラス地獄を避ける | `s.when...returns` と `s.effects...expect` を標準化 | OK |
-| Google Test標準 | V3で標準runnerに決定 | OK |
-| 独自runner乱立を避ける | runtime/kernelは独立、runner fallbackは限定条件のみ | OK |
+| 要求                                             | V3での回答                                                                             | 判定 |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------- | ---- |
+| インスタンス化なしにメソッドロジックを試験したい | ASTからMMIRへ落とし、self付きkernelを生成する                                          | OK   |
+| fake this禁止                                    | Semantic Contractで禁止。object_refは実ポインタではない                                | OK   |
+| 壊れやすいABI hack禁止                           | pointer-to-member偽変換、未構築storage呼び出しを禁止                                   | OK   |
+| AST/Semaベース                                   | Clang AST/Sema後情報から変換する                                                       | OK   |
+| 複雑なmode選択を避ける                           | 公開入口は原則 `azteca extract` のみ                                                   | OK   |
+| ほとんどすべてのメソッドへ拡張                   | Semantic Envelopeにfield/object_ref/deps/effects/dispatch/type/lifetime/byteを追加可能 | OK   |
+| 依存が多いメソッドを試験可能にする               | Dependency Transcript、Scenario API、path-wise stub burden                             | OK   |
+| fakeクラス地獄を避ける                           | `s.when...returns` と `s.effects...expect` を標準化                                    | OK   |
+| Google Test標準                                  | V3で標準runnerに決定                                                                   | OK   |
+| 独自runner乱立を避ける                           | runtime/kernelは独立、runner fallbackは限定条件のみ                                    | OK   |
 
 ## 4. 齟齬検査
 
@@ -9110,13 +9030,9 @@ GO: Phase A implementation may start.
 実装で現実のASTにぶつかった場合、設計書へADRとして反映する。
 ただし、公開UXを複雑化する方向の変更は慎重に扱う。
 
-
-
 ---
 
-
-# File: 12_adr/0001_no_fake_this.md
-
+# File: docs/adr/0001_no_fake_this.md
 
 # ADR-0001: fake `this` を使わない
 
@@ -9182,16 +9098,12 @@ private突破で実オブジェクトを作りやすくする案。
 
 ## References
 
-- `01_semantic_contract.md`
-- `07_live_mode.md`
-
-
+- `../design/01_semantic_contract.md`
+- `../design/07_live_mode.md`
 
 ---
 
-
-# File: 12_adr/0002_use_clang_ast_not_text_rewrite.md
-
+# File: docs/adr/0002_use_clang_ast_not_text_rewrite.md
 
 # ADR-0002: テキスト置換ではなくClang ASTを使う
 
@@ -9249,16 +9161,12 @@ AztecaはClang AST/Sema後の情報に基づいて変換する。
 
 ## References
 
-- `02_architecture.md`
-- `05_lowering_rules.md`
-
-
+- `../design/02_architecture.md`
+- `../design/05_lowering_rules.md`
 
 ---
 
-
-# File: 12_adr/0003_heart_mode_and_live_mode.md
-
+# File: docs/adr/0003_heart_mode_and_live_mode.md
 
 # ADR-0003: Heart mode と Live mode を分離する
 
@@ -9306,16 +9214,12 @@ Live mode:
 
 ## References
 
-- `01_semantic_contract.md`
-- `07_live_mode.md`
-
-
+- `../design/01_semantic_contract.md`
+- `../design/07_live_mode.md`
 
 ---
 
-
-# File: 12_adr/0004_generate_new_code_do_not_modify_product_code.md
-
+# File: docs/adr/0004_generate_new_code_do_not_modify_product_code.md
 
 # ADR-0004: 製品コードを書き換えず、別ディレクトリへ生成する
 
@@ -9354,15 +9258,11 @@ Aztecaは既定で元製品コードを変更しない。
 
 ## References
 
-- `08_codegen_spec.md`
-
-
+- `../design/08_codegen_spec.md`
 
 ---
 
-
-# File: 12_adr/0005_compile_database_as_primary_input.md
-
+# File: docs/adr/0005_compile_database_as_primary_input.md
 
 # ADR-0005: compile_commands.json を主要入力にする
 
@@ -9405,16 +9305,12 @@ CLIは`-p <build-dir>`を受け取り、Clang Toolingを使って対象translati
 
 ## References
 
-- `02_architecture.md`
-- `03_extraction_pipeline.md`
-
-
+- `../design/02_architecture.md`
+- `../design/03_extraction_pipeline.md`
 
 ---
 
-
-# File: 12_adr/0006_single_public_extraction_model.md
-
+# File: docs/adr/0006_single_public_extraction_model.md
 
 # ADR-0006: 単一の公開抽出モデルを採用する
 
@@ -9478,13 +9374,9 @@ azteca extract -p build --method 'C::m(int)'
 実オブジェクト構築の問題から逃げられず、アステカの本来価値を失う。
 ```
 
-
-
 ---
 
-
-# File: 12_adr/0007_semantic_envelope_over_modes.md
-
+# File: docs/adr/0007_semantic_envelope_over_modes.md
 
 # ADR-0007: mode追加ではなくSemantic Envelope拡張で対応範囲を広げる
 
@@ -9530,13 +9422,9 @@ byte access        -> byte_view
 
 Semantic Envelopeは、実C++オブジェクトを偽造するものではない。あくまでユニットテストで観測可能な意味を表す安全なモデルである。
 
-
-
 ---
 
-
-# File: 12_adr/0008_boundary_shims_as_valid_unit_extraction.md
-
+# File: docs/adr/0008_boundary_shims_as_valid_unit_extraction.md
 
 # ADR-0008: dependency boundaryを有効な抽出結果として扱う
 
@@ -9583,13 +9471,9 @@ effects.record_call("external", self.object_ref(), x);
 
 Boundary化は失敗ではない。ただし、境界化された依存は必ずreportとmanifestに記録する。
 
-
-
 ---
 
-
-# File: 12_adr/0009_mmir_between_clang_ast_and_codegen.md
-
+# File: docs/adr/0009_mmir_between_clang_ast_and_codegen.md
 
 # ADR-0009: Clang ASTとCodegenの間にMMIRを置く
 
@@ -9630,13 +9514,9 @@ MMIRは、field access、object identity、boundary call、dispatch call、lifet
 
 MMIRはコンパイラIRのような最適化用IRではない。目的は、対象メソッドのユニットテスト可能な意味を失わずに正規化することである。
 
-
-
 ---
 
-
-# File: 12_adr/0010_gtest_as_default_runner.md
-
+# File: docs/adr/0010_gtest_as_default_runner.md
 
 # ADR-0010: Google Testを標準テストランナーにする
 
@@ -9687,13 +9567,9 @@ TEST(C_m, sample) {
 - `azteca_gtest.hpp` を薄いadapterにする。
 - 必要時のみstandalone runnerを生成できる余地を残す。
 
-
-
 ---
 
-
-# File: 12_adr/0011_dependency_transcript_over_handwritten_fakes.md
-
+# File: docs/adr/0011_dependency_transcript_over_handwritten_fakes.md
 
 # ADR-0011: 手書きfakeではなくDependency Transcriptを標準にする
 

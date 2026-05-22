@@ -15,20 +15,20 @@ V3では、依存問題の基本方針を次のように改める。
 
 ## 2. 依存の基本分類
 
-| ID | 種類 | 例 | V3既定方針 |
-|---|---|---|---|
-| D1 | same-class pure helper | `fee(x)` | 可能なら再帰抽出 |
-| D2 | same-class boundary-like helper | `notify(x)` | query/effect/operation port |
-| D3 | base-class nonvirtual method | `B::g()` | 再帰抽出またはport |
-| D4 | virtual method | `compute(x)` | dispatch query port |
-| D5 | static member function | `C::normalize(x)` | pureなら再帰/直接、外部性があればport |
-| D6 | free function | `normalize(x)` | pureなら直接、外部性があればport |
-| D7 | global read/write | `global_limit` | env portまたはeffect |
-| D8 | member object method | `repo_.load(id)` | dependency transcript port |
-| D9 | external resource | file/socket/db/time/random | query/effect/operation port |
-| D10 | returned dependency object | `repo_.load(id)->amount()` | Shapeまたはexpression-level query |
-| D11 | object identity dependency | `return this`, `external(this)` | `object_ref` |
-| D12 | template helper | `helper<T>(x)` | specialization単位 |
+| ID  | 種類                            | 例                              | V3既定方針                            |
+| --- | ------------------------------- | ------------------------------- | ------------------------------------- |
+| D1  | same-class pure helper          | `fee(x)`                        | 可能なら再帰抽出                      |
+| D2  | same-class boundary-like helper | `notify(x)`                     | query/effect/operation port           |
+| D3  | base-class nonvirtual method    | `B::g()`                        | 再帰抽出またはport                    |
+| D4  | virtual method                  | `compute(x)`                    | dispatch query port                   |
+| D5  | static member function          | `C::normalize(x)`               | pureなら再帰/直接、外部性があればport |
+| D6  | free function                   | `normalize(x)`                  | pureなら直接、外部性があればport      |
+| D7  | global read/write               | `global_limit`                  | env portまたはeffect                  |
+| D8  | member object method            | `repo_.load(id)`                | dependency transcript port            |
+| D9  | external resource               | file/socket/db/time/random      | query/effect/operation port           |
+| D10 | returned dependency object      | `repo_.load(id)->amount()`      | Shapeまたはexpression-level query     |
+| D11 | object identity dependency      | `return this`, `external(this)` | `object_ref`                          |
+| D12 | template helper                 | `helper<T>(x)`                  | specialization単位                    |
 
 ## 3. 依存処理の優先順位
 

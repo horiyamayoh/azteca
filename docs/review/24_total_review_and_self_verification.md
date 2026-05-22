@@ -22,18 +22,18 @@
 
 ## 3. 要求充足チェック
 
-| 要求 | V3での回答 | 判定 |
-|---|---|---|
-| インスタンス化なしにメソッドロジックを試験したい | ASTからMMIRへ落とし、self付きkernelを生成する | OK |
-| fake this禁止 | Semantic Contractで禁止。object_refは実ポインタではない | OK |
-| 壊れやすいABI hack禁止 | pointer-to-member偽変換、未構築storage呼び出しを禁止 | OK |
-| AST/Semaベース | Clang AST/Sema後情報から変換する | OK |
-| 複雑なmode選択を避ける | 公開入口は原則 `azteca extract` のみ | OK |
-| ほとんどすべてのメソッドへ拡張 | Semantic Envelopeにfield/object_ref/deps/effects/dispatch/type/lifetime/byteを追加可能 | OK |
-| 依存が多いメソッドを試験可能にする | Dependency Transcript、Scenario API、path-wise stub burden | OK |
-| fakeクラス地獄を避ける | `s.when...returns` と `s.effects...expect` を標準化 | OK |
-| Google Test標準 | V3で標準runnerに決定 | OK |
-| 独自runner乱立を避ける | runtime/kernelは独立、runner fallbackは限定条件のみ | OK |
+| 要求                                             | V3での回答                                                                             | 判定 |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------- | ---- |
+| インスタンス化なしにメソッドロジックを試験したい | ASTからMMIRへ落とし、self付きkernelを生成する                                          | OK   |
+| fake this禁止                                    | Semantic Contractで禁止。object_refは実ポインタではない                                | OK   |
+| 壊れやすいABI hack禁止                           | pointer-to-member偽変換、未構築storage呼び出しを禁止                                   | OK   |
+| AST/Semaベース                                   | Clang AST/Sema後情報から変換する                                                       | OK   |
+| 複雑なmode選択を避ける                           | 公開入口は原則 `azteca extract` のみ                                                   | OK   |
+| ほとんどすべてのメソッドへ拡張                   | Semantic Envelopeにfield/object_ref/deps/effects/dispatch/type/lifetime/byteを追加可能 | OK   |
+| 依存が多いメソッドを試験可能にする               | Dependency Transcript、Scenario API、path-wise stub burden                             | OK   |
+| fakeクラス地獄を避ける                           | `s.when...returns` と `s.effects...expect` を標準化                                    | OK   |
+| Google Test標準                                  | V3で標準runnerに決定                                                                   | OK   |
+| 独自runner乱立を避ける                           | runtime/kernelは独立、runner fallbackは限定条件のみ                                    | OK   |
 
 ## 4. 齟齬検査
 

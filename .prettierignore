@@ -1,0 +1,8 @@
+build/
+cmake-build-*/
+azteca-out/
+node_modules/
+CMakeFiles/
+Testing/
+compile_commands.json
+package-lock.json

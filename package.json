@@ -1,0 +1,15 @@
+{
+  "name": "azteca-dev-tooling",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Development tooling for Azteca.",
+  "scripts": {
+    "docs:reference": "node scripts/generate-reference.mjs",
+    "docs:reference:check": "node scripts/generate-reference.mjs --check",
+    "format:docs": "prettier --write \"**/*.{md,json,yml,yaml}\"",
+    "format:docs:check": "prettier --check \"**/*.{md,json,yml,yaml}\""
+  },
+  "devDependencies": {
+    "prettier": "3.8.3"
+  }
+}

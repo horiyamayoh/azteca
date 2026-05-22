@@ -34,6 +34,14 @@ docs/                設計書、ADR、実装計画、レビュー
 ## Bootstrap
 
 ```bash
-cmake -S . -B build
-cmake --build build
+npm ci
+cmake --preset dev-clang
+cmake --build --preset dev-clang
+cmake --build --preset dev-clang --target check
 ```
+
+Azteca本体はClang 18 + C++23をbaselineにします。`build/` 配下は生成物であり、既存artifactや `compile_commands.json` はsource of truthではありません。
+
+現在のbootstrap段階では、production C++ translation unit と Google Test unit test が未追加のため、CTestは `No tests were found` になり得ます。Issue 8でGoogle Test unit testを追加した時点で、`check` は実テストも実行します。
+
+開発基盤と品質ゲートは [AGENTS.md](AGENTS.md) と [docs/development.md](docs/development.md) を参照してください。

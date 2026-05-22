@@ -152,15 +152,15 @@ Loweringでは、MMIRをC++コードへ変換する。
 
 対応例:
 
-| 元意味 | 生成意味 |
-|---|---|
-| field read/write | `self.x` |
-| same-class pure helper | recursive kernel |
-| external non-void call | `ports.xxx.call(...)` |
-| external void call | `ports.xxx.record(...)` |
-| return this | `self.object_ref()` |
-| virtual call | dispatch query/operation |
-| dependency object property | shape field |
+| 元意味                     | 生成意味                 |
+| -------------------------- | ------------------------ |
+| field read/write           | `self.x`                 |
+| same-class pure helper     | recursive kernel         |
+| external non-void call     | `ports.xxx.call(...)`    |
+| external void call         | `ports.xxx.record(...)`  |
+| return this                | `self.object_ref()`      |
+| virtual call               | dispatch query/operation |
+| dependency object property | shape field              |
 
 ## 10. Google Test Generation
 

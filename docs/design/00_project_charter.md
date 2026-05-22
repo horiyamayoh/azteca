@@ -128,21 +128,21 @@ Aztecaの主要利用者は次である。
 
 ## 9. 用語
 
-| 用語 | 意味 |
-|---|---|
-| target method | 抽出対象の非staticメンバ関数 |
-| Heart mode | ASTから明示レシーバ関数を生成するモード |
-| Live mode | 正規構築オブジェクトで元メソッドを呼ぶモード |
-| receiver | 元の暗黙 `this` を置き換える明示引数 |
-| self model | receiverが参照するテスト用状態構造体 |
-| dependency model | 他メソッド・外部関数・global等の依存表現 |
-| lowering | AST上の意味構造を生成コードへ変換すること |
-| kernel | 生成されたテスト用関数本体 |
-| driver | kernelまたはLive callを実行するテストハーネス |
-| manifest | 抽出結果、分類、生成物を記録するJSON |
-| classification | Heart可能、Live必須、未対応などの分類 |
-| raw this escape | `this` が外部へ `C*` 等として流出すること |
-| fallback | Heart modeで扱えない場合の代替策 |
+| 用語             | 意味                                          |
+| ---------------- | --------------------------------------------- |
+| target method    | 抽出対象の非staticメンバ関数                  |
+| Heart mode       | ASTから明示レシーバ関数を生成するモード       |
+| Live mode        | 正規構築オブジェクトで元メソッドを呼ぶモード  |
+| receiver         | 元の暗黙 `this` を置き換える明示引数          |
+| self model       | receiverが参照するテスト用状態構造体          |
+| dependency model | 他メソッド・外部関数・global等の依存表現      |
+| lowering         | AST上の意味構造を生成コードへ変換すること     |
+| kernel           | 生成されたテスト用関数本体                    |
+| driver           | kernelまたはLive callを実行するテストハーネス |
+| manifest         | 抽出結果、分類、生成物を記録するJSON          |
+| classification   | Heart可能、Live必須、未対応などの分類         |
+| raw this escape  | `this` が外部へ `C*` 等として流出すること     |
+| fallback         | Heart modeで扱えない場合の代替策              |
 
 ## 10. 初期MVPスコープ
 

@@ -1,0 +1,54 @@
+---
+Language: Cpp
+BasedOnStyle: Google
+Standard: Latest
+
+BreakBeforeBraces: Allman
+IndentWidth: 4
+ContinuationIndentWidth: 4
+TabWidth: 4
+UseTab: ForIndentation
+
+AlignAfterOpenBracket: DontAlign
+AlignArrayOfStructures: None
+AlignConsecutiveAssignments:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  PadOperators: false
+AlignConsecutiveBitFields:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveDeclarations:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignFunctionPointers: false
+AlignConsecutiveMacros:
+  Enabled: false
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignEscapedNewlines: DontAlign
+AlignOperands: DontAlign
+AlignTrailingComments:
+  Kind: Never
+  OverEmptyLines: 0
+
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: false
+
+ColumnLimit: 100
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+IncludeBlocks: Regroup
+SortIncludes: CaseSensitive
+SpacesBeforeTrailingComments: 1
+...

@@ -65,23 +65,23 @@ features:
 
 ## Lowering方針一覧
 
-| Feature | Lowering | 例外条件 |
-|---|---|---|
-| field read/write | `self.field` | 型が生成不能な場合はopaque field |
-| field address | `cell<T>` | pointer arithmeticが任意メモリへ出る場合はboundary |
-| this identity | `object_ref<C>` | 実C*数値そのものが要求される場合はboundary |
-| return this | `object_ref<C>`戻り | 元シグネチャ維持が必須ならadapter生成 |
-| pass this | dependencyに`object_ref<C>`を渡す | calleeも抽出可能ならcalleeも変換 |
-| virtual call | dispatch table | dispatch先が不明でもstub dispatch |
-| dynamic_cast | type_tag test | private inheritance等は型グラフに基づき診断 |
-| delete this | lifetime effect | 実allocator検証は対象外 |
-| destructor call | destructor kernel | 未抽出資源解放はboundary |
-| placement new | constructor kernel + lifetime reinit | raw storage layout依存はboundary |
-| global read/write | env model | 実global使用も設定可能 |
-| external call | dependency boundary | 戻り値はtest sideで供給 |
-| byte representation | byte_view/boundary | ABI正確性は標準対象外 |
-| inline asm | boundary | 制御支配ならnot-meaningful |
-| coroutine | coroutine state model or boundary | 初期実装ではboundary |
+| Feature             | Lowering                             | 例外条件                                           |
+| ------------------- | ------------------------------------ | -------------------------------------------------- |
+| field read/write    | `self.field`                         | 型が生成不能な場合はopaque field                   |
+| field address       | `cell<T>`                            | pointer arithmeticが任意メモリへ出る場合はboundary |
+| this identity       | `object_ref<C>`                      | 実C\*数値そのものが要求される場合はboundary        |
+| return this         | `object_ref<C>`戻り                  | 元シグネチャ維持が必須ならadapter生成              |
+| pass this           | dependencyに`object_ref<C>`を渡す    | calleeも抽出可能ならcalleeも変換                   |
+| virtual call        | dispatch table                       | dispatch先が不明でもstub dispatch                  |
+| dynamic_cast        | type_tag test                        | private inheritance等は型グラフに基づき診断        |
+| delete this         | lifetime effect                      | 実allocator検証は対象外                            |
+| destructor call     | destructor kernel                    | 未抽出資源解放はboundary                           |
+| placement new       | constructor kernel + lifetime reinit | raw storage layout依存はboundary                   |
+| global read/write   | env model                            | 実global使用も設定可能                             |
+| external call       | dependency boundary                  | 戻り値はtest sideで供給                            |
+| byte representation | byte_view/boundary                   | ABI正確性は標準対象外                              |
+| inline asm          | boundary                             | 制御支配ならnot-meaningful                         |
+| coroutine           | coroutine state model or boundary    | 初期実装ではboundary                               |
 
 ## Direct Field Lowering
 

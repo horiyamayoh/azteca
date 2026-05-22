@@ -24,13 +24,13 @@ Tests: 必須fixture
 
 ## 3. 分類語彙
 
-| 用語 | 意味 |
-|---|---|
-| accept | Heart modeで変換可能 |
-| dependency | 依存注入または再帰抽出が必要 |
-| model | 明示モデル追加で変換可能 |
-| live | Live modeが必要 |
-| unsupported | 現在未対応 |
+| 用語        | 意味                         |
+| ----------- | ---------------------------- |
+| accept      | Heart modeで変換可能         |
+| dependency  | 依存注入または再帰抽出が必要 |
+| model       | 明示モデル追加で変換可能     |
+| live        | Live modeが必要              |
+| unsupported | 現在未対応                   |
 
 ## LR-001: implicit data member read
 
@@ -771,7 +771,7 @@ heart_partial_with_modeling
 
 - `return_this_partial.cpp`
 
-## LR-022: return *this
+## LR-022: return \*this
 
 ### Before
 
@@ -822,7 +822,7 @@ RTTIと実オブジェクトの動的型が必要。
 
 - `dynamic_cast_this_live.cpp`
 
-## LR-024: typeid(*this)
+## LR-024: typeid(\*this)
 
 ### Before
 
