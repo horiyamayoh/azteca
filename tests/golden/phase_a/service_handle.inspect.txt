@@ -1,0 +1,56 @@
+Azteca can inspect Service::handle.
+
+Extraction result: extracted
+
+Generated Google Test preview:
+  tests/service_handle.sample_test.cpp
+
+Receiver state:
+  - bool enabled_ read
+
+Dependency observations:
+  - query policy_allow(Id) -> bool
+  - query repo_exists(Id) -> bool
+
+Observable effects:
+  - effect notifier_send(Id)
+
+Operations:
+  none
+
+Recursive helper candidates:
+  none
+
+Generated shapes:
+  none
+
+Object identity requirements:
+  none
+
+Path-wise test burden:
+  return_disabled:
+    observations: none
+    effects: none
+    operations: none
+  return_not_found:
+    observations: repo_exists
+    effects: none
+    operations: none
+  return_denied:
+    observations: repo_exists, policy_allow
+    effects: none
+    operations: none
+  return_ok:
+    observations: repo_exists, policy_allow
+    effects: notifier_send
+    operations: none
+
+Google Test preview:
+  auto s = azteca_gen::scenario::service_handle{};
+  s.self.enabled_ = /* value */;
+  s.when.policy_allow(/* args */).returns(/* value */);
+  s.when.repo_exists(/* args */).returns(/* value */);
+  auto result = s.call(/* args */);
+  EXPECT_EQ(result, /* expected */);
+  s.effects.notifier_send.expect_once(/* args */);
+

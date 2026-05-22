@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
 
-project(azteca VERSION 0.1.0 LANGUAGES CXX)
+project(azteca VERSION 0.1.0 LANGUAGES C CXX)
 
 if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	message(FATAL_ERROR "Azteca must be built with Clang. Configure with CMakePresets.json.")
@@ -83,10 +83,88 @@ include(CTest)
 find_program(GIT_EXECUTABLE git REQUIRED)
 find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format-18 clang-format REQUIRED)
 find_program(CLANG_TIDY_EXECUTABLE NAMES clang-tidy-18 clang-tidy REQUIRED)
+find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config-18 llvm-config REQUIRED)
 find_program(NPM_EXECUTABLE npm REQUIRED)
 
 require_tool_major_version("clang-format" "${CLANG_FORMAT_EXECUTABLE}" 18)
 require_tool_major_version("clang-tidy" "${CLANG_TIDY_EXECUTABLE}" 18)
+
+execute_process(
+	COMMAND ${LLVM_CONFIG_EXECUTABLE} --cmakedir
+	OUTPUT_VARIABLE LLVM_CMAKE_DIR_FROM_CONFIG
+	RESULT_VARIABLE LLVM_CONFIG_RESULT
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(NOT LLVM_CONFIG_RESULT EQUAL 0)
+	message(FATAL_ERROR "Failed to query LLVM CMake directory with ${LLVM_CONFIG_EXECUTABLE}")
+endif()
+
+set(LLVM_DIR "${LLVM_CMAKE_DIR_FROM_CONFIG}" CACHE PATH "LLVM CMake package directory" FORCE)
+get_filename_component(LLVM_CMAKE_PACKAGE_ROOT "${LLVM_CMAKE_DIR_FROM_CONFIG}" DIRECTORY)
+set(Clang_DIR "${LLVM_CMAKE_PACKAGE_ROOT}/clang" CACHE PATH "Clang CMake package directory" FORCE)
+
+find_package(LLVM CONFIG REQUIRED)
+find_package(Clang CONFIG REQUIRED)
+
+if(NOT LLVM_VERSION_MAJOR EQUAL 18)
+	message(FATAL_ERROR "Azteca requires LLVM 18, but found ${LLVM_PACKAGE_VERSION}.")
+endif()
+
+add_library(
+	azteca_core
+	src/collect/InspectCollector.cpp
+	src/frontend/InspectFrontend.cpp
+	src/mmir/MMIR.cpp
+	src/plan/ExtractionPlan.cpp
+	src/report/InspectReport.cpp
+	src/resolve/MethodSelector.cpp
+	src/MethodSpec.cpp
+)
+
+target_include_directories(
+	azteca_core
+	PUBLIC ${PROJECT_SOURCE_DIR}/include
+)
+
+target_include_directories(
+	azteca_core
+	SYSTEM
+	PRIVATE ${LLVM_INCLUDE_DIRS} ${CLANG_INCLUDE_DIRS}
+)
+
+target_compile_definitions(azteca_core PRIVATE ${LLVM_DEFINITIONS})
+target_link_libraries(azteca_core PRIVATE clangTooling clangASTMatchers clangFrontend clangAST)
+
+add_executable(azteca src/cli/main.cpp)
+target_link_libraries(azteca PRIVATE azteca_core)
+
+if(BUILD_TESTING)
+	find_package(GTest CONFIG QUIET)
+
+	add_test(
+		NAME phase_a_inspect_fixture
+		COMMAND
+			${CMAKE_COMMAND}
+			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
+			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseAInspect.cmake
+	)
+
+	if(GTest_FOUND)
+		add_executable(
+			azteca_unit_tests
+			tests/unit/ExtractionPlanTests.cpp
+			tests/unit/MethodSpecTests.cpp
+		)
+		target_link_libraries(azteca_unit_tests PRIVATE azteca_core GTest::gtest_main)
+		include(GoogleTest)
+		gtest_discover_tests(azteca_unit_tests)
+	else()
+		message(WARNING "GTest was not found; Azteca unit tests are not built in this environment.")
+	endif()
+endif()
 
 add_custom_target(
 	format-check

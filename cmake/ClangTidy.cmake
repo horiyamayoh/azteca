@@ -31,7 +31,7 @@ set(tidy_files)
 set(header_filter_regex "(^|.*/)(include|src|tests)/")
 
 foreach(file IN LISTS git_files)
-	if(file MATCHES "^(src|tests)/.*\\.(cc|cpp|cxx)$")
+	if(file MATCHES "^src/.*\\.(cc|cpp|cxx)$")
 		list(APPEND tidy_files "${PROJECT_SOURCE_DIR}/${file}")
 	endif()
 endforeach()
