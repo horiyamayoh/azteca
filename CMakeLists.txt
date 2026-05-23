@@ -294,7 +294,7 @@ add_custom_target(
 add_custom_target(
 	check
 	COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
-	DEPENDS format-check prettier-check reference-check lint
+	DEPENDS ${AZTECA_TEST_DEPENDENCIES} format-check prettier-check reference-check lint
 	COMMENT "Running all local quality gates"
 	VERBATIM
 )

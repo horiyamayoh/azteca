@@ -1,0 +1,484 @@
+{
+  "schema_version": 2,
+  "target": {
+    "qualified_name": "SyntaxMatrix::macro_use",
+    "signature": "int()",
+    "source_file": "<fixture>/syntax_matrix.cpp",
+    "line": 156
+  },
+  "result": "extracted-with-conservative-notes",
+  "confidence": "medium",
+  "receiver_state": [
+    {
+      "name": "own_",
+      "type": "int",
+      "access": "read",
+      "mutable": false,
+      "access_specifier": "private",
+      "location": { "file": "<fixture>/syntax_matrix.cpp", "line": 162, "column": 6 },
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 23 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 23 }
+      }
+    }
+  ],
+  "dependency_observations": [],
+  "observable_effects": [],
+  "operations": [],
+  "recursive_helper_candidates": [],
+  "shape_candidates": [],
+  "object_ref_requirements": [],
+  "semantic_features": [
+    {
+      "name": "access_control",
+      "handling": "modeled",
+      "detail": "inspect reports non-public receiver state without #define private public",
+      "rule_id": "LR-048",
+      "reason": "private/protected receiver state is modeled without changing product access",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 23 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 23 }
+      }
+    },
+    {
+      "name": "macro_expansion",
+      "handling": "conservative",
+      "detail": "source spelling may differ from AST semantics",
+      "rule_id": "LR-034",
+      "reason": "macro-expanded source range is tracked conservatively",
+      "certainty": "conservative",
+      "conservative": true,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 3 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 28 }
+      }
+    },
+    {
+      "name": "receiver_state",
+      "handling": "supported",
+      "detail": "receiver field read",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 23 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 23 }
+      }
+    }
+  ],
+  "unsupported_or_modeled_constructs": [
+    {
+      "construct": "macro expansion",
+      "handling": "conservative",
+      "construct_reason": "macro expansion requires source-map-aware regeneration",
+      "fallbacks": [
+        "use AST semantics for inspect",
+        "treat complex macro spelling as conservative"
+      ],
+      "location": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 3 },
+      "rule_id": "LR-034",
+      "reason": "macro-expanded source range is tracked conservatively",
+      "certainty": "conservative",
+      "conservative": true,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 3 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 28 }
+      }
+    }
+  ],
+  "control_flow_summary": {
+    "has_if": false,
+    "has_switch": false,
+    "has_loop": false,
+    "has_range_for": false,
+    "has_try": false,
+    "has_throw": false,
+    "has_return": true,
+    "conservative": false,
+    "conservative_reasons": []
+  },
+  "envelope_requirements": [
+    {
+      "kind": "self_state",
+      "requirement_reason": "receiver field read",
+      "source": "SyntaxMatrix::own_",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 23 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 23 }
+      }
+    },
+    {
+      "kind": "macro_source_map",
+      "requirement_reason": "macro source mapping is required for faithful diagnostics",
+      "source": "<fixture>/syntax_matrix.cpp:158:23-158:23",
+      "rule_id": "LR-034",
+      "reason": "macro-expanded source range is tracked conservatively",
+      "certainty": "conservative",
+      "conservative": true,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 23 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 23 }
+      }
+    },
+    {
+      "kind": "macro_source_map",
+      "requirement_reason": "macro source mapping is required for faithful diagnostics",
+      "source": "<fixture>/syntax_matrix.cpp:158:3-158:28",
+      "rule_id": "LR-034",
+      "reason": "macro-expanded source range is tracked conservatively",
+      "certainty": "conservative",
+      "conservative": true,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 3 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 28 }
+      }
+    },
+    {
+      "kind": "macro_source_map",
+      "requirement_reason": "macro source mapping is required for faithful diagnostics",
+      "source": "<fixture>/syntax_matrix.cpp:5:30-5:40",
+      "rule_id": "LR-034",
+      "reason": "macro-expanded source range is tracked conservatively",
+      "certainty": "conservative",
+      "conservative": true,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 5, "column": 30 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 5, "column": 40 }
+      }
+    }
+  ],
+  "rule_coverage": [
+    {
+      "rule_id": "LR-001",
+      "handling": "supported",
+      "note": "implicit data member read",
+      "observed": true
+    },
+    {
+      "rule_id": "LR-002",
+      "handling": "supported",
+      "note": "explicit this data member read",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-003",
+      "handling": "supported",
+      "note": "data member mutation",
+      "observed": false
+    },
+    { "rule_id": "LR-004", "handling": "supported", "note": "return statement", "observed": true },
+    { "rule_id": "LR-005", "handling": "supported", "note": "if statement", "observed": false },
+    {
+      "rule_id": "LR-006",
+      "handling": "supported",
+      "note": "built-in expression",
+      "observed": true
+    },
+    {
+      "rule_id": "LR-007",
+      "handling": "supported",
+      "note": "same-class nonvirtual helper candidate",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-008",
+      "handling": "boundary",
+      "note": "static member calls are boundary candidates",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-009",
+      "handling": "boundary",
+      "note": "free function calls are boundary candidates",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-010",
+      "handling": "modeled",
+      "note": "global state is modeled as env",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-011",
+      "handling": "modeled",
+      "note": "base state is modeled explicitly",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-012",
+      "handling": "modeled",
+      "note": "virtual calls require dispatch table",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-013",
+      "handling": "boundary",
+      "note": "overloaded operators are resolved boundaries",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-014",
+      "handling": "supported",
+      "note": "local variable declaration",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-015",
+      "handling": "conservative",
+      "note": "loops are conservative paths in Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-016",
+      "handling": "conservative",
+      "note": "range-for is conservative in Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-017",
+      "handling": "supported",
+      "note": "lambda without this capture",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-018",
+      "handling": "modeled",
+      "note": "lambda with this capture maps to self",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-019",
+      "handling": "supported",
+      "note": "noexcept is reported from method metadata",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-020",
+      "handling": "modeled",
+      "note": "raw this escape requires object_ref",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-021",
+      "handling": "modeled",
+      "note": "return this requires object_ref",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-022",
+      "handling": "modeled",
+      "note": "return *this requires object_ref/self view",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-023",
+      "handling": "modeled",
+      "note": "dynamic_cast requires type_tag",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-024",
+      "handling": "modeled",
+      "note": "typeid requires type_tag",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-025",
+      "handling": "boundary",
+      "note": "reinterpret_cast this requires byte boundary",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-026",
+      "handling": "modeled",
+      "note": "delete this requires lifetime state",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-027",
+      "handling": "modeled",
+      "note": "explicit destructor call requires lifetime state",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-028",
+      "handling": "modeled",
+      "note": "placement new on this requires lifetime state",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-029",
+      "handling": "modeled",
+      "note": "field address requires addressable cell",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-030",
+      "handling": "not_yet_implemented",
+      "note": "member function pointer is reported only",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-031",
+      "handling": "not_yet_implemented",
+      "note": "constructor target is outside Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-032",
+      "handling": "not_yet_implemented",
+      "note": "destructor target is outside Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-033",
+      "handling": "supported",
+      "note": "instantiated function template specializations are inspectable",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-034",
+      "handling": "conservative",
+      "note": "macro source mapping is conservative",
+      "observed": true
+    },
+    {
+      "rule_id": "LR-035",
+      "handling": "supported",
+      "note": "throw expression is preserved as exception intent",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-036",
+      "handling": "conservative",
+      "note": "try/catch is conservative in Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-037",
+      "handling": "supported",
+      "note": "structured binding field expansion when bindings resolve to record fields",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-038",
+      "handling": "not_yet_implemented",
+      "note": "coroutines are future work",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-039",
+      "handling": "supported",
+      "note": "unevaluated contexts are tracked without effects",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-040",
+      "handling": "not_yet_implemented",
+      "note": "default member initializer is future work",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-041",
+      "handling": "supported",
+      "note": "conditional operator is expression control flow",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-042",
+      "handling": "supported",
+      "note": "default arguments are supplied by Clang Sema",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-043",
+      "handling": "supported",
+      "note": "auto type is recorded after semantic resolution",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-044",
+      "handling": "supported",
+      "note": "casts and std::move/std::forward are resolved expressions",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-045",
+      "handling": "boundary",
+      "note": "const_cast requires mutability-aware boundary handling",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-046",
+      "handling": "supported",
+      "note": "break/continue statements are tracked",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-047",
+      "handling": "supported",
+      "note": "cv/ref member qualifiers are part of target metadata",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-048",
+      "handling": "modeled",
+      "note": "access control is reported without rewriting product visibility",
+      "observed": true
+    },
+    {
+      "rule_id": "LR-049",
+      "handling": "conservative",
+      "note": "constructor calls in method bodies require construction-aware lowering",
+      "observed": false
+    }
+  ],
+  "paths": [
+    {
+      "name": "return_azteca_touch_own",
+      "observations": [],
+      "effects": [],
+      "operations": [],
+      "loop_body_observations": [],
+      "required_envelopes": [],
+      "conservative_reason": "",
+      "rule_id": "PATH-DFS",
+      "reason": "return path accumulated by DFS",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 3 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 28 }
+      }
+    }
+  ],
+  "gtest_preview": {
+    "sample_test_path": "tests/syntaxmatrix_macro_use.sample_test.cpp",
+    "lines": [
+      "auto s = azteca_gen::scenario::syntaxmatrix_macro_use{};",
+      "s.self.own_ = /* value */;",
+      "auto result = s.call(/* args */);",
+      "EXPECT_EQ(result, /* expected */);",
+      "s.effects.expect_none();"
+    ]
+  },
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "AZTECA_CONSERVATIVE_CONSTRUCT",
+      "message": "macro expansion: macro expansion requires source-map-aware regeneration",
+      "location": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 3 }
+    }
+  ]
+}

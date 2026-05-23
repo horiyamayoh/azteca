@@ -62,6 +62,12 @@ class EdgeCases
 		return flag ? value_ : 0;
 	}
 
+	int field_address()
+	{
+		auto* value = &value_;
+		return *value;
+	}
+
 	int member_pointer_report() const
 	{
 		auto pointer = &EdgeCases::pointer_target;

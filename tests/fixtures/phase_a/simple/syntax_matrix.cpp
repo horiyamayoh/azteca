@@ -63,6 +63,15 @@ class SyntaxMatrix : public MatrixBase
 		return add_self(value);
 	}
 
+	int lambda_without_this(int value)
+	{
+		auto double_value = [](int input)
+		{
+			return input * 2;
+		};
+		return double_value(value);
+	}
+
 	int exception_run(int value)
 	{
 		try

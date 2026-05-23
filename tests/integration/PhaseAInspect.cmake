@@ -56,6 +56,49 @@ function(assert_or_update_golden golden_path actual_output context)
 	endif()
 endfunction()
 
+function(assert_or_update_json_golden golden_path actual_output context)
+	string(REPLACE "${fixture_source}" "<fixture>" normalized_json_output "${actual_output}")
+	if(DEFINED ENV{AZTECA_ACCEPT_GOLDEN} AND NOT "$ENV{AZTECA_ACCEPT_GOLDEN}" STREQUAL "")
+		file(WRITE "${golden_path}" "${normalized_json_output}")
+		return()
+	endif()
+
+	file(READ "${golden_path}" expected_json_output)
+	string(REGEX REPLACE "[ \t\r\n]" "" normalized_json_compact "${normalized_json_output}")
+	string(REGEX REPLACE "[ \t\r\n]" "" expected_json_compact "${expected_json_output}")
+	if(NOT normalized_json_compact STREQUAL expected_json_compact)
+		message(FATAL_ERROR "${context} differed from golden:\n${normalized_json_output}")
+	endif()
+endfunction()
+
+function(assert_phase_a_json_golden source_file method golden_name)
+	execute_process(
+		COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source "${source_file}"
+				--method "${method}" --format json
+		RESULT_VARIABLE json_result
+		OUTPUT_VARIABLE json_output
+		ERROR_VARIABLE json_error
+	)
+
+	if(NOT json_result EQUAL 0)
+		message(FATAL_ERROR "json inspect failed for ${method}:\n${json_output}\n${json_error}")
+	endif()
+
+	string(JSON parsed_schema ERROR_VARIABLE json_parse_error GET "${json_output}" schema_version)
+	if(json_parse_error)
+		message(FATAL_ERROR "json inspect output was not valid JSON for ${method}:\n${json_parse_error}\n${json_output}")
+	endif()
+	if(NOT parsed_schema STREQUAL "2")
+		message(FATAL_ERROR "json inspect schema_version should be 2 for ${method} but was ${parsed_schema}")
+	endif()
+
+	assert_or_update_json_golden(
+		"${PROJECT_SOURCE_DIR}/tests/golden/phase_a/${golden_name}"
+		"${json_output}"
+		"json inspect output for ${method}"
+	)
+endfunction()
+
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
 			"${fixture_source}/service.cpp" --method "Service::handle(Id)" --format text
@@ -146,11 +189,11 @@ else()
 endif()
 
 foreach(required_json
-		"\"schema_version\": 2"
-		"\"target\""
-		"\"receiver_state\""
-		"\"dependency_observations\""
-		"\"observable_effects\""
+			"\"schema_version\": 2"
+			"\"target\""
+			"\"receiver_state\""
+			"\"dependency_observations\""
+			"\"observable_effects\""
 		"\"operations\""
 		"\"shape_candidates\""
 		"\"object_ref_requirements\""
@@ -165,11 +208,37 @@ foreach(required_json
 		"\"gtest_preview\""
 		"\"diagnostics\""
 		"\"rule_id\""
-		"\"source_range\""
-		"\"certainty\""
-		"\"conservative\"")
+			"\"source_range\""
+			"\"certainty\""
+			"\"conservative\"")
 	assert_contains("${inspect_json_output}" "${required_json}" "json inspect output")
 endforeach()
+
+assert_phase_a_json_golden(
+	"${fixture_source}/hardening.cpp"
+	"LoopExample::run(int)"
+	"loop_example_run.inspect.json"
+)
+assert_phase_a_json_golden(
+	"${fixture_source}/syntax_matrix.cpp"
+	"SyntaxMatrix::macro_use()"
+	"syntax_matrix_macro_use.inspect.json"
+)
+assert_phase_a_json_golden(
+	"${fixture_source}/edge_cases.cpp"
+	"EdgeCases::member_pointer_report() const"
+	"edge_cases_member_pointer_report.inspect.json"
+)
+assert_phase_a_json_golden(
+	"${fixture_source}/order_service.cpp"
+	"OrderService::check(int)"
+	"order_service_check.inspect.json"
+)
+assert_phase_a_json_golden(
+	"${fixture_source}/hardening.cpp"
+	"EscapeExample::link()"
+	"escape_example_link.inspect.json"
+)
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
@@ -184,11 +253,34 @@ if(NOT inspect_shape_result EQUAL 0)
 endif()
 
 foreach(required_shape_line
-		"Generated shapes:"
-		"OrderShape"
-		"deadline"
-		"amount")
+			"Generated shapes:"
+			"OrderShape"
+			"deadline"
+			"amount")
 	assert_contains("${inspect_shape_output}" "${required_shape_line}" "shape inspect output")
+endforeach()
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/account.cpp" --method "Account::withdraw(int)" --format text
+	RESULT_VARIABLE inspect_account_result
+	OUTPUT_VARIABLE inspect_account_output
+	ERROR_VARIABLE inspect_account_error
+)
+
+if(NOT inspect_account_result EQUAL 0)
+	message(FATAL_ERROR "account inspect failed:\n${inspect_account_output}\n${inspect_account_error}")
+endif()
+
+foreach(required_account_line
+		"int balance_ read/write"
+		"bool locked_ read"
+		"recursive fee(int) -> int"
+		"return_1:"
+		"return_balance:"
+		"auto s = azteca_gen::scenario::account_withdraw{};"
+		"LR-007 [supported] observed")
+	assert_contains("${inspect_account_output}" "${required_account_line}" "account inspect output")
 endforeach()
 
 execute_process(
@@ -353,6 +445,13 @@ assert_syntax_inspect(
 )
 
 assert_syntax_inspect(
+	"SyntaxMatrix::lambda_without_this(int)"
+	"lambda [supported]"
+	"lambda_call [supported]"
+	"LR-017 [supported] observed"
+)
+
+assert_syntax_inspect(
 	"SyntaxMatrix::exception_run(int)"
 	"try_catch [conservative]"
 	"exception_throw [supported]"
@@ -403,6 +502,12 @@ assert_syntax_inspect(
 	"LR-027 [modeled] observed"
 	"LR-028 [modeled] observed"
 	"LR-049 [conservative] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::unevaluated()"
+	"unevaluated_context [supported]"
+	"LR-039 [supported] observed"
 )
 
 assert_syntax_inspect(
@@ -494,6 +599,14 @@ assert_edge_inspect(
 	"EdgeCases::ternary(bool) const"
 	"conditional_operator [supported]"
 	"LR-041 [supported] observed"
+)
+
+assert_edge_inspect(
+	"EdgeCases::field_address()"
+	"int value_ address"
+	"addressable_cell: address-taken field must be represented as a cell"
+	"field address taking [modeled]"
+	"LR-029 [modeled] observed"
 )
 
 assert_edge_inspect(
@@ -683,4 +796,125 @@ if(NOT missing_db_result EQUAL 2)
 		"missing compile db should exit 2 but exited ${missing_db_result}:\n"
 		"${missing_db_output}\n${missing_db_error}"
 	)
+endif()
+assert_contains("${missing_db_error}" "AZTECA_COMPILE_DB_MISSING" "missing compile db stderr")
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" --help
+	RESULT_VARIABLE help_result
+	OUTPUT_VARIABLE help_output
+	ERROR_VARIABLE help_error
+)
+if(NOT help_result EQUAL 0)
+	message(FATAL_ERROR "help should exit 0 but exited ${help_result}:\n${help_output}\n${help_error}")
+endif()
+assert_contains("${help_output}" "Usage:" "help stdout")
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" scan
+	RESULT_VARIABLE unknown_command_result
+	OUTPUT_VARIABLE unknown_command_output
+	ERROR_VARIABLE unknown_command_error
+)
+if(NOT unknown_command_result EQUAL 1)
+	message(
+		FATAL_ERROR
+		"unknown command should exit 1 but exited ${unknown_command_result}:\n"
+		"${unknown_command_output}\n${unknown_command_error}"
+	)
+endif()
+assert_contains("${unknown_command_error}" "unsupported command: scan" "unknown command stderr")
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect --bogus
+	RESULT_VARIABLE unknown_option_result
+	OUTPUT_VARIABLE unknown_option_output
+	ERROR_VARIABLE unknown_option_error
+)
+if(NOT unknown_option_result EQUAL 1)
+	message(
+		FATAL_ERROR
+		"unknown option should exit 1 but exited ${unknown_option_result}:\n"
+		"${unknown_option_output}\n${unknown_option_error}"
+	)
+endif()
+assert_contains("${unknown_option_error}" "unknown option: --bogus" "unknown option stderr")
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect --method "Service::handle(Id)"
+	RESULT_VARIABLE missing_build_result
+	OUTPUT_VARIABLE missing_build_output
+	ERROR_VARIABLE missing_build_error
+)
+if(NOT missing_build_result EQUAL 1)
+	message(
+		FATAL_ERROR
+		"missing build dir should exit 1 but exited ${missing_build_result}:\n"
+		"${missing_build_output}\n${missing_build_error}"
+	)
+endif()
+assert_contains("${missing_build_error}" "inspect requires -p/--build-dir" "missing build stderr")
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}"
+	RESULT_VARIABLE missing_method_spec_result
+	OUTPUT_VARIABLE missing_method_spec_output
+	ERROR_VARIABLE missing_method_spec_error
+)
+if(NOT missing_method_spec_result EQUAL 1)
+	message(
+		FATAL_ERROR
+		"missing method spec should exit 1 but exited ${missing_method_spec_result}:\n"
+		"${missing_method_spec_output}\n${missing_method_spec_error}"
+	)
+endif()
+assert_contains("${missing_method_spec_error}" "invalid --method" "missing method spec stderr")
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/service.cpp" --method "Service::handle(Id)" --format yaml
+	RESULT_VARIABLE unsupported_format_result
+	OUTPUT_VARIABLE unsupported_format_output
+	ERROR_VARIABLE unsupported_format_error
+)
+if(NOT unsupported_format_result EQUAL 1)
+	message(
+		FATAL_ERROR
+		"unsupported format should exit 1 but exited ${unsupported_format_result}:\n"
+		"${unsupported_format_output}\n${unsupported_format_error}"
+	)
+endif()
+assert_contains("${unsupported_format_error}" "unsupported format: yaml" "unsupported format stderr")
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/hardening.cpp" --method "TemplateExample::target<int>(int)"
+			--template-args "double" --format text
+	RESULT_VARIABLE invalid_template_args_result
+	OUTPUT_VARIABLE invalid_template_args_output
+	ERROR_VARIABLE invalid_template_args_error
+)
+if(NOT invalid_template_args_result EQUAL 1)
+	message(
+		FATAL_ERROR
+		"invalid template args should exit 1 but exited ${invalid_template_args_result}:\n"
+		"${invalid_template_args_output}\n${invalid_template_args_error}"
+	)
+endif()
+assert_contains(
+	"${invalid_template_args_error}" "invalid --template-args" "invalid template args stderr"
+)
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/service.cpp" --method "Service::handle(Id)" --format text --quiet
+	RESULT_VARIABLE quiet_result
+	OUTPUT_VARIABLE quiet_output
+	ERROR_VARIABLE quiet_error
+)
+if(NOT quiet_result EQUAL 0)
+	message(FATAL_ERROR "quiet inspect should exit 0 but exited ${quiet_result}:\n${quiet_output}\n${quiet_error}")
+endif()
+if(NOT "${quiet_output}" STREQUAL "")
+	message(FATAL_ERROR "quiet inspect should not write stdout:\n${quiet_output}")
 endif()

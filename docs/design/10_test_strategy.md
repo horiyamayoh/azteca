@@ -240,7 +240,7 @@ Golden testsは、fixture入力から生成される以下を比較する。
 更新コマンド:
 
 ```bash
-AZTECA_UPDATE_GOLDEN=1 ctest -R golden
+AZTECA_ACCEPT_GOLDEN=1 ctest -R golden
 ```
 
 Golden更新はレビュー必須である。
