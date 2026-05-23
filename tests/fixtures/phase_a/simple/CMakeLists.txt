@@ -12,6 +12,7 @@ add_library(
 	account.cpp
 	ambiguous_a.cpp
 	ambiguous_b.cpp
+	edge_cases.cpp
 	hardening.cpp
 	order_service.cpp
 	service.cpp

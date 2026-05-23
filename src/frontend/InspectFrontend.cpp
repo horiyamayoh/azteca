@@ -2,11 +2,13 @@
 
 #include <clang/AST/ASTContext.h>
 #include <clang/AST/DeclCXX.h>
+#include <clang/AST/DeclTemplate.h>
 #include <clang/AST/Expr.h>
 #include <clang/AST/ExprCXX.h>
 #include <clang/AST/ParentMapContext.h>
 #include <clang/AST/RecursiveASTVisitor.h>
 #include <clang/AST/StmtCXX.h>
+#include <clang/AST/Type.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendAction.h>
 #include <clang/Lex/Lexer.h>
@@ -23,7 +25,9 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 #include "../resolve/MethodSelector.hpp"
 #include "azteca/MethodSpec.hpp"
@@ -267,6 +271,43 @@ struct PathState
 	return false;
 }
 
+[[nodiscard]] bool has_explicit_this_base(clang::MemberExpr const& member)
+{
+	if (member.isImplicitAccess())
+	{
+		return false;
+	}
+
+	return has_this_base(member.getBase());
+}
+
+[[nodiscard]] bool has_auto_type(clang::QualType type)
+{
+	return type.getTypePtrOrNull() != nullptr && type->getContainedAutoType() != nullptr;
+}
+
+[[nodiscard]] bool has_overload_set(clang::NamedDecl const& declaration)
+{
+	auto const* context = declaration.getDeclContext();
+	if (context == nullptr || declaration.getDeclName().isEmpty())
+	{
+		return false;
+	}
+
+	auto declarations = context->lookup(declaration.getDeclName());
+	auto count = 0;
+	for (auto const* candidate : declarations)
+	{
+		if (llvm::isa<clang::FunctionDecl>(candidate) ||
+		    llvm::isa<clang::FunctionTemplateDecl>(candidate))
+		{
+			++count;
+		}
+	}
+
+	return count > 1;
+}
+
 [[nodiscard]] clang::FieldDecl const* dependency_base_field(clang::CXXMemberCallExpr const& call)
 {
 	auto const* callee_expression = call.getCallee();
@@ -330,6 +371,14 @@ struct PathState
 	policy.SuppressTagKeyword = true;
 	policy.SuppressUnwrittenScope = true;
 	return type.getAsString(policy);
+}
+
+[[nodiscard]] bool is_std_move_or_forward(clang::FunctionDecl const& callee)
+{
+	auto qualified_name = callee.getQualifiedNameAsString();
+	return qualified_name == "std::move" || qualified_name == "std::forward" ||
+	    ((qualified_name.ends_with("::move") || qualified_name.ends_with("::forward")) &&
+	        qualified_name.find("std::") != std::string::npos);
 }
 
 [[nodiscard]] SourceLocation source_location(
@@ -459,22 +508,7 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			    "target method has no body available");
 		}
 
-		std::ranges::sort(plan_.receiver_state,
-		    [](ReceiverField const& lhs, ReceiverField const& rhs)
-		    {
-			    return lhs.name < rhs.name;
-		    });
-
-		std::ranges::sort(plan_.dependency_ports,
-		    [](DependencyPort const& lhs, DependencyPort const& rhs)
-		    {
-			    if (lhs.kind != rhs.kind)
-			    {
-				    return static_cast<int>(lhs.kind) < static_cast<int>(rhs.kind);
-			    }
-			    return lhs.name < rhs.name;
-		    });
-
+		finalize_deterministic_order();
 		build_gtest_preview();
 		return plan_;
 	}
@@ -491,6 +525,11 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		if (!has_this_base(member->getBase()))
 		{
 			add_shape_observation(*member);
+			return true;
+		}
+
+		if (is_dependency_object_base(*member))
+		{
 			return true;
 		}
 
@@ -511,8 +550,16 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		}
 		else if (access == FieldAccess::kRead)
 		{
-			rule_id = "LR-001";
-			reason = "receiver field read";
+			if (has_explicit_this_base(*member))
+			{
+				rule_id = "LR-002";
+				reason = "explicit this receiver field read";
+			}
+			else
+			{
+				rule_id = "LR-001";
+				reason = "receiver field read";
+			}
 		}
 		auto evidence = make_evidence(rule_id, reason, member->getSourceRange());
 		add_mmir(kIsBaseField ? MmirNodeKind::kBaseFieldRef : MmirNodeKind::kFieldRef,
@@ -525,6 +572,17 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		add_envelope_requirement(kIsBaseField ? EnvelopeRequirementKind::kBaseState
 		                                      : EnvelopeRequirementKind::kSelfState,
 		    reason, field->getQualifiedNameAsString(), evidence);
+
+		if (!kIsBaseField &&
+		    (field->getAccess() == clang::AS_private || field->getAccess() == clang::AS_protected))
+		{
+			auto access_evidence = make_evidence("LR-048",
+			    "private/protected receiver state is modeled without changing product access",
+			    member->getSourceRange());
+			add_semantic_feature("access_control", ConstructHandling::kModeled,
+			    "inspect reports non-public receiver state without #define private public",
+			    access_evidence);
+		}
 
 		if (access == FieldAccess::kAddress)
 		{
@@ -597,9 +655,17 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		if (variable->isLocalVarDecl())
 		{
 			local_types_[variable->getCanonicalDecl()] = type_string(context_, variable->getType());
+			auto evidence =
+			    make_evidence("LR-014", "local variable declaration", variable->getSourceRange());
 			add_semantic_feature("local_variable", ConstructHandling::kSupported,
-			    "local variable declaration is part of inspect MMIR",
-			    make_evidence("LR-014", "local variable declaration", variable->getSourceRange()));
+			    "local variable declaration is part of inspect MMIR", evidence);
+			if (has_auto_type(variable->getType()))
+			{
+				auto auto_evidence = make_evidence(
+				    "LR-043", "auto type is resolved by Clang Sema", variable->getSourceRange());
+				add_semantic_feature("auto_type", ConstructHandling::kSupported,
+				    "auto is reported after semantic type resolution", auto_evidence);
+			}
 			record_dependency_local(*variable);
 		}
 		return true;
@@ -622,6 +688,34 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			    source_text(context_, binary_operator->getSourceRange()),
 			    binary_operator->getOperatorLoc(), binary_operator->getSourceRange(), "LR-020");
 		}
+		return true;
+	}
+
+	bool VisitConditionalOperator(clang::ConditionalOperator* conditional_operator)
+	{
+		auto evidence = make_evidence("LR-041",
+		    "ternary conditional expression is tracked as expression control flow",
+		    conditional_operator->getSourceRange());
+		add_mmir(MmirNodeKind::kConditional, "?:", conditional_operator->getQuestionLoc(),
+		    conditional_operator->getSourceRange(), evidence);
+		add_semantic_feature("conditional_operator", ConstructHandling::kSupported,
+		    "ternary expression is part of local expression semantics", evidence);
+		return true;
+	}
+
+	bool VisitBinaryConditionalOperator(clang::BinaryConditionalOperator* conditional_operator)
+	{
+		auto evidence =
+		    make_evidence("LR-041", "GNU binary conditional expression is tracked conservatively",
+		        conditional_operator->getSourceRange(), true, "conservative");
+		add_mmir(MmirNodeKind::kConditional, "?:", conditional_operator->getQuestionLoc(),
+		    conditional_operator->getSourceRange(), evidence);
+		add_semantic_feature("conditional_operator", ConstructHandling::kConservative,
+		    "binary conditional expression is a compiler-extension expression form", evidence);
+		add_construct("binary conditional operator", ConstructHandling::kConservative,
+		    "compiler-extension conditional syntax requires dedicated lowering",
+		    {"standard ternary lowering when available", "dependency boundary for extension use"},
+		    conditional_operator->getQuestionLoc(), evidence);
 		return true;
 	}
 
@@ -696,6 +790,28 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 	{
 		plan_.control_flow_summary.has_range_for = true;
 		return record_loop(*statement, statement->getBeginLoc(), "range-for loop", "LR-016");
+	}
+
+	bool VisitBreakStmt(clang::BreakStmt* statement)
+	{
+		auto evidence = make_evidence(
+		    "LR-046", "break statement is tracked in control flow", statement->getSourceRange());
+		add_mmir(MmirNodeKind::kBreak, "break", statement->getBreakLoc(),
+		    statement->getSourceRange(), evidence);
+		add_semantic_feature("break_continue", ConstructHandling::kSupported,
+		    "break statement is reported as control-flow intent", evidence);
+		return true;
+	}
+
+	bool VisitContinueStmt(clang::ContinueStmt* statement)
+	{
+		auto evidence = make_evidence(
+		    "LR-046", "continue statement is tracked in control flow", statement->getSourceRange());
+		add_mmir(MmirNodeKind::kContinue, "continue", statement->getContinueLoc(),
+		    statement->getSourceRange(), evidence);
+		add_semantic_feature("break_continue", ConstructHandling::kSupported,
+		    "continue statement is reported as control-flow intent", evidence);
+		return true;
 	}
 
 	bool VisitReturnStmt(clang::ReturnStmt* return_statement)
@@ -799,6 +915,19 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			return true;
 		}
 
+		if (auto const* callee = call->getDirectCallee();
+		    callee != nullptr && is_std_move_or_forward(*callee))
+		{
+			auto evidence = make_evidence("LR-044",
+			    "std::move/std::forward is a value-category cast, not a dependency call",
+			    call->getSourceRange());
+			add_mmir(MmirNodeKind::kCast, callee->getNameAsString(), call->getExprLoc(),
+			    call->getSourceRange(), evidence);
+			add_semantic_feature("value_category_cast", ConstructHandling::kSupported,
+			    "std::move/std::forward is tracked without creating a transcript port", evidence);
+			return true;
+		}
+
 		auto port = dependency_port_for_call(*call);
 		if (port.has_value())
 		{
@@ -870,7 +999,7 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 
 			add_dependency_port({
 			    .kind = kind,
-			    .name = operator_port_name(original_symbol),
+			    .name = stable_port_name(operator_port_name(original_symbol), *callee),
 			    .original_callee = original_symbol,
 			    .return_type = type_string(context_, callee->getReturnType()),
 			    .argument_types = call_argument_types(*call),
@@ -911,6 +1040,38 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			add_envelope_requirement(EnvelopeRequirementKind::kSelfState,
 			    "lambda this capture requires access to receiver self", "lambda", evidence);
 		}
+		return true;
+	}
+
+	bool VisitDependentScopeDeclRefExpr(clang::DependentScopeDeclRefExpr* expression)
+	{
+		auto evidence = make_evidence("LR-033",
+		    "dependent name cannot be resolved without template instantiation",
+		    expression->getSourceRange(), true, "conservative");
+		add_mmir(MmirNodeKind::kUnsupported, "dependent_decl_ref", expression->getBeginLoc(),
+		    expression->getSourceRange(), evidence);
+		add_semantic_feature("dependent_name", ConstructHandling::kNotYetImplemented,
+		    "dependent declaration reference requires template instantiation support", evidence);
+		add_construct("dependent name", ConstructHandling::kNotYetImplemented,
+		    "dependent name resolution is outside Phase A inspect",
+		    {"inspect an instantiated non-template method", "future template-aware MMIR"},
+		    expression->getBeginLoc(), evidence);
+		return true;
+	}
+
+	bool VisitCXXDependentScopeMemberExpr(clang::CXXDependentScopeMemberExpr* expression)
+	{
+		auto evidence = make_evidence("LR-033",
+		    "dependent member name cannot be resolved without template instantiation",
+		    expression->getSourceRange(), true, "conservative");
+		add_mmir(MmirNodeKind::kUnsupported, "dependent_member_ref", expression->getBeginLoc(),
+		    expression->getSourceRange(), evidence);
+		add_semantic_feature("dependent_name", ConstructHandling::kNotYetImplemented,
+		    "dependent member reference requires template instantiation support", evidence);
+		add_construct("dependent member name", ConstructHandling::kNotYetImplemented,
+		    "dependent member resolution is outside Phase A inspect",
+		    {"inspect an instantiated non-template method", "future template-aware MMIR"},
+		    expression->getBeginLoc(), evidence);
 		return true;
 	}
 
@@ -1047,6 +1208,77 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		return true;
 	}
 
+	bool VisitCXXConstructExpr(clang::CXXConstructExpr* construct_expression)
+	{
+		auto const* constructor = construct_expression->getConstructor();
+		if (constructor == nullptr || constructor->isTrivial() || constructor->isImplicit())
+		{
+			return true;
+		}
+
+		auto evidence = make_evidence("LR-049",
+		    "non-trivial constructor call is represented as construction intent",
+		    construct_expression->getSourceRange(), true, "conservative");
+		add_mmir(MmirNodeKind::kLifetimeOp, "constructor_call", construct_expression->getBeginLoc(),
+		    construct_expression->getSourceRange(), evidence, "lifetime",
+		    constructor->getQualifiedNameAsString());
+		add_semantic_feature("constructor_call", ConstructHandling::kConservative,
+		    "constructor effects require construction-aware lowering", evidence);
+		add_envelope_requirement(EnvelopeRequirementKind::kLifetimeState,
+		    "constructor call requires lifetime/value construction modeling",
+		    constructor->getQualifiedNameAsString(), evidence);
+		add_construct("constructor call", ConstructHandling::kConservative,
+		    "constructor semantics are reported but not code-generated in Phase A",
+		    {"value construction model", "recursive constructor analysis when available",
+		        "live validation"},
+		    construct_expression->getBeginLoc(), evidence);
+		return true;
+	}
+
+	bool VisitCXXDefaultArgExpr(clang::CXXDefaultArgExpr* expression)
+	{
+		auto const* parameter = expression->getParam();
+		auto parameter_name =
+		    parameter == nullptr ? std::string{"<unknown>"} : parameter->getNameAsString();
+		auto evidence = make_evidence("LR-042", "default argument use is supplied by Clang Sema",
+		    expression->getSourceRange());
+		add_mmir(MmirNodeKind::kDefaultArgument, parameter_name, expression->getUsedLocation(),
+		    expression->getSourceRange(), evidence);
+		add_semantic_feature("default_argument", ConstructHandling::kSupported,
+		    "default argument is visible as a semantic call argument", evidence);
+		return true;
+	}
+
+	bool VisitCXXStaticCastExpr(clang::CXXStaticCastExpr* cast)
+	{
+		return record_supported_cast(*cast, cast->getBeginLoc(), "static_cast");
+	}
+
+	bool VisitCXXFunctionalCastExpr(clang::CXXFunctionalCastExpr* cast)
+	{
+		return record_supported_cast(*cast, cast->getBeginLoc(), "functional_cast");
+	}
+
+	bool VisitCStyleCastExpr(clang::CStyleCastExpr* cast)
+	{
+		return record_supported_cast(*cast, cast->getBeginLoc(), "c_style_cast");
+	}
+
+	bool VisitCXXConstCastExpr(clang::CXXConstCastExpr* cast)
+	{
+		auto evidence = make_evidence("LR-045",
+		    "const_cast may change mutability and is represented as a boundary",
+		    cast->getSourceRange(), true, "conservative");
+		add_mmir(MmirNodeKind::kCast, "const_cast", cast->getBeginLoc(), cast->getSourceRange(),
+		    evidence);
+		add_semantic_feature("cast_expression", ConstructHandling::kBoundary,
+		    "const_cast requires mutability-aware lowering", evidence);
+		add_construct("const_cast", ConstructHandling::kBoundary,
+		    "const removal is not approximated through fake object access",
+		    {"mutability-aware boundary", "live validation"}, cast->getBeginLoc(), evidence);
+		return true;
+	}
+
 	bool VisitUnaryExprOrTypeTraitExpr(clang::UnaryExprOrTypeTraitExpr* expression)
 	{
 		auto evidence = make_evidence("LR-039",
@@ -1100,6 +1332,44 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		return true;
 	}
 
+	[[nodiscard]] std::string overload_suffix(clang::FunctionDecl const& callee) const
+	{
+		if (callee.getNumParams() == 0U)
+		{
+			return "void";
+		}
+
+		std::string suffix;
+		for (auto index = unsigned{0}; index < callee.getNumParams(); ++index)
+		{
+			if (!suffix.empty())
+			{
+				suffix += "_";
+			}
+			suffix +=
+			    sanitize_identifier(type_string(context_, callee.getParamDecl(index)->getType()));
+		}
+
+		return suffix.empty() ? "args" : suffix;
+	}
+
+	[[nodiscard]] std::string stable_port_name(
+	    std::string const& base_name, clang::FunctionDecl const& callee) const
+	{
+		auto sanitized = sanitize_identifier(base_name);
+		if (sanitized.empty())
+		{
+			sanitized = "call";
+		}
+
+		if (!has_overload_set(callee))
+		{
+			return sanitized;
+		}
+
+		return sanitized + "__" + overload_suffix(callee);
+	}
+
 	[[nodiscard]] std::optional<DependencyPort> dependency_port_for_call(
 	    clang::CXXMemberCallExpr const& call)
 	{
@@ -1137,12 +1407,12 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		{
 			return DependencyPort{
 			    .kind = DependencyKind::kRecursiveCandidate,
-			    .name = callee->getNameAsString(),
+			    .name = stable_port_name(callee->getNameAsString(), *callee),
 			    .original_callee = callee->getQualifiedNameAsString(),
 			    .return_type = type_string(context_, callee->getReturnType()),
 			    .argument_types = call_argument_types(call),
 			    .location = source_location(context_, call.getExprLoc()),
-			    .evidence = make_evidence("DEP-SAME-CLASS-HELPER",
+			    .evidence = make_evidence("LR-007",
 			        "same-class nonvirtual helper can be considered for recursive extraction",
 			        call.getSourceRange()),
 			};
@@ -1175,7 +1445,7 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		auto base_name = remove_trailing_underscore(base_field->getNameAsString());
 		return DependencyPort{
 		    .kind = kind,
-		    .name = base_name + "_" + callee->getNameAsString(),
+		    .name = stable_port_name(base_name + "_" + callee->getNameAsString(), *callee),
 		    .original_callee = callee->getQualifiedNameAsString(),
 		    .return_type = type_string(context_, callee->getReturnType()),
 		    .argument_types = call_argument_types(call),
@@ -1189,6 +1459,11 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 	{
 		auto const* callee = call.getDirectCallee();
 		if (callee == nullptr)
+		{
+			return std::nullopt;
+		}
+
+		if (is_std_move_or_forward(*callee))
 		{
 			return std::nullopt;
 		}
@@ -1219,7 +1494,8 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 
 				return DependencyPort{
 				    .kind = kind,
-				    .name = operator_port_name(method->getQualifiedNameAsString()),
+				    .name = stable_port_name(
+				        operator_port_name(method->getQualifiedNameAsString()), *method),
 				    .original_callee = method->getQualifiedNameAsString(),
 				    .return_type = type_string(context_, method->getReturnType()),
 				    .argument_types = call_argument_types(call),
@@ -1240,7 +1516,8 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 
 			return DependencyPort{
 			    .kind = kind,
-			    .name = sanitize_identifier(replace_colons(method->getQualifiedNameAsString())),
+			    .name =
+			        stable_port_name(replace_colons(method->getQualifiedNameAsString()), *method),
 			    .original_callee = method->getQualifiedNameAsString(),
 			    .return_type = type_string(context_, method->getReturnType()),
 			    .argument_types = call_argument_types(call),
@@ -1251,20 +1528,21 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		}
 
 		auto kind = DependencyKind::kQuery;
-		auto rule_id = std::string{"DEP-FREE-QUERY"};
+		auto rule_id = std::string{"LR-009"};
 		auto reason = std::string{"non-void free function call is a query boundary"};
 		if (callee->getReturnType()->isVoidType() || result_is_ignored(context_, call))
 		{
 			kind = DependencyKind::kEffect;
-			rule_id = "DEP-FREE-EFFECT";
+			rule_id = "LR-009";
 			reason = "void or ignored-return free function call is an effect boundary";
 		}
 
 		return DependencyPort{
 		    .kind = kind,
-		    .name = llvm::isa<clang::CXXOperatorCallExpr>(&call)
-		        ? operator_port_name(callee->getQualifiedNameAsString())
-		        : sanitize_identifier(replace_colons(callee->getQualifiedNameAsString())),
+		    .name = stable_port_name(llvm::isa<clang::CXXOperatorCallExpr>(&call)
+		            ? operator_port_name(callee->getQualifiedNameAsString())
+		            : replace_colons(callee->getQualifiedNameAsString()),
+		        *callee),
 		    .original_callee = callee->getQualifiedNameAsString(),
 		    .return_type = type_string(context_, callee->getReturnType()),
 		    .argument_types = call_argument_types(call),
@@ -1344,6 +1622,23 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		    "unevaluated contexts are tracked without effects");
 		add("LR-040", ConstructHandling::kNotYetImplemented,
 		    "default member initializer is future work");
+		add("LR-041", ConstructHandling::kSupported,
+		    "conditional operator is expression control flow");
+		add("LR-042", ConstructHandling::kSupported,
+		    "default arguments are supplied by Clang Sema");
+		add("LR-043", ConstructHandling::kSupported,
+		    "auto type is recorded after semantic resolution");
+		add("LR-044", ConstructHandling::kSupported,
+		    "casts and std::move/std::forward are resolved expressions");
+		add("LR-045", ConstructHandling::kBoundary,
+		    "const_cast requires mutability-aware boundary handling");
+		add("LR-046", ConstructHandling::kSupported, "break/continue statements are tracked");
+		add("LR-047", ConstructHandling::kSupported,
+		    "cv/ref member qualifiers are part of target metadata");
+		add("LR-048", ConstructHandling::kModeled,
+		    "access control is reported without rewriting product visibility");
+		add("LR-049", ConstructHandling::kConservative,
+		    "constructor calls in method bodies require construction-aware lowering");
 	}
 
 	void mark_rule_observed(std::string const& rule_id)
@@ -1364,8 +1659,93 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		}
 	}
 
+	void finalize_deterministic_order()
+	{
+		std::ranges::sort(plan_.receiver_state,
+		    [](ReceiverField const& lhs, ReceiverField const& rhs)
+		    {
+			    return std::tie(lhs.name, lhs.type, lhs.access_specifier) <
+			        std::tie(rhs.name, rhs.type, rhs.access_specifier);
+		    });
+
+		std::ranges::sort(plan_.dependency_ports,
+		    [](DependencyPort const& lhs, DependencyPort const& rhs)
+		    {
+			    return std::tie(lhs.kind, lhs.name, lhs.original_callee, lhs.return_type,
+			               lhs.argument_types) < std::tie(rhs.kind, rhs.name, rhs.original_callee,
+			                                         rhs.return_type, rhs.argument_types);
+		    });
+
+		for (auto& shape : plan_.shape_candidates)
+		{
+			std::ranges::sort(shape.observed_members);
+		}
+		std::ranges::sort(plan_.shape_candidates,
+		    [](ShapeCandidate const& lhs, ShapeCandidate const& rhs)
+		    {
+			    return std::tie(lhs.name, lhs.source_dependency, lhs.observed_members) <
+			        std::tie(rhs.name, rhs.source_dependency, rhs.observed_members);
+		    });
+
+		std::ranges::sort(plan_.object_ref_requirements,
+		    [](ObjectRefRequirement const& lhs, ObjectRefRequirement const& rhs)
+		    {
+			    return std::tie(lhs.reason, lhs.expression) < std::tie(rhs.reason, rhs.expression);
+		    });
+
+		std::ranges::sort(plan_.semantic_features,
+		    [](SemanticFeature const& lhs, SemanticFeature const& rhs)
+		    {
+			    return std::tie(lhs.name, lhs.handling, lhs.detail) <
+			        std::tie(rhs.name, rhs.handling, rhs.detail);
+		    });
+
+		std::ranges::sort(plan_.unsupported_or_modeled_constructs,
+		    [](UnsupportedOrModeledConstruct const& lhs, UnsupportedOrModeledConstruct const& rhs)
+		    {
+			    return std::tie(lhs.construct, lhs.handling, lhs.reason) <
+			        std::tie(rhs.construct, rhs.handling, rhs.reason);
+		    });
+
+		std::ranges::sort(plan_.envelope_requirements,
+		    [](EnvelopeRequirement const& lhs, EnvelopeRequirement const& rhs)
+		    {
+			    return std::tie(lhs.kind, lhs.source, lhs.reason) <
+			        std::tie(rhs.kind, rhs.source, rhs.reason);
+		    });
+	}
+
 	void record_method_qualifiers()
 	{
+		if (method_.isConst() || method_.isVolatile() ||
+		    method_.getRefQualifier() != clang::RQ_None)
+		{
+			auto details = std::string{"target method qualifiers:"};
+			if (method_.isConst())
+			{
+				details += " const";
+			}
+			if (method_.isVolatile())
+			{
+				details += " volatile";
+			}
+			switch (method_.getRefQualifier())
+			{
+				case clang::RQ_None:
+					break;
+				case clang::RQ_LValue:
+					details += " &";
+					break;
+				case clang::RQ_RValue:
+					details += " &&";
+					break;
+			}
+			auto evidence = make_evidence(
+			    "LR-047", "target method cv/ref qualifiers are recorded", method_.getSourceRange());
+			add_semantic_feature(
+			    "method_qualifier", ConstructHandling::kSupported, details, evidence);
+		}
+
 		auto const* proto = method_.getType()->getAs<clang::FunctionProtoType>();
 		if (proto != nullptr && proto->isNothrow())
 		{
@@ -1374,6 +1754,32 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			    method_.getSourceRange());
 			add_semantic_feature("noexcept", ConstructHandling::kSupported,
 			    "target method is noexcept-compatible", evidence);
+		}
+
+		for (auto const* parameter : method_.parameters())
+		{
+			if (!parameter->hasDefaultArg())
+			{
+				continue;
+			}
+
+			auto evidence = make_evidence("LR-042",
+			    "target method parameter has a default argument", parameter->getSourceRange());
+			add_semantic_feature("default_argument", ConstructHandling::kSupported,
+			    "target parameter default argument is visible in inspect metadata", evidence);
+		}
+
+		if (llvm::isa<clang::ClassTemplateSpecializationDecl>(method_.getParent()))
+		{
+			auto evidence =
+			    make_evidence("LR-033", "target belongs to a class template specialization",
+			        method_.getSourceRange(), true, "conservative");
+			add_semantic_feature("template_specialization", ConstructHandling::kConservative,
+			    "class template specialization is inspected after Clang instantiation", evidence);
+			add_construct("class template specialization", ConstructHandling::kConservative,
+			    "template-dependent source spelling may differ from instantiated AST",
+			    {"inspect instantiated semantics only", "future template-source mapping"},
+			    method_.getLocation(), evidence);
 		}
 	}
 
@@ -1422,6 +1828,17 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		return true;
 	}
 
+	bool record_supported_cast(
+	    clang::ExplicitCastExpr const& cast, clang::SourceLocation location, std::string label)
+	{
+		auto evidence = make_evidence(
+		    "LR-044", "cast expression is resolved by Clang Sema", cast.getSourceRange());
+		add_mmir(MmirNodeKind::kCast, std::move(label), location, cast.getSourceRange(), evidence);
+		add_semantic_feature("cast_expression", ConstructHandling::kSupported,
+		    "cast expression is represented from resolved AST type information", evidence);
+		return true;
+	}
+
 	void add_semantic_feature(
 	    std::string name, ConstructHandling handling, std::string detail, PlanEvidence evidence)
 	{
@@ -1446,6 +1863,23 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 	    std::vector<std::string> fallbacks, clang::SourceLocation location, PlanEvidence evidence)
 	{
 		mark_rule_observed(evidence.rule_id);
+		if (handling == ConstructHandling::kConservative ||
+		    handling == ConstructHandling::kNotYetImplemented)
+		{
+			if (plan_.result == "extracted")
+			{
+				plan_.result = "extracted-with-conservative-notes";
+			}
+			if (handling == ConstructHandling::kNotYetImplemented)
+			{
+				plan_.confidence = "low";
+			}
+			else if (plan_.confidence == "high")
+			{
+				plan_.confidence = "medium";
+			}
+		}
+
 		auto duplicate = std::ranges::any_of(plan_.unsupported_or_modeled_constructs,
 		    [&construct, handling](UnsupportedOrModeledConstruct const& existing)
 		    {
@@ -1453,6 +1887,15 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		    });
 		if (!duplicate)
 		{
+			if (handling == ConstructHandling::kConservative ||
+			    handling == ConstructHandling::kNotYetImplemented)
+			{
+				auto const* code = handling == ConstructHandling::kNotYetImplemented
+				    ? "AZTECA_UNSUPPORTED_CONSTRUCT"
+				    : "AZTECA_CONSERVATIVE_CONSTRUCT";
+				plan_.diagnostics.add(DiagnosticSeverity::kWarning, code, construct + ": " + reason,
+				    source_location(context_, location));
+			}
 			plan_.unsupported_or_modeled_constructs.push_back({
 			    .construct = std::move(construct),
 			    .handling = handling,
@@ -1598,6 +2041,40 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		return FieldAccess::kRead;
 	}
 
+	[[nodiscard]] bool is_dependency_object_base(clang::MemberExpr const& member)
+	{
+		auto const* current = static_cast<clang::Stmt const*>(&member);
+		for (auto depth = 0; depth < 8; ++depth)
+		{
+			auto parents = context_.getParents(*current);
+			if (parents.empty())
+			{
+				return false;
+			}
+
+			auto const& parent = *parents.begin();
+			if (auto const* outer_member = parent.get<clang::MemberExpr>())
+			{
+				if (llvm::isa<clang::CXXMethodDecl>(outer_member->getMemberDecl()) &&
+				    expression_contains(outer_member->getBase(), &member))
+				{
+					return true;
+				}
+				current = outer_member;
+				continue;
+			}
+
+			auto const* expression = parent.get<clang::Expr>();
+			if (expression == nullptr)
+			{
+				return false;
+			}
+			current = expression;
+		}
+
+		return false;
+	}
+
 	void add_receiver_field(
 	    clang::FieldDecl const& field, FieldAccess access, PlanEvidence evidence)
 	{
@@ -1679,6 +2156,30 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			}
 		}
 		plan_.envelope_requirements = std::move(envelope_filtered);
+
+		if (plan_.receiver_state.empty())
+		{
+			std::erase_if(plan_.semantic_features,
+			    [](SemanticFeature const& feature)
+			    {
+				    return feature.name == "receiver_state" || feature.name == "access_control";
+			    });
+			return;
+		}
+
+		auto const kHasNonPublicReceiverState = std::ranges::any_of(plan_.receiver_state,
+		    [](ReceiverField const& field)
+		    {
+			    return field.access_specifier == "private" || field.access_specifier == "protected";
+		    });
+		if (!kHasNonPublicReceiverState)
+		{
+			std::erase_if(plan_.semantic_features,
+			    [](SemanticFeature const& feature)
+			    {
+				    return feature.name == "access_control";
+			    });
+		}
 	}
 
 	void record_dependency_local(clang::VarDecl const& variable)
@@ -1799,7 +2300,9 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		    [&port](DependencyPort const& existing)
 		    {
 			    return existing.kind == port.kind && existing.name == port.name &&
-			        existing.original_callee == port.original_callee;
+			        existing.original_callee == port.original_callee &&
+			        existing.return_type == port.return_type &&
+			        existing.argument_types == port.argument_types;
 		    });
 
 		if (!duplicate)

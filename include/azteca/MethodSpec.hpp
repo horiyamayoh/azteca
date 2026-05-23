@@ -23,6 +23,7 @@ struct MethodSpec
 	std::string method_name;
 	std::vector<std::string> parameter_types;
 	bool is_const{false};
+	bool is_volatile{false};
 	RefQualifier ref_qualifier{RefQualifier::kNone};
 };
 

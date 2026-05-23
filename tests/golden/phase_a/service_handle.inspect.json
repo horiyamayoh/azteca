@@ -84,6 +84,19 @@
   "object_ref_requirements": [],
   "semantic_features": [
     {
+      "name": "access_control",
+      "handling": "modeled",
+      "detail": "inspect reports non-public receiver state without #define private public",
+      "rule_id": "LR-048",
+      "reason": "private/protected receiver state is modeled without changing product access",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 34, "column": 8 },
+        "end": { "file": "<fixture>/service.cpp", "line": 34, "column": 16 }
+      }
+    },
+    {
       "name": "receiver_state",
       "handling": "supported",
       "detail": "receiver field read",
@@ -126,14 +139,14 @@
     {
       "kind": "dependency_boundary",
       "requirement_reason": "dependency call is represented by transcript port",
-      "source": "Repo::exists",
-      "rule_id": "DEP-MEMBER-QUERY",
-      "reason": "const non-void member object call is a query",
+      "source": "Notifier::send",
+      "rule_id": "DEP-MEMBER-EFFECT",
+      "reason": "void or ignored-return member object call is an effect",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/service.cpp", "line": 39, "column": 8 },
-        "end": { "file": "<fixture>/service.cpp", "line": 39, "column": 24 }
+        "begin": { "file": "<fixture>/service.cpp", "line": 49, "column": 3 },
+        "end": { "file": "<fixture>/service.cpp", "line": 49, "column": 21 }
       }
     },
     {
@@ -152,14 +165,14 @@
     {
       "kind": "dependency_boundary",
       "requirement_reason": "dependency call is represented by transcript port",
-      "source": "Notifier::send",
-      "rule_id": "DEP-MEMBER-EFFECT",
-      "reason": "void or ignored-return member object call is an effect",
+      "source": "Repo::exists",
+      "rule_id": "DEP-MEMBER-QUERY",
+      "reason": "const non-void member object call is a query",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/service.cpp", "line": 49, "column": 3 },
-        "end": { "file": "<fixture>/service.cpp", "line": 49, "column": 21 }
+        "begin": { "file": "<fixture>/service.cpp", "line": 39, "column": 8 },
+        "end": { "file": "<fixture>/service.cpp", "line": 39, "column": 24 }
       }
     }
   ],
@@ -182,18 +195,8 @@
       "note": "data member mutation",
       "observed": false
     },
-    {
-      "rule_id": "LR-004",
-      "handling": "supported",
-      "note": "return statement",
-      "observed": true
-    },
-    {
-      "rule_id": "LR-005",
-      "handling": "supported",
-      "note": "if statement",
-      "observed": true
-    },
+    { "rule_id": "LR-004", "handling": "supported", "note": "return statement", "observed": true },
+    { "rule_id": "LR-005", "handling": "supported", "note": "if statement", "observed": true },
     {
       "rule_id": "LR-006",
       "handling": "supported",
@@ -402,6 +405,60 @@
       "rule_id": "LR-040",
       "handling": "not_yet_implemented",
       "note": "default member initializer is future work",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-041",
+      "handling": "supported",
+      "note": "conditional operator is expression control flow",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-042",
+      "handling": "supported",
+      "note": "default arguments are supplied by Clang Sema",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-043",
+      "handling": "supported",
+      "note": "auto type is recorded after semantic resolution",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-044",
+      "handling": "supported",
+      "note": "casts and std::move/std::forward are resolved expressions",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-045",
+      "handling": "boundary",
+      "note": "const_cast requires mutability-aware boundary handling",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-046",
+      "handling": "supported",
+      "note": "break/continue statements are tracked",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-047",
+      "handling": "supported",
+      "note": "cv/ref member qualifiers are part of target metadata",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-048",
+      "handling": "modeled",
+      "note": "access control is reported without rewriting product visibility",
+      "observed": true
+    },
+    {
+      "rule_id": "LR-049",
+      "handling": "conservative",
+      "note": "constructor calls in method bodies require construction-aware lowering",
       "observed": false
     }
   ],

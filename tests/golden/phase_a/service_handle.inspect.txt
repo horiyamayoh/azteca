@@ -30,13 +30,14 @@ Object identity requirements:
   none
 
 Semantic features:
+  - access_control [modeled]: inspect reports non-public receiver state without #define private public
   - receiver_state [supported]: receiver field read
 
 Envelope requirements:
   - self_state: receiver field read (Service::enabled_)
-  - dependency_boundary: dependency call is represented by transcript port (Repo::exists)
-  - dependency_boundary: dependency call is represented by transcript port (Policy::allow)
   - dependency_boundary: dependency call is represented by transcript port (Notifier::send)
+  - dependency_boundary: dependency call is represented by transcript port (Policy::allow)
+  - dependency_boundary: dependency call is represented by transcript port (Repo::exists)
 
 Modeled or boundary constructs:
   none
@@ -113,6 +114,15 @@ Rule coverage:
   - LR-038 [not_yet_implemented] not observed: coroutines are future work
   - LR-039 [supported] not observed: unevaluated contexts are tracked without effects
   - LR-040 [not_yet_implemented] not observed: default member initializer is future work
+  - LR-041 [supported] not observed: conditional operator is expression control flow
+  - LR-042 [supported] not observed: default arguments are supplied by Clang Sema
+  - LR-043 [supported] not observed: auto type is recorded after semantic resolution
+  - LR-044 [supported] not observed: casts and std::move/std::forward are resolved expressions
+  - LR-045 [boundary] not observed: const_cast requires mutability-aware boundary handling
+  - LR-046 [supported] not observed: break/continue statements are tracked
+  - LR-047 [supported] not observed: cv/ref member qualifiers are part of target metadata
+  - LR-048 [modeled] observed: access control is reported without rewriting product visibility
+  - LR-049 [conservative] not observed: constructor calls in method bodies require construction-aware lowering
 
 Google Test preview:
   auto s = azteca_gen::scenario::service_handle{};

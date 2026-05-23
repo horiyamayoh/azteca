@@ -155,23 +155,41 @@ MethodSpecParseResult parse_method_spec(std::string_view input)
 		return parse_error("template method specs are not supported by Phase A inspect");
 	}
 
-	if (!suffix.empty())
+	while (!suffix.empty())
 	{
 		if (consume_suffix(suffix, "&&"))
 		{
+			if (spec.ref_qualifier != RefQualifier::kNone)
+			{
+				return parse_error("duplicate ref qualifier in method spec");
+			}
 			spec.ref_qualifier = RefQualifier::kRValue;
 		}
 		else if (consume_suffix(suffix, "&"))
 		{
+			if (spec.ref_qualifier != RefQualifier::kNone)
+			{
+				return parse_error("duplicate ref qualifier in method spec");
+			}
 			spec.ref_qualifier = RefQualifier::kLValue;
 		}
-
-		if (consume_suffix(suffix, "const"))
+		else if (consume_suffix(suffix, "const"))
 		{
+			if (spec.is_const)
+			{
+				return parse_error("duplicate const qualifier in method spec");
+			}
 			spec.is_const = true;
 		}
-
-		if (!suffix.empty())
+		else if (consume_suffix(suffix, "volatile"))
+		{
+			if (spec.is_volatile)
+			{
+				return parse_error("duplicate volatile qualifier in method spec");
+			}
+			spec.is_volatile = true;
+		}
+		else
 		{
 			return parse_error("unsupported method qualifier in spec: " + suffix);
 		}

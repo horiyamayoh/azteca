@@ -7,7 +7,7 @@ namespace
 
 TEST(MethodSpecParser, ParsesConstLvalueQualifiedMethod)
 {
-	auto result = azteca::parse_method_spec("ns::C::m(int, Foo const&) const &");
+	auto result = azteca::parse_method_spec("ns::C::m(int, Foo const&) const volatile &");
 
 	ASSERT_TRUE(result.spec.has_value()) << result.error;
 	EXPECT_EQ(result.spec->qualified_class_name, "ns::C");
@@ -16,7 +16,18 @@ TEST(MethodSpecParser, ParsesConstLvalueQualifiedMethod)
 	EXPECT_EQ(result.spec->parameter_types[0], "int");
 	EXPECT_EQ(result.spec->parameter_types[1], "Foo const&");
 	EXPECT_TRUE(result.spec->is_const);
+	EXPECT_TRUE(result.spec->is_volatile);
 	EXPECT_EQ(result.spec->ref_qualifier, azteca::RefQualifier::kLValue);
+}
+
+TEST(MethodSpecParser, ParsesVolatileRvalueQualifiedMethod)
+{
+	auto result = azteca::parse_method_spec("ns::C::m() volatile &&");
+
+	ASSERT_TRUE(result.spec.has_value()) << result.error;
+	EXPECT_FALSE(result.spec->is_const);
+	EXPECT_TRUE(result.spec->is_volatile);
+	EXPECT_EQ(result.spec->ref_qualifier, azteca::RefQualifier::kRValue);
 }
 
 TEST(MethodSpecParser, RejectsTemplateMethodInPhaseA)

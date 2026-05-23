@@ -37,6 +37,13 @@ function(assert_contains haystack needle context)
 	endif()
 endfunction()
 
+function(assert_not_contains haystack needle context)
+	string(FIND "${haystack}" "${needle}" found_index)
+	if(NOT found_index EQUAL -1)
+		message(FATAL_ERROR "${context} unexpectedly contained '${needle}':\n${haystack}")
+	endif()
+endfunction()
+
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
 			"${fixture_source}/service.cpp" --method "Service::handle(Id)" --format text
@@ -355,10 +362,12 @@ assert_syntax_inspect(
 
 assert_syntax_inspect(
 	"SyntaxMatrix::reset_in_place()"
+	"constructor_call [conservative]"
 	"explicit destructor call [modeled]"
 	"placement new on this [modeled]"
 	"LR-027 [modeled] observed"
 	"LR-028 [modeled] observed"
+	"LR-049 [conservative] observed"
 )
 
 assert_syntax_inspect(
@@ -371,6 +380,94 @@ assert_syntax_inspect(
 	"SyntaxMatrix::macro_use()"
 	"macro_expansion [conservative]"
 	"LR-034 [conservative] observed"
+)
+
+function(assert_edge_inspect method)
+	execute_process(
+		COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+				"${fixture_source}/edge_cases.cpp" --method "${method}" --format text
+		RESULT_VARIABLE edge_result
+		OUTPUT_VARIABLE edge_output
+		ERROR_VARIABLE edge_error
+	)
+
+	if(NOT edge_result EQUAL 0)
+		message(FATAL_ERROR "edge inspect failed for ${method}:\n${edge_output}\n${edge_error}")
+	endif()
+
+	foreach(required_line IN LISTS ARGN)
+		assert_contains("${edge_output}" "${required_line}" "edge inspect output for ${method}")
+	endforeach()
+endfunction()
+
+assert_edge_inspect(
+	"EdgeCases::explicit_this_read() const"
+	"explicit this receiver field read"
+	"access_control [modeled]"
+	"LR-002 [supported] observed"
+	"LR-048 [modeled] observed"
+)
+
+assert_edge_inspect(
+	"EdgeCases::default_argument(int)"
+	"default_argument [supported]"
+	"query dependency_value(int, int) -> int"
+	"LR-042 [supported] observed"
+)
+
+assert_edge_inspect(
+	"EdgeCases::overloads(int)"
+	"recursive helper__int(int) -> int"
+	"recursive helper__double(double) -> int"
+	"LR-007 [supported] observed"
+)
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/edge_cases.cpp" --method
+			"EdgeCases::value_category_and_casts(const int *)" --format text
+	RESULT_VARIABLE edge_cast_result
+	OUTPUT_VARIABLE edge_cast_output
+	ERROR_VARIABLE edge_cast_error
+)
+
+if(NOT edge_cast_result EQUAL 0)
+	message(FATAL_ERROR "edge cast inspect failed:\n${edge_cast_output}\n${edge_cast_error}")
+endif()
+
+foreach(required_cast_line
+		"value_category_cast [supported]"
+		"cast_expression [supported]"
+		"const_cast [boundary]"
+		"LR-044 [supported] observed"
+		"LR-045 [boundary] observed")
+	assert_contains("${edge_cast_output}" "${required_cast_line}" "edge cast inspect output")
+endforeach()
+assert_not_contains("${edge_cast_output}" "std_move" "edge cast inspect output")
+
+assert_edge_inspect(
+	"EdgeCases::branch_controls(int)"
+	"break_continue [supported]"
+	"loop_control_flow [conservative]"
+	"LR-046 [supported] observed"
+)
+
+assert_edge_inspect(
+	"EdgeCases::ternary(bool) const"
+	"conditional_operator [supported]"
+	"LR-041 [supported] observed"
+)
+
+assert_edge_inspect(
+	"EdgeCases::cv_ref() const volatile &"
+	"method_qualifier [supported]: target method qualifiers: const volatile &"
+	"LR-047 [supported] observed"
+)
+
+assert_edge_inspect(
+	"outer::Container::Inner::run() const"
+	"Azteca can inspect outer::Container::Inner::run."
+	"access_control [modeled]"
 )
 
 execute_process(

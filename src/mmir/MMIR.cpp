@@ -23,6 +23,8 @@ std::string to_string(MmirNodeKind kind)
 			return "Unary";
 		case MmirNodeKind::kBinary:
 			return "Binary";
+		case MmirNodeKind::kConditional:
+			return "Conditional";
 		case MmirNodeKind::kAssign:
 			return "Assign";
 		case MmirNodeKind::kIf:
@@ -31,6 +33,10 @@ std::string to_string(MmirNodeKind kind)
 			return "Switch";
 		case MmirNodeKind::kLoop:
 			return "Loop";
+		case MmirNodeKind::kBreak:
+			return "Break";
+		case MmirNodeKind::kContinue:
+			return "Continue";
 		case MmirNodeKind::kReturn:
 			return "Return";
 		case MmirNodeKind::kThrow:
@@ -47,6 +53,8 @@ std::string to_string(MmirNodeKind kind)
 			return "OperatorCall";
 		case MmirNodeKind::kCast:
 			return "Cast";
+		case MmirNodeKind::kDefaultArgument:
+			return "DefaultArgument";
 		case MmirNodeKind::kTypeInfo:
 			return "TypeInfo";
 		case MmirNodeKind::kLambda:

@@ -42,6 +42,10 @@ std::string method_signature(clang::ASTContext const& context, clang::CXXMethodD
 	{
 		output << " const";
 	}
+	if (method.isVolatile())
+	{
+		output << " volatile";
+	}
 	switch (method.getRefQualifier())
 	{
 		case clang::RQ_None:
@@ -81,6 +85,11 @@ bool method_matches_spec(
 	}
 
 	if (method.isConst() != spec.is_const)
+	{
+		return false;
+	}
+
+	if (method.isVolatile() != spec.is_volatile)
 	{
 		return false;
 	}
