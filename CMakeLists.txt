@@ -59,6 +59,25 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(AZTECA_ENABLE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 option(AZTECA_ENABLE_SANITIZERS "Build with AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
 
+include(ProcessorCount)
+ProcessorCount(AZTECA_PROCESSOR_COUNT)
+if(AZTECA_PROCESSOR_COUNT EQUAL 0)
+	set(AZTECA_PROCESSOR_COUNT 4)
+endif()
+
+if(AZTECA_PROCESSOR_COUNT LESS 4)
+	set(AZTECA_DEFAULT_CLANG_TIDY_JOBS "${AZTECA_PROCESSOR_COUNT}")
+else()
+	set(AZTECA_DEFAULT_CLANG_TIDY_JOBS 4)
+endif()
+
+set(
+	AZTECA_CLANG_TIDY_JOBS
+	"${AZTECA_DEFAULT_CLANG_TIDY_JOBS}"
+	CACHE STRING
+	"Number of parallel clang-tidy jobs"
+)
+
 add_compile_options(
 	-Wall
 	-Wextra
@@ -83,6 +102,7 @@ include(CTest)
 find_program(GIT_EXECUTABLE git REQUIRED)
 find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format-18 clang-format REQUIRED)
 find_program(CLANG_TIDY_EXECUTABLE NAMES clang-tidy-18 clang-tidy REQUIRED)
+find_program(RUN_CLANG_TIDY_EXECUTABLE NAMES run-clang-tidy-18 run-clang-tidy)
 find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config-18 llvm-config REQUIRED)
 find_program(NPM_EXECUTABLE npm REQUIRED)
 
@@ -139,6 +159,8 @@ target_link_libraries(azteca_core PRIVATE clangTooling clangASTMatchers clangFro
 add_executable(azteca src/cli/main.cpp)
 target_link_libraries(azteca PRIVATE azteca_core)
 
+set(AZTECA_TEST_DEPENDENCIES azteca)
+
 if(BUILD_TESTING)
 	find_package(GTest CONFIG QUIET)
 
@@ -159,6 +181,7 @@ if(BUILD_TESTING)
 			tests/unit/MethodSpecTests.cpp
 		)
 		target_link_libraries(azteca_unit_tests PRIVATE azteca_core GTest::gtest_main)
+		list(APPEND AZTECA_TEST_DEPENDENCIES azteca_unit_tests)
 		include(GoogleTest)
 		gtest_discover_tests(azteca_unit_tests)
 	else()
@@ -231,12 +254,40 @@ add_custom_target(
 	COMMAND
 		${CMAKE_COMMAND}
 		-DCLANG_TIDY_EXECUTABLE=${CLANG_TIDY_EXECUTABLE}
+		-DRUN_CLANG_TIDY_EXECUTABLE=${RUN_CLANG_TIDY_EXECUTABLE}
 		-DGIT_EXECUTABLE=${GIT_EXECUTABLE}
 		-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
 		-DCOMPILE_COMMANDS_DIR=${CMAKE_BINARY_DIR}
+		-DCLANG_TIDY_JOBS=${AZTECA_CLANG_TIDY_JOBS}
+		-DCLANG_TIDY_PROFILE=full
 		-P ${PROJECT_SOURCE_DIR}/cmake/ClangTidy.cmake
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 	COMMENT "Running clang-tidy"
+	VERBATIM
+)
+
+add_custom_target(
+	lint-fast
+	COMMAND
+		${CMAKE_COMMAND}
+		-DCLANG_TIDY_EXECUTABLE=${CLANG_TIDY_EXECUTABLE}
+		-DRUN_CLANG_TIDY_EXECUTABLE=${RUN_CLANG_TIDY_EXECUTABLE}
+		-DGIT_EXECUTABLE=${GIT_EXECUTABLE}
+		-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+		-DCOMPILE_COMMANDS_DIR=${CMAKE_BINARY_DIR}
+		-DCLANG_TIDY_JOBS=${AZTECA_CLANG_TIDY_JOBS}
+		-DCLANG_TIDY_PROFILE=fast
+		-P ${PROJECT_SOURCE_DIR}/cmake/ClangTidy.cmake
+	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+	COMMENT "Running clang-tidy fast profile"
+	VERBATIM
+)
+
+add_custom_target(
+	quick-check
+	COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
+	DEPENDS ${AZTECA_TEST_DEPENDENCIES}
+	COMMENT "Running fast local test loop"
 	VERBATIM
 )
 

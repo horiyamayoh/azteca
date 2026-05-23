@@ -10,25 +10,36 @@ Azteca 本体は Clang + C++23 を baseline にします。
 npm ci
 cmake --preset dev-clang
 cmake --build --preset dev-clang
-cmake --build --preset dev-clang --target check
+cmake --build --preset dev-clang --target quick-check
 ```
 
 `build/` 配下は生成物です。既存 artifact や `compile_commands.json` は再生成可能なものとして扱い、source of truth にしません。
 
 ## Quality Gates
 
-ローカルと CI は同じ CMake target を使います。
+開発中の反復は、ビルド済み target に依存して CTest だけを実行する `quick-check` を使います。
+
+```bash
+cmake --build --preset dev-clang --target quick-check
+```
+
+CI 相当の確認は `check` を使います。
+
+```bash
+cmake --build --preset dev-clang --target check
+```
+
+個別ゲート:
 
 ```bash
 cmake --build --preset dev-clang --target format-check
 cmake --build --preset dev-clang --target prettier-check
+cmake --build --preset dev-clang --target lint-fast
 cmake --build --preset dev-clang --target lint
 ctest --preset dev-clang
 ```
 
-`check` は format、Prettier、clang-tidy、CTest をまとめて実行します。通常の build は CI で `check` の前に実行します。
-
-現在のbootstrap段階では、production C++ translation unit と Google Test unit test が未追加のため、clang-tidyやCTestは対象なしでスキップされることがあります。Issue 8でGoogle Test unit testを追加した時点で、`check` は実テストも実行します。
+`lint-fast` は `clang-analyzer-*` を除いたローカル向け clang-tidy profile です。`lint` は analyzer を含む full profile で、`check` は format、Prettier、reference、full clang-tidy、CTest をまとめて実行します。通常の build は CI で `check` の前に実行します。
 
 ## Formatting
 
