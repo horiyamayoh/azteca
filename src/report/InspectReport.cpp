@@ -60,6 +60,11 @@ void append_string_array(std::ostringstream& output, std::vector<std::string> co
 	output << ']';
 }
 
+void append_bool(std::ostringstream& output, bool value)
+{
+	output << (value ? "true" : "false");
+}
+
 void append_location(std::ostringstream& output, SourceLocation const& location)
 {
 	output << "{";
@@ -178,6 +183,7 @@ std::string render_text_report(ExtractionPlan const& plan, ReportOptions const& 
 
 	output << "Azteca can inspect " << plan.target.qualified_name << ".\n\n";
 	output << "Extraction result: " << plan.result << "\n\n";
+	output << "Confidence: " << plan.confidence << "\n\n";
 	output << "Generated Google Test preview:\n";
 	output << "  " << plan.gtest_preview.sample_test_path << "\n\n";
 
@@ -257,6 +263,101 @@ std::string render_text_report(ExtractionPlan const& plan, ReportOptions const& 
 	}
 	output << '\n';
 
+	output << "Semantic features:\n";
+	if (plan.semantic_features.empty())
+	{
+		output << "  none\n";
+	}
+	else
+	{
+		for (auto const& feature : plan.semantic_features)
+		{
+			output << "  - " << feature.name << " [" << to_string(feature.handling) << "]";
+			if (!feature.detail.empty())
+			{
+				output << ": " << feature.detail;
+			}
+			output << '\n';
+			if (options.verbose)
+			{
+				append_verbose_evidence(output, feature.evidence);
+			}
+		}
+	}
+	output << '\n';
+
+	output << "Envelope requirements:\n";
+	if (plan.envelope_requirements.empty())
+	{
+		output << "  none\n";
+	}
+	else
+	{
+		for (auto const& requirement : plan.envelope_requirements)
+		{
+			output << "  - " << to_string(requirement.kind) << ": " << requirement.reason;
+			if (!requirement.source.empty())
+			{
+				output << " (" << requirement.source << ')';
+			}
+			output << '\n';
+			if (options.verbose)
+			{
+				append_verbose_evidence(output, requirement.evidence);
+			}
+		}
+	}
+	output << '\n';
+
+	output << "Modeled or boundary constructs:\n";
+	if (plan.unsupported_or_modeled_constructs.empty())
+	{
+		output << "  none\n";
+	}
+	else
+	{
+		for (auto const& construct : plan.unsupported_or_modeled_constructs)
+		{
+			output << "  - " << construct.construct << " [" << to_string(construct.handling)
+			       << "]: " << construct.reason << '\n';
+			if (!construct.fallbacks.empty())
+			{
+				output << "    fallbacks: ";
+				for (auto index = std::size_t{0}; index < construct.fallbacks.size(); ++index)
+				{
+					if (index != 0U)
+					{
+						output << ", ";
+					}
+					output << construct.fallbacks[index];
+				}
+				output << '\n';
+			}
+			if (options.verbose)
+			{
+				append_verbose_evidence(output, construct.evidence);
+			}
+		}
+	}
+	output << '\n';
+
+	output << "Control flow summary:\n";
+	output << "  if: " << (plan.control_flow_summary.has_if ? "yes" : "no") << '\n';
+	output << "  switch: " << (plan.control_flow_summary.has_switch ? "yes" : "no") << '\n';
+	output << "  loop: " << (plan.control_flow_summary.has_loop ? "yes" : "no") << '\n';
+	output << "  range-for: " << (plan.control_flow_summary.has_range_for ? "yes" : "no") << '\n';
+	output << "  try: " << (plan.control_flow_summary.has_try ? "yes" : "no") << '\n';
+	output << "  throw: " << (plan.control_flow_summary.has_throw ? "yes" : "no") << '\n';
+	output << "  return: " << (plan.control_flow_summary.has_return ? "yes" : "no") << '\n';
+	if (plan.control_flow_summary.conservative)
+	{
+		for (auto const& reason : plan.control_flow_summary.conservative_reasons)
+		{
+			output << "  conservative: " << reason << '\n';
+		}
+	}
+	output << '\n';
+
 	output << "Path-wise test burden:\n";
 	if (plan.paths.empty())
 	{
@@ -319,8 +420,41 @@ std::string render_text_report(ExtractionPlan const& plan, ReportOptions const& 
 					output << path.operations[index];
 				}
 			}
+			output << "\n    required envelope: ";
+			if (path.required_envelopes.empty())
+			{
+				output << "none";
+			}
+			else
+			{
+				for (auto index = std::size_t{0}; index < path.required_envelopes.size(); ++index)
+				{
+					if (index != 0U)
+					{
+						output << ", ";
+					}
+					output << path.required_envelopes[index];
+				}
+			}
+			if (!path.conservative_reason.empty())
+			{
+				output << "\n    conservative reason: " << path.conservative_reason;
+			}
 			output << '\n';
 		}
+	}
+	output << '\n';
+
+	output << "Rule coverage:\n";
+	for (auto const& coverage : plan.rule_coverage)
+	{
+		output << "  - " << coverage.rule_id << " [" << to_string(coverage.handling) << "] "
+		       << (coverage.observed ? "observed" : "not observed");
+		if (!coverage.note.empty())
+		{
+			output << ": " << coverage.note;
+		}
+		output << '\n';
 	}
 	output << '\n';
 
@@ -365,6 +499,9 @@ std::string render_json_report(ExtractionPlan const& plan)
 	output << "  },\n";
 	output << "  \"result\": ";
 	append_json_string(output, plan.result);
+	output << ",\n";
+	output << "  \"confidence\": ";
+	append_json_string(output, plan.confidence);
 	output << ",\n";
 
 	output << "  \"receiver_state\": [\n";
@@ -473,6 +610,100 @@ std::string render_json_report(ExtractionPlan const& plan)
 	}
 	output << "  ],\n";
 
+	output << "  \"semantic_features\": [\n";
+	for (auto index = std::size_t{0}; index < plan.semantic_features.size(); ++index)
+	{
+		auto const& feature = plan.semantic_features[index];
+		output << "    {\"name\": ";
+		append_json_string(output, feature.name);
+		output << ", \"handling\": ";
+		append_json_string(output, to_string(feature.handling));
+		output << ", \"detail\": ";
+		append_json_string(output, feature.detail);
+		output << ", ";
+		append_evidence(output, feature.evidence);
+		output << "}";
+		output << (index + 1U == plan.semantic_features.size() ? "\n" : ",\n");
+	}
+	output << "  ],\n";
+
+	output << "  \"unsupported_or_modeled_constructs\": [\n";
+	for (auto index = std::size_t{0}; index < plan.unsupported_or_modeled_constructs.size();
+	     ++index)
+	{
+		auto const& construct = plan.unsupported_or_modeled_constructs[index];
+		output << "    {\"construct\": ";
+		append_json_string(output, construct.construct);
+		output << ", \"handling\": ";
+		append_json_string(output, to_string(construct.handling));
+		output << ", \"construct_reason\": ";
+		append_json_string(output, construct.reason);
+		output << ", \"fallbacks\": ";
+		append_string_array(output, construct.fallbacks);
+		output << ", \"location\": ";
+		append_location(output, construct.location);
+		output << ", ";
+		append_evidence(output, construct.evidence);
+		output << "}";
+		output << (index + 1U == plan.unsupported_or_modeled_constructs.size() ? "\n" : ",\n");
+	}
+	output << "  ],\n";
+
+	output << "  \"control_flow_summary\": {";
+	output << "\"has_if\": ";
+	append_bool(output, plan.control_flow_summary.has_if);
+	output << ", \"has_switch\": ";
+	append_bool(output, plan.control_flow_summary.has_switch);
+	output << ", \"has_loop\": ";
+	append_bool(output, plan.control_flow_summary.has_loop);
+	output << ", \"has_range_for\": ";
+	append_bool(output, plan.control_flow_summary.has_range_for);
+	output << ", \"has_try\": ";
+	append_bool(output, plan.control_flow_summary.has_try);
+	output << ", \"has_throw\": ";
+	append_bool(output, plan.control_flow_summary.has_throw);
+	output << ", \"has_return\": ";
+	append_bool(output, plan.control_flow_summary.has_return);
+	output << ", \"conservative\": ";
+	append_bool(output, plan.control_flow_summary.conservative);
+	output << ", \"conservative_reasons\": ";
+	append_string_array(output, plan.control_flow_summary.conservative_reasons);
+	output << "},\n";
+
+	output << "  \"envelope_requirements\": [\n";
+	for (auto index = std::size_t{0}; index < plan.envelope_requirements.size(); ++index)
+	{
+		auto const& requirement = plan.envelope_requirements[index];
+		output << "    {\"kind\": ";
+		append_json_string(output, to_string(requirement.kind));
+		output << ", \"requirement_reason\": ";
+		append_json_string(output, requirement.reason);
+		output << ", \"source\": ";
+		append_json_string(output, requirement.source);
+		output << ", ";
+		append_evidence(output, requirement.evidence);
+		output << "}";
+		output << (index + 1U == plan.envelope_requirements.size() ? "\n" : ",\n");
+	}
+	output << "  ],\n";
+
+	output << "  \"rule_coverage\": [\n";
+	for (auto index = std::size_t{0}; index < plan.rule_coverage.size(); ++index)
+	{
+		auto const& coverage = plan.rule_coverage[index];
+		output << "    {\"rule_id\": ";
+		append_json_string(output, coverage.rule_id);
+		output << ", \"handling\": ";
+		append_json_string(output, to_string(coverage.handling));
+		output << ", \"note\": ";
+		append_json_string(output, coverage.note);
+		output << ", \"observed\": ";
+		append_bool(output, coverage.observed);
+		output << "}";
+		output << (index + 1U == plan.rule_coverage.size() ? "\n" : ",\n");
+	}
+	output << "  ],\n";
+
 	output << "  \"paths\": [\n";
 	for (auto index = std::size_t{0}; index < plan.paths.size(); ++index)
 	{
@@ -485,6 +716,10 @@ std::string render_json_report(ExtractionPlan const& plan)
 		append_string_array(output, path.effects);
 		output << ", \"operations\": ";
 		append_string_array(output, path.operations);
+		output << ", \"required_envelopes\": ";
+		append_string_array(output, path.required_envelopes);
+		output << ", \"conservative_reason\": ";
+		append_json_string(output, path.conservative_reason);
 		output << ", ";
 		append_evidence(output, path.evidence);
 		output << "}";

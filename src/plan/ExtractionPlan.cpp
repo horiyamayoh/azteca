@@ -124,4 +124,58 @@ std::string to_string(DependencyKind kind)
 	return "query";
 }
 
+std::string to_string(ConstructHandling handling)
+{
+	switch (handling)
+	{
+		case ConstructHandling::kSupported:
+			return "supported";
+		case ConstructHandling::kModeled:
+			return "modeled";
+		case ConstructHandling::kBoundary:
+			return "boundary";
+		case ConstructHandling::kConservative:
+			return "conservative";
+		case ConstructHandling::kNotYetImplemented:
+			return "not_yet_implemented";
+		case ConstructHandling::kNotMeaningful:
+			return "not_meaningful_for_unit_extraction";
+	}
+
+	return "not_yet_implemented";
+}
+
+std::string to_string(EnvelopeRequirementKind kind)
+{
+	switch (kind)
+	{
+		case EnvelopeRequirementKind::kSelfState:
+			return "self_state";
+		case EnvelopeRequirementKind::kBaseState:
+			return "base_state";
+		case EnvelopeRequirementKind::kAddressableCell:
+			return "addressable_cell";
+		case EnvelopeRequirementKind::kObjectRef:
+			return "object_ref";
+		case EnvelopeRequirementKind::kDependencyBoundary:
+			return "dependency_boundary";
+		case EnvelopeRequirementKind::kDispatchTable:
+			return "dispatch_table";
+		case EnvelopeRequirementKind::kTypeTag:
+			return "type_tag";
+		case EnvelopeRequirementKind::kLifetimeState:
+			return "lifetime_state";
+		case EnvelopeRequirementKind::kByteView:
+			return "byte_view";
+		case EnvelopeRequirementKind::kGlobalEnvironment:
+			return "global_environment";
+		case EnvelopeRequirementKind::kExceptionModel:
+			return "exception_model";
+		case EnvelopeRequirementKind::kMacroSourceMap:
+			return "macro_source_map";
+	}
+
+	return "self_state";
+}
+
 } // namespace azteca

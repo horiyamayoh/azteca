@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "target": {
     "qualified_name": "Service::handle",
     "signature": "Result(Id)",
@@ -7,6 +7,7 @@
     "line": 32
   },
   "result": "extracted",
+  "confidence": "high",
   "receiver_state": [
     {
       "name": "enabled_",
@@ -81,12 +82,337 @@
   "recursive_helper_candidates": [],
   "shape_candidates": [],
   "object_ref_requirements": [],
+  "semantic_features": [
+    {
+      "name": "receiver_state",
+      "handling": "supported",
+      "detail": "receiver field read",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 34, "column": 8 },
+        "end": { "file": "<fixture>/service.cpp", "line": 34, "column": 16 }
+      }
+    }
+  ],
+  "unsupported_or_modeled_constructs": [],
+  "control_flow_summary": {
+    "has_if": true,
+    "has_switch": false,
+    "has_loop": false,
+    "has_range_for": false,
+    "has_try": false,
+    "has_throw": false,
+    "has_return": true,
+    "conservative": false,
+    "conservative_reasons": []
+  },
+  "envelope_requirements": [
+    {
+      "kind": "self_state",
+      "requirement_reason": "receiver field read",
+      "source": "Service::enabled_",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 34, "column": 8 },
+        "end": { "file": "<fixture>/service.cpp", "line": 34, "column": 16 }
+      }
+    },
+    {
+      "kind": "dependency_boundary",
+      "requirement_reason": "dependency call is represented by transcript port",
+      "source": "Repo::exists",
+      "rule_id": "DEP-MEMBER-QUERY",
+      "reason": "const non-void member object call is a query",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 39, "column": 8 },
+        "end": { "file": "<fixture>/service.cpp", "line": 39, "column": 24 }
+      }
+    },
+    {
+      "kind": "dependency_boundary",
+      "requirement_reason": "dependency call is represented by transcript port",
+      "source": "Policy::allow",
+      "rule_id": "DEP-MEMBER-QUERY",
+      "reason": "const non-void member object call is a query",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 44, "column": 8 },
+        "end": { "file": "<fixture>/service.cpp", "line": 44, "column": 25 }
+      }
+    },
+    {
+      "kind": "dependency_boundary",
+      "requirement_reason": "dependency call is represented by transcript port",
+      "source": "Notifier::send",
+      "rule_id": "DEP-MEMBER-EFFECT",
+      "reason": "void or ignored-return member object call is an effect",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/service.cpp", "line": 49, "column": 3 },
+        "end": { "file": "<fixture>/service.cpp", "line": 49, "column": 21 }
+      }
+    }
+  ],
+  "rule_coverage": [
+    {
+      "rule_id": "LR-001",
+      "handling": "supported",
+      "note": "implicit data member read",
+      "observed": true
+    },
+    {
+      "rule_id": "LR-002",
+      "handling": "supported",
+      "note": "explicit this data member read",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-003",
+      "handling": "supported",
+      "note": "data member mutation",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-004",
+      "handling": "supported",
+      "note": "return statement",
+      "observed": true
+    },
+    {
+      "rule_id": "LR-005",
+      "handling": "supported",
+      "note": "if statement",
+      "observed": true
+    },
+    {
+      "rule_id": "LR-006",
+      "handling": "supported",
+      "note": "built-in expression",
+      "observed": true
+    },
+    {
+      "rule_id": "LR-007",
+      "handling": "supported",
+      "note": "same-class nonvirtual helper candidate",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-008",
+      "handling": "boundary",
+      "note": "static member calls are boundary candidates",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-009",
+      "handling": "boundary",
+      "note": "free function calls are boundary candidates",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-010",
+      "handling": "modeled",
+      "note": "global state is modeled as env",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-011",
+      "handling": "modeled",
+      "note": "base state is modeled explicitly",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-012",
+      "handling": "modeled",
+      "note": "virtual calls require dispatch table",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-013",
+      "handling": "boundary",
+      "note": "overloaded operators are resolved boundaries",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-014",
+      "handling": "supported",
+      "note": "local variable declaration",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-015",
+      "handling": "conservative",
+      "note": "loops are conservative paths in Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-016",
+      "handling": "conservative",
+      "note": "range-for is conservative in Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-017",
+      "handling": "supported",
+      "note": "lambda without this capture",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-018",
+      "handling": "modeled",
+      "note": "lambda with this capture maps to self",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-019",
+      "handling": "supported",
+      "note": "noexcept is reported from method metadata",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-020",
+      "handling": "modeled",
+      "note": "raw this escape requires object_ref",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-021",
+      "handling": "modeled",
+      "note": "return this requires object_ref",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-022",
+      "handling": "modeled",
+      "note": "return *this requires object_ref/self view",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-023",
+      "handling": "modeled",
+      "note": "dynamic_cast requires type_tag",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-024",
+      "handling": "modeled",
+      "note": "typeid requires type_tag",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-025",
+      "handling": "boundary",
+      "note": "reinterpret_cast this requires byte boundary",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-026",
+      "handling": "modeled",
+      "note": "delete this requires lifetime state",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-027",
+      "handling": "modeled",
+      "note": "explicit destructor call requires lifetime state",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-028",
+      "handling": "modeled",
+      "note": "placement new on this requires lifetime state",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-029",
+      "handling": "modeled",
+      "note": "field address requires addressable cell",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-030",
+      "handling": "not_yet_implemented",
+      "note": "member function pointer is reported only",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-031",
+      "handling": "not_yet_implemented",
+      "note": "constructor target is outside Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-032",
+      "handling": "not_yet_implemented",
+      "note": "destructor target is outside Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-033",
+      "handling": "not_yet_implemented",
+      "note": "template specialization support is future",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-034",
+      "handling": "conservative",
+      "note": "macro source mapping is conservative",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-035",
+      "handling": "supported",
+      "note": "throw expression is preserved as exception intent",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-036",
+      "handling": "conservative",
+      "note": "try/catch is conservative in Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-037",
+      "handling": "conservative",
+      "note": "structured binding is conservative in Phase A",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-038",
+      "handling": "not_yet_implemented",
+      "note": "coroutines are future work",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-039",
+      "handling": "supported",
+      "note": "unevaluated contexts are tracked without effects",
+      "observed": false
+    },
+    {
+      "rule_id": "LR-040",
+      "handling": "not_yet_implemented",
+      "note": "default member initializer is future work",
+      "observed": false
+    }
+  ],
   "paths": [
     {
       "name": "return_disabled",
       "observations": [],
       "effects": [],
       "operations": [],
+      "required_envelopes": [],
+      "conservative_reason": "",
       "rule_id": "PATH-DFS",
       "reason": "return path accumulated by DFS",
       "certainty": "certain",
@@ -101,6 +427,8 @@
       "observations": ["repo_exists"],
       "effects": [],
       "operations": [],
+      "required_envelopes": ["dependency_boundary"],
+      "conservative_reason": "",
       "rule_id": "PATH-DFS",
       "reason": "return path accumulated by DFS",
       "certainty": "certain",
@@ -115,6 +443,8 @@
       "observations": ["repo_exists", "policy_allow"],
       "effects": [],
       "operations": [],
+      "required_envelopes": ["dependency_boundary"],
+      "conservative_reason": "",
       "rule_id": "PATH-DFS",
       "reason": "return path accumulated by DFS",
       "certainty": "certain",
@@ -129,6 +459,8 @@
       "observations": ["repo_exists", "policy_allow"],
       "effects": ["notifier_send"],
       "operations": [],
+      "required_envelopes": ["dependency_boundary"],
+      "conservative_reason": "",
       "rule_id": "PATH-DFS",
       "reason": "return path accumulated by DFS",
       "certainty": "certain",

@@ -55,6 +55,32 @@ enum class DependencyKind : std::uint8_t
 	kOperation,
 };
 
+enum class ConstructHandling : std::uint8_t
+{
+	kSupported,
+	kModeled,
+	kBoundary,
+	kConservative,
+	kNotYetImplemented,
+	kNotMeaningful,
+};
+
+enum class EnvelopeRequirementKind : std::uint8_t
+{
+	kSelfState,
+	kBaseState,
+	kAddressableCell,
+	kObjectRef,
+	kDependencyBoundary,
+	kDispatchTable,
+	kTypeTag,
+	kLifetimeState,
+	kByteView,
+	kGlobalEnvironment,
+	kExceptionModel,
+	kMacroSourceMap,
+};
+
 struct DependencyPort
 {
 	DependencyKind kind{DependencyKind::kQuery};
@@ -82,12 +108,61 @@ struct ObjectRefRequirement
 	PlanEvidence evidence;
 };
 
+struct SemanticFeature
+{
+	std::string name;
+	ConstructHandling handling{ConstructHandling::kSupported};
+	std::string detail;
+	PlanEvidence evidence;
+};
+
+struct UnsupportedOrModeledConstruct
+{
+	std::string construct;
+	ConstructHandling handling{ConstructHandling::kModeled};
+	std::string reason;
+	std::vector<std::string> fallbacks;
+	SourceLocation location;
+	PlanEvidence evidence;
+};
+
+struct ControlFlowSummary
+{
+	bool has_if{false};
+	bool has_switch{false};
+	bool has_loop{false};
+	bool has_range_for{false};
+	bool has_try{false};
+	bool has_throw{false};
+	bool has_return{false};
+	bool conservative{false};
+	std::vector<std::string> conservative_reasons;
+};
+
+struct EnvelopeRequirement
+{
+	EnvelopeRequirementKind kind{EnvelopeRequirementKind::kSelfState};
+	std::string reason;
+	std::string source;
+	PlanEvidence evidence;
+};
+
+struct RuleCoverage
+{
+	std::string rule_id;
+	ConstructHandling handling{ConstructHandling::kNotYetImplemented};
+	std::string note;
+	bool observed{false};
+};
+
 struct PathBurden
 {
 	std::string name;
 	std::vector<std::string> observations;
 	std::vector<std::string> effects;
 	std::vector<std::string> operations;
+	std::vector<std::string> required_envelopes;
+	std::string conservative_reason;
 	PlanEvidence evidence;
 };
 
@@ -99,13 +174,19 @@ struct GTestPreview
 
 struct ExtractionPlan
 {
-	int schema_version{1};
+	int schema_version{2};
 	TargetInfo target;
 	std::string result{"extracted"};
+	std::string confidence{"high"};
 	std::vector<ReceiverField> receiver_state;
 	std::vector<DependencyPort> dependency_ports;
 	std::vector<ShapeCandidate> shape_candidates;
 	std::vector<ObjectRefRequirement> object_ref_requirements;
+	std::vector<SemanticFeature> semantic_features;
+	std::vector<UnsupportedOrModeledConstruct> unsupported_or_modeled_constructs;
+	ControlFlowSummary control_flow_summary;
+	std::vector<EnvelopeRequirement> envelope_requirements;
+	std::vector<RuleCoverage> rule_coverage;
 	std::vector<PathBurden> paths;
 	GTestPreview gtest_preview;
 	Diagnostics diagnostics;
@@ -114,5 +195,7 @@ struct ExtractionPlan
 
 [[nodiscard]] std::string to_string(FieldAccess access);
 [[nodiscard]] std::string to_string(DependencyKind kind);
+[[nodiscard]] std::string to_string(ConstructHandling handling);
+[[nodiscard]] std::string to_string(EnvelopeRequirementKind kind);
 
 } // namespace azteca

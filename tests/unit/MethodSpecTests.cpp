@@ -27,6 +27,17 @@ TEST(MethodSpecParser, RejectsTemplateMethodInPhaseA)
 	EXPECT_NE(result.error.find("template"), std::string::npos);
 }
 
+TEST(MethodSpecParser, RejectsOperatorOverloadButAllowsOperatorPrefixIdentifier)
+{
+	auto rejected = azteca::parse_method_spec("C::operator+(C const&) const");
+	EXPECT_FALSE(rejected.spec.has_value());
+	EXPECT_NE(rejected.error.find("operator"), std::string::npos);
+
+	auto accepted = azteca::parse_method_spec("C::operator_path()");
+	ASSERT_TRUE(accepted.spec.has_value()) << accepted.error;
+	EXPECT_EQ(accepted.spec->method_name, "operator_path");
+}
+
 TEST(MethodSpecParser, NormalizesTypeForMatching)
 {
 	EXPECT_EQ(azteca::normalize_type_for_match("class ns::Id const &"), "ns::Idconst&");

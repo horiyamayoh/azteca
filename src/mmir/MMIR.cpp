@@ -13,6 +13,10 @@ std::string to_string(MmirNodeKind kind)
 			return "LocalRef";
 		case MmirNodeKind::kFieldRef:
 			return "FieldRef";
+		case MmirNodeKind::kBaseFieldRef:
+			return "BaseFieldRef";
+		case MmirNodeKind::kGlobalRef:
+			return "GlobalRef";
 		case MmirNodeKind::kLiteral:
 			return "Literal";
 		case MmirNodeKind::kUnary:
@@ -23,12 +27,40 @@ std::string to_string(MmirNodeKind kind)
 			return "Assign";
 		case MmirNodeKind::kIf:
 			return "If";
+		case MmirNodeKind::kSwitch:
+			return "Switch";
+		case MmirNodeKind::kLoop:
+			return "Loop";
 		case MmirNodeKind::kReturn:
 			return "Return";
+		case MmirNodeKind::kThrow:
+			return "Throw";
+		case MmirNodeKind::kTry:
+			return "Try";
 		case MmirNodeKind::kCall:
 			return "Call";
 		case MmirNodeKind::kBoundaryCall:
 			return "BoundaryCall";
+		case MmirNodeKind::kDispatchCall:
+			return "DispatchCall";
+		case MmirNodeKind::kOperatorCall:
+			return "OperatorCall";
+		case MmirNodeKind::kCast:
+			return "Cast";
+		case MmirNodeKind::kTypeInfo:
+			return "TypeInfo";
+		case MmirNodeKind::kLambda:
+			return "Lambda";
+		case MmirNodeKind::kLifetimeOp:
+			return "LifetimeOp";
+		case MmirNodeKind::kByteView:
+			return "ByteView";
+		case MmirNodeKind::kMacroExpansion:
+			return "MacroExpansion";
+		case MmirNodeKind::kUnevaluatedContext:
+			return "UnevaluatedContext";
+		case MmirNodeKind::kStructuredBinding:
+			return "StructuredBinding";
 		case MmirNodeKind::kObjectRefRequirement:
 			return "ObjectRefRequirement";
 		case MmirNodeKind::kUnsupported:

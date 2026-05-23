@@ -40,6 +40,8 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 	    .observations = {"repo_exists"},
 	    .effects = {},
 	    .operations = {},
+	    .required_envelopes = {"dependency_boundary"},
+	    .conservative_reason = {},
 	    .evidence = evidence,
 	});
 	plan.gtest_preview.sample_test_path = "tests/service_handle.sample_test.cpp";
@@ -47,14 +49,20 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 
 	auto json = azteca::render_json_report(plan);
 
-	EXPECT_NE(json.find("\"schema_version\": 1"), std::string::npos);
+	EXPECT_NE(json.find("\"schema_version\": 2"), std::string::npos);
 	EXPECT_NE(json.find("\"target\""), std::string::npos);
+	EXPECT_NE(json.find("\"confidence\""), std::string::npos);
 	EXPECT_NE(json.find("\"receiver_state\""), std::string::npos);
 	EXPECT_NE(json.find("\"dependency_observations\""), std::string::npos);
 	EXPECT_NE(json.find("\"observable_effects\""), std::string::npos);
 	EXPECT_NE(json.find("\"operations\""), std::string::npos);
 	EXPECT_NE(json.find("\"shape_candidates\""), std::string::npos);
 	EXPECT_NE(json.find("\"object_ref_requirements\""), std::string::npos);
+	EXPECT_NE(json.find("\"semantic_features\""), std::string::npos);
+	EXPECT_NE(json.find("\"unsupported_or_modeled_constructs\""), std::string::npos);
+	EXPECT_NE(json.find("\"control_flow_summary\""), std::string::npos);
+	EXPECT_NE(json.find("\"envelope_requirements\""), std::string::npos);
+	EXPECT_NE(json.find("\"rule_coverage\""), std::string::npos);
 	EXPECT_NE(json.find("\"paths\""), std::string::npos);
 	EXPECT_NE(json.find("\"gtest_preview\""), std::string::npos);
 	EXPECT_NE(json.find("\"diagnostics\""), std::string::npos);
@@ -83,6 +91,10 @@ TEST(InspectReport, TextShowsCoreInspectSections)
 
 	EXPECT_NE(text.find("Receiver state:"), std::string::npos);
 	EXPECT_NE(text.find("Dependency observations:"), std::string::npos);
+	EXPECT_NE(text.find("Semantic features:"), std::string::npos);
+	EXPECT_NE(text.find("Envelope requirements:"), std::string::npos);
+	EXPECT_NE(text.find("Control flow summary:"), std::string::npos);
+	EXPECT_NE(text.find("Rule coverage:"), std::string::npos);
 	EXPECT_NE(text.find("Path-wise test burden:"), std::string::npos);
 	EXPECT_NE(text.find("Google Test preview:"), std::string::npos);
 }

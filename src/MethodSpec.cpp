@@ -125,11 +125,6 @@ MethodSpecParseResult parse_method_spec(std::string_view input)
 	    std::string_view(text).substr(open_paren + 1, close_paren - open_paren - 1);
 	auto suffix = trim(std::string_view(text).substr(close_paren + 1));
 
-	if (prefix.find("::operator") != std::string::npos)
-	{
-		return parse_error("operator methods are not supported by Phase A inspect");
-	}
-
 	auto separator = prefix.rfind("::");
 	if (separator == std::string::npos || separator == 0 || separator + 2 >= prefix.size())
 	{
@@ -144,6 +139,15 @@ MethodSpecParseResult parse_method_spec(std::string_view input)
 	if (spec.method_name.empty())
 	{
 		return parse_error("method name is empty");
+	}
+
+	if (spec.method_name.starts_with("operator") && spec.method_name.size() > 8U)
+	{
+		auto const kNext = static_cast<unsigned char>(spec.method_name[8]);
+		if (std::isalnum(kNext) == 0 && spec.method_name[8] != '_')
+		{
+			return parse_error("operator methods are not supported by Phase A inspect");
+		}
 	}
 
 	if (contains_template_marker(spec.method_name))

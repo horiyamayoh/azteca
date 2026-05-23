@@ -2,6 +2,8 @@ Azteca can inspect Service::handle.
 
 Extraction result: extracted
 
+Confidence: high
+
 Generated Google Test preview:
   tests/service_handle.sample_test.cpp
 
@@ -27,23 +29,90 @@ Generated shapes:
 Object identity requirements:
   none
 
+Semantic features:
+  - receiver_state [supported]: receiver field read
+
+Envelope requirements:
+  - self_state: receiver field read (Service::enabled_)
+  - dependency_boundary: dependency call is represented by transcript port (Repo::exists)
+  - dependency_boundary: dependency call is represented by transcript port (Policy::allow)
+  - dependency_boundary: dependency call is represented by transcript port (Notifier::send)
+
+Modeled or boundary constructs:
+  none
+
+Control flow summary:
+  if: yes
+  switch: no
+  loop: no
+  range-for: no
+  try: no
+  throw: no
+  return: yes
+
 Path-wise test burden:
   return_disabled:
     observations: none
     effects: none
     operations: none
+    required envelope: none
   return_not_found:
     observations: repo_exists
     effects: none
     operations: none
+    required envelope: dependency_boundary
   return_denied:
     observations: repo_exists, policy_allow
     effects: none
     operations: none
+    required envelope: dependency_boundary
   return_ok:
     observations: repo_exists, policy_allow
     effects: notifier_send
     operations: none
+    required envelope: dependency_boundary
+
+Rule coverage:
+  - LR-001 [supported] observed: implicit data member read
+  - LR-002 [supported] not observed: explicit this data member read
+  - LR-003 [supported] not observed: data member mutation
+  - LR-004 [supported] observed: return statement
+  - LR-005 [supported] observed: if statement
+  - LR-006 [supported] observed: built-in expression
+  - LR-007 [supported] not observed: same-class nonvirtual helper candidate
+  - LR-008 [boundary] not observed: static member calls are boundary candidates
+  - LR-009 [boundary] not observed: free function calls are boundary candidates
+  - LR-010 [modeled] not observed: global state is modeled as env
+  - LR-011 [modeled] not observed: base state is modeled explicitly
+  - LR-012 [modeled] not observed: virtual calls require dispatch table
+  - LR-013 [boundary] not observed: overloaded operators are resolved boundaries
+  - LR-014 [supported] not observed: local variable declaration
+  - LR-015 [conservative] not observed: loops are conservative paths in Phase A
+  - LR-016 [conservative] not observed: range-for is conservative in Phase A
+  - LR-017 [supported] not observed: lambda without this capture
+  - LR-018 [modeled] not observed: lambda with this capture maps to self
+  - LR-019 [supported] not observed: noexcept is reported from method metadata
+  - LR-020 [modeled] not observed: raw this escape requires object_ref
+  - LR-021 [modeled] not observed: return this requires object_ref
+  - LR-022 [modeled] not observed: return *this requires object_ref/self view
+  - LR-023 [modeled] not observed: dynamic_cast requires type_tag
+  - LR-024 [modeled] not observed: typeid requires type_tag
+  - LR-025 [boundary] not observed: reinterpret_cast this requires byte boundary
+  - LR-026 [modeled] not observed: delete this requires lifetime state
+  - LR-027 [modeled] not observed: explicit destructor call requires lifetime state
+  - LR-028 [modeled] not observed: placement new on this requires lifetime state
+  - LR-029 [modeled] not observed: field address requires addressable cell
+  - LR-030 [not_yet_implemented] not observed: member function pointer is reported only
+  - LR-031 [not_yet_implemented] not observed: constructor target is outside Phase A
+  - LR-032 [not_yet_implemented] not observed: destructor target is outside Phase A
+  - LR-033 [not_yet_implemented] not observed: template specialization support is future
+  - LR-034 [conservative] not observed: macro source mapping is conservative
+  - LR-035 [supported] not observed: throw expression is preserved as exception intent
+  - LR-036 [conservative] not observed: try/catch is conservative in Phase A
+  - LR-037 [conservative] not observed: structured binding is conservative in Phase A
+  - LR-038 [not_yet_implemented] not observed: coroutines are future work
+  - LR-039 [supported] not observed: unevaluated contexts are tracked without effects
+  - LR-040 [not_yet_implemented] not observed: default member initializer is future work
 
 Google Test preview:
   auto s = azteca_gen::scenario::service_handle{};

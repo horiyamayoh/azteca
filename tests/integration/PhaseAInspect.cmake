@@ -60,7 +60,13 @@ foreach(required_line
 		"query repo_exists(Id) -> bool"
 		"query policy_allow(Id) -> bool"
 		"effect notifier_send(Id)"
+		"Semantic features:"
+		"Envelope requirements:"
+		"Control flow summary:"
 		"Path-wise test burden:"
+		"required envelope: dependency_boundary"
+		"Rule coverage:"
+		"LR-001 [supported] observed"
 		"observations: repo_exists, policy_allow"
 		"effects: notifier_send"
 		"Google Test preview:")
@@ -107,7 +113,7 @@ if(NOT normalized_json_compact STREQUAL expected_json_compact)
 endif()
 
 foreach(required_json
-		"\"schema_version\": 1"
+		"\"schema_version\": 2"
 		"\"target\""
 		"\"receiver_state\""
 		"\"dependency_observations\""
@@ -115,6 +121,12 @@ foreach(required_json
 		"\"operations\""
 		"\"shape_candidates\""
 		"\"object_ref_requirements\""
+		"\"semantic_features\""
+		"\"unsupported_or_modeled_constructs\""
+		"\"control_flow_summary\""
+		"\"envelope_requirements\""
+		"\"rule_coverage\""
+		"\"confidence\""
 		"\"paths\""
 		"\"gtest_preview\""
 		"\"diagnostics\""
@@ -252,6 +264,131 @@ foreach(required_bitfield_line
 		"AZTECA_BIT_FIELD_PARTIAL")
 	assert_contains("${inspect_bitfield_output}" "${required_bitfield_line}" "bit-field inspect output")
 endforeach()
+
+function(assert_syntax_inspect method)
+	execute_process(
+		COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+				"${fixture_source}/syntax_matrix.cpp" --method "${method}" --format text
+		RESULT_VARIABLE syntax_result
+		OUTPUT_VARIABLE syntax_output
+		ERROR_VARIABLE syntax_error
+	)
+
+	if(NOT syntax_result EQUAL 0)
+		message(FATAL_ERROR "syntax inspect failed for ${method}:\n${syntax_output}\n${syntax_error}")
+	endif()
+
+	foreach(required_line IN LISTS ARGN)
+		assert_contains("${syntax_output}" "${required_line}" "syntax inspect output for ${method}")
+	endforeach()
+endfunction()
+
+assert_syntax_inspect(
+	"SyntaxMatrix::base_global_static(int)"
+	"base_state [modeled]"
+	"global_state [modeled]"
+	"LR-008 [boundary] observed"
+	"LR-010 [modeled] observed"
+	"LR-011 [modeled] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::dispatch(int) const"
+	"virtual_dispatch [modeled]"
+	"dispatch_table: virtual call requires dispatch table"
+	"LR-012 [modeled] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::operator_path()"
+	"overloaded_operator [boundary]"
+	"s.when.op_operator"
+	"LR-013 [boundary] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::lambda_run(int)"
+	"lambda [modeled]"
+	"lambda_call [supported]"
+	"LR-018 [modeled] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::exception_run(int)"
+	"try_catch [conservative]"
+	"exception_throw [supported]"
+	"LR-035 [supported] observed"
+	"LR-036 [conservative] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::switch_loop(int)"
+	"switch_control_flow [conservative]"
+	"loop_control_flow [conservative]"
+	"LR-015 [conservative] observed"
+	"LR-016 [conservative] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::identity_and_type(MatrixBase *)"
+	"object_identity [modeled]"
+	"dynamic_type [modeled]"
+	"type_info [modeled]"
+	"LR-020 [modeled] observed"
+	"LR-023 [modeled] observed"
+	"LR-024 [modeled] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::first_byte()"
+	"byte_representation [boundary]"
+	"byte_view: byte representation must not fake product object layout"
+	"LR-025 [boundary] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::release()"
+	"lifetime_operation [modeled]"
+	"delete expression [modeled]"
+	"LR-026 [modeled] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::reset_in_place()"
+	"explicit destructor call [modeled]"
+	"placement new on this [modeled]"
+	"LR-027 [modeled] observed"
+	"LR-028 [modeled] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::structured()"
+	"structured_binding [conservative]"
+	"LR-037 [conservative] observed"
+)
+
+assert_syntax_inspect(
+	"SyntaxMatrix::macro_use()"
+	"macro_expansion [conservative]"
+	"LR-034 [conservative] observed"
+)
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/syntax_matrix.cpp" --method "SyntaxMatrix::operator+(int)" --format text
+	RESULT_VARIABLE operator_spec_result
+	OUTPUT_VARIABLE operator_spec_output
+	ERROR_VARIABLE operator_spec_error
+)
+
+if(NOT operator_spec_result EQUAL 1)
+	message(
+		FATAL_ERROR
+		"operator spec should exit 1 but exited ${operator_spec_result}:\n"
+		"${operator_spec_output}\n${operator_spec_error}"
+	)
+endif()
+assert_contains("${operator_spec_error}" "operator methods are not supported" "operator spec stderr")
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source

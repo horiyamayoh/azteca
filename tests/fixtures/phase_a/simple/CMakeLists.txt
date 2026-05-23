@@ -15,4 +15,5 @@ add_library(
 	hardening.cpp
 	order_service.cpp
 	service.cpp
+	syntax_matrix.cpp
 )
