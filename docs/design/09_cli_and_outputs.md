@@ -101,7 +101,27 @@ No fake OrderService object will be created.
 No dependency fake class is required.
 ```
 
-JSON出力は、report生成やIDE連携に使う。
+JSON出力は、report生成、IDE連携、Phase B以降のcodegen入力候補に使う。
+
+Phase AのJSON schemaは `schema_version: 2` を安定契約とする。主要な意味は次である。
+
+```text
+result:
+  extracted                         保守的注記なしでinspectできた
+  extracted-with-conservative-notes 保守的に表現した構文や経路がある
+  invalid-plan                      MMIR/planの内部検証に失敗した
+
+confidence:
+  high    supported/modeled中心
+  medium  conservative constructを含む
+  low     not_yet_implemented constructを含む
+
+diagnostics:
+  userが次に見るべき警告・エラーを保持する。通常のconservative noteはwarningで出す。
+
+unsupported_or_modeled_constructs:
+  fake thisや危険な変換を避けるため、boundary/model/conservative/future扱いにした箇所を保持する。
+```
 
 ## 5. extract
 
@@ -273,6 +293,9 @@ operator:
 C::operator+(C const&) const
 C::operator[](int)
 ```
+
+Phase A `inspect` では、operator overloadそのものをtarget methodにする指定は未対応として拒否する。
+一方で、通常メソッド本体内に現れるoverloaded operator callは、解決済みcallee metadataを持つboundary候補としてreportする。
 
 constructor/destructorは将来:
 

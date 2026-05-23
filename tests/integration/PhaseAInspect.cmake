@@ -111,6 +111,14 @@ if(NOT inspect_json_result EQUAL 0)
 	message(FATAL_ERROR "json inspect failed:\n${inspect_json_output}\n${inspect_json_error}")
 endif()
 
+string(JSON parsed_schema ERROR_VARIABLE json_parse_error GET "${inspect_json_output}" schema_version)
+if(json_parse_error)
+	message(FATAL_ERROR "json inspect output was not valid JSON:\n${json_parse_error}\n${inspect_json_output}")
+endif()
+if(NOT parsed_schema STREQUAL "2")
+	message(FATAL_ERROR "json inspect schema_version should be 2 but was ${parsed_schema}")
+endif()
+
 string(REPLACE "${fixture_source}" "<fixture>" normalized_json_output "${inspect_json_output}")
 file(READ "${PROJECT_SOURCE_DIR}/tests/golden/phase_a/service_handle.inspect.json" expected_json_output)
 string(REGEX REPLACE "[ \t\r\n]" "" normalized_json_compact "${normalized_json_output}")
@@ -230,9 +238,12 @@ endif()
 foreach(required_escape_line
 		"Object identity requirements:"
 		"this passed to dependency"
-		"effect publish(EscapeExample *)")
+		"effect publish(EscapeExample *)"
+		"s.call(/* args */);")
 	assert_contains("${inspect_escape_output}" "${required_escape_line}" "escape inspect output")
 endforeach()
+assert_not_contains("${inspect_escape_output}" "auto result = s.call" "escape inspect output")
+assert_not_contains("${inspect_escape_output}" "EXPECT_EQ(result" "escape inspect output")
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source

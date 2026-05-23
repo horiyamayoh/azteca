@@ -16,8 +16,6 @@
 #include <clang/Tooling/Tooling.h>
 
 #include <algorithm>
-#include <array>
-#include <cctype>
 #include <filesystem>
 #include <map>
 #include <memory>
@@ -29,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include "../collect/InspectCollector.hpp"
 #include "../resolve/MethodSelector.hpp"
 #include "azteca/MethodSpec.hpp"
 
@@ -44,83 +43,16 @@ struct ToolState
 	Diagnostics diagnostics;
 };
 
-struct PathEvent
-{
-	DependencyKind kind{DependencyKind::kQuery};
-	std::string name;
-};
-
-struct PathState
-{
-	std::vector<PathEvent> events;
-	bool conservative{false};
-};
-
-[[nodiscard]] std::string remove_trailing_underscore(std::string value)
-{
-	if (!value.empty() && value.back() == '_')
-	{
-		value.pop_back();
-	}
-	return value;
-}
-
-[[nodiscard]] std::string replace_colons(std::string value)
-{
-	std::string result;
-	result.reserve(value.size());
-
-	for (auto index = std::size_t{0}; index < value.size(); ++index)
-	{
-		if (value[index] == ':' && index + 1U < value.size() && value[index + 1U] == ':')
-		{
-			result.push_back('_');
-			++index;
-			continue;
-		}
-
-		result.push_back(value[index]);
-	}
-
-	return result;
-}
-
-[[nodiscard]] std::string sanitize_identifier(std::string const& value)
-{
-	std::string result;
-	result.reserve(value.size());
-
-	for (char character : value)
-	{
-		if (std::isalnum(static_cast<unsigned char>(character)) != 0)
-		{
-			result.push_back(
-			    static_cast<char>(std::tolower(static_cast<unsigned char>(character))));
-		}
-		else if (!result.empty() && result.back() != '_')
-		{
-			result.push_back('_');
-		}
-	}
-
-	while (!result.empty() && result.back() == '_')
-	{
-		result.pop_back();
-	}
-
-	if (result.empty())
-	{
-		return "path";
-	}
-
-	return result;
-}
-
-[[nodiscard]] std::string operator_port_name(std::string const& original_symbol)
-{
-	auto name = sanitize_identifier("op_" + replace_colons(original_symbol));
-	return name.empty() ? "op_operator" : name;
-}
+using inspect_collect::append_events;
+using inspect_collect::build_path_burden;
+using inspect_collect::deduplicate_events;
+using inspect_collect::deduplicate_strings;
+using inspect_collect::operator_port_name;
+using inspect_collect::PathEvent;
+using inspect_collect::PathState;
+using inspect_collect::remove_trailing_underscore;
+using inspect_collect::replace_colons;
+using inspect_collect::sanitize_identifier;
 
 [[nodiscard]] std::string access_to_string(clang::AccessSpecifier access)
 {
@@ -986,16 +918,10 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		    call->getExprLoc(), evidence);
 		if (callee != nullptr)
 		{
-			auto kind = DependencyKind::kQuery;
-			if (callee->getReturnType()->isVoidType() || result_is_ignored(context_, *call))
-			{
-				kind = DependencyKind::kEffect;
-			}
-			else if (auto const* method = llvm::dyn_cast<clang::CXXMethodDecl>(callee);
-			         method != nullptr && !method->isConst())
-			{
-				kind = DependencyKind::kOperation;
-			}
+			auto const* method = llvm::dyn_cast<clang::CXXMethodDecl>(callee);
+			auto kind = inspect_collect::classify_dependency_kind(
+			    callee->getReturnType()->isVoidType() || result_is_ignored(context_, *call),
+			    method == nullptr || method->isConst());
 
 			add_dependency_port({
 			    .kind = kind,
@@ -1381,15 +1307,9 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 
 		if (callee->isVirtual())
 		{
-			auto kind = DependencyKind::kQuery;
-			if (callee->getReturnType()->isVoidType() || result_is_ignored(context_, call))
-			{
-				kind = DependencyKind::kEffect;
-			}
-			else if (!callee->isConst())
-			{
-				kind = DependencyKind::kOperation;
-			}
+			auto kind = inspect_collect::classify_dependency_kind(
+			    callee->getReturnType()->isVoidType() || result_is_ignored(context_, call),
+			    callee->isConst());
 
 			return DependencyPort{
 			    .kind = kind,
@@ -1426,31 +1346,20 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 
 		dependency_fields_.insert(base_field->getCanonicalDecl());
 
-		auto kind = DependencyKind::kQuery;
-		auto rule_id = std::string{"DEP-MEMBER-QUERY"};
-		auto reason = std::string{"const non-void member object call is a query"};
-		if (callee->getReturnType()->isVoidType() || result_is_ignored(context_, call))
-		{
-			kind = DependencyKind::kEffect;
-			rule_id = "DEP-MEMBER-EFFECT";
-			reason = "void or ignored-return member object call is an effect";
-		}
-		else if (!callee->isConst())
-		{
-			kind = DependencyKind::kOperation;
-			rule_id = "DEP-MEMBER-OPERATION";
-			reason = "non-const non-void member object call is an operation";
-		}
+		auto classification = inspect_collect::classify_member_object_call(
+		    callee->getReturnType()->isVoidType() || result_is_ignored(context_, call),
+		    callee->isConst());
 
 		auto base_name = remove_trailing_underscore(base_field->getNameAsString());
 		return DependencyPort{
-		    .kind = kind,
+		    .kind = classification.kind,
 		    .name = stable_port_name(base_name + "_" + callee->getNameAsString(), *callee),
 		    .original_callee = callee->getQualifiedNameAsString(),
 		    .return_type = type_string(context_, callee->getReturnType()),
 		    .argument_types = call_argument_types(call),
 		    .location = source_location(context_, call.getExprLoc()),
-		    .evidence = make_evidence(std::move(rule_id), std::move(reason), call.getSourceRange()),
+		    .evidence = make_evidence(std::move(classification.rule_id),
+		        std::move(classification.reason), call.getSourceRange()),
 		};
 	}
 
@@ -1482,15 +1391,9 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 					return std::nullopt;
 				}
 
-				auto kind = DependencyKind::kQuery;
-				if (method->getReturnType()->isVoidType() || result_is_ignored(context_, call))
-				{
-					kind = DependencyKind::kEffect;
-				}
-				else if (!method->isConst())
-				{
-					kind = DependencyKind::kOperation;
-				}
+				auto kind = inspect_collect::classify_dependency_kind(
+				    method->getReturnType()->isVoidType() || result_is_ignored(context_, call),
+				    method->isConst());
 
 				return DependencyPort{
 				    .kind = kind,
@@ -1506,39 +1409,27 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 				};
 			}
 
-			auto kind = DependencyKind::kQuery;
-			auto rule_id = std::string{"LR-008"};
-			auto reason = std::string{"static member function call is a boundary candidate"};
-			if (method->getReturnType()->isVoidType() || result_is_ignored(context_, call))
-			{
-				kind = DependencyKind::kEffect;
-			}
+			auto classification = inspect_collect::classify_static_member_call(
+			    method->getReturnType()->isVoidType() || result_is_ignored(context_, call));
 
 			return DependencyPort{
-			    .kind = kind,
+			    .kind = classification.kind,
 			    .name =
 			        stable_port_name(replace_colons(method->getQualifiedNameAsString()), *method),
 			    .original_callee = method->getQualifiedNameAsString(),
 			    .return_type = type_string(context_, method->getReturnType()),
 			    .argument_types = call_argument_types(call),
 			    .location = source_location(context_, call.getExprLoc()),
-			    .evidence =
-			        make_evidence(std::move(rule_id), std::move(reason), call.getSourceRange()),
+			    .evidence = make_evidence(std::move(classification.rule_id),
+			        std::move(classification.reason), call.getSourceRange()),
 			};
 		}
 
-		auto kind = DependencyKind::kQuery;
-		auto rule_id = std::string{"LR-009"};
-		auto reason = std::string{"non-void free function call is a query boundary"};
-		if (callee->getReturnType()->isVoidType() || result_is_ignored(context_, call))
-		{
-			kind = DependencyKind::kEffect;
-			rule_id = "LR-009";
-			reason = "void or ignored-return free function call is an effect boundary";
-		}
+		auto classification = inspect_collect::classify_free_function_call(
+		    callee->getReturnType()->isVoidType() || result_is_ignored(context_, call));
 
 		return DependencyPort{
-		    .kind = kind,
+		    .kind = classification.kind,
 		    .name = stable_port_name(llvm::isa<clang::CXXOperatorCallExpr>(&call)
 		            ? operator_port_name(callee->getQualifiedNameAsString())
 		            : replace_colons(callee->getQualifiedNameAsString()),
@@ -1547,7 +1438,8 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		    .return_type = type_string(context_, callee->getReturnType()),
 		    .argument_types = call_argument_types(call),
 		    .location = source_location(context_, call.getExprLoc()),
-		    .evidence = make_evidence(std::move(rule_id), std::move(reason), call.getSourceRange()),
+		    .evidence = make_evidence(std::move(classification.rule_id),
+		        std::move(classification.reason), call.getSourceRange()),
 		};
 	}
 
@@ -2235,63 +2127,13 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		}
 
 		auto type = local_types_.find(variable->getCanonicalDecl());
-		auto shape_name = type == local_types_.end() ? dependency->second + "_shape"
-		                                             : shape_name_from_type(type->second);
-		auto observed_member = member.getMemberDecl()->getNameAsString();
-
-		auto shape_iterator = std::ranges::find_if(plan_.shape_candidates,
-		    [&shape_name, &dependency](ShapeCandidate const& candidate)
-		    {
-			    return candidate.name == shape_name &&
-			        candidate.source_dependency == dependency->second;
-		    });
-
-		if (shape_iterator == plan_.shape_candidates.end())
-		{
-			plan_.shape_candidates.push_back({
-			    .name = std::move(shape_name),
-			    .source_dependency = dependency->second,
-			    .observed_members = {observed_member},
-			    .evidence = make_evidence("SHAPE-DEPENDENCY-RETURN",
-			        "member access on dependency return local suggests a shape candidate",
-			        member.getSourceRange()),
-			});
-			return;
-		}
-
-		if (std::ranges::find(shape_iterator->observed_members, observed_member) ==
-		    shape_iterator->observed_members.end())
-		{
-			shape_iterator->observed_members.push_back(std::move(observed_member));
-		}
-	}
-
-	[[nodiscard]] static std::string shape_name_from_type(std::string type)
-	{
-		static constexpr auto kTokens = std::array<std::string_view, 3>{"const", "&", "*"};
-		for (std::string_view token : kTokens)
-		{
-			auto position = std::string::size_type{0};
-			while ((position = type.find(token, position)) != std::string::npos)
-			{
-				type.erase(position, token.size());
-			}
-		}
-
-		auto namespace_separator = type.rfind("::");
-		if (namespace_separator != std::string::npos)
-		{
-			type = type.substr(namespace_separator + 2);
-		}
-
-		type = sanitize_identifier(type);
-		if (type.empty())
-		{
-			return "DependencyShape";
-		}
-
-		type[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(type[0])));
-		return type + "Shape";
+		auto local_type =
+		    type == local_types_.end() ? std::optional<std::string>{} : std::optional{type->second};
+		inspect_collect::record_shape_observation(plan_, dependency->second, local_type,
+		    member.getMemberDecl()->getNameAsString(),
+		    make_evidence("SHAPE-DEPENDENCY-RETURN",
+		        "member access on dependency return local suggests a shape candidate",
+		        member.getSourceRange()));
 	}
 
 	void add_dependency_port(DependencyPort port)
@@ -2394,7 +2236,8 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		{
 			for (auto const& state : fallthrough_states)
 			{
-				paths.push_back(build_path("path_" + std::to_string(path_index), state.events,
+				paths.push_back(build_path_burden("path_" + std::to_string(path_index),
+				    state.events,
 				    make_evidence(state.conservative ? "PATH-CONSERVATIVE" : "PATH-DFS",
 				        state.conservative ? "fallthrough path includes conservative control flow"
 				                           : "fallthrough path accumulated by DFS",
@@ -2428,12 +2271,13 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			append_events(states, collect_events(statement));
 			for (auto const& state : states)
 			{
-				paths.push_back(build_path(path_name(*return_statement, path_index), state.events,
-				    make_evidence(state.conservative ? "PATH-CONSERVATIVE" : "PATH-DFS",
-				        state.conservative ? "return path includes conservative control flow"
-				                           : "return path accumulated by DFS",
-				        return_statement->getSourceRange(), state.conservative,
-				        state.conservative ? "conservative" : "certain")));
+				paths.push_back(
+				    build_path_burden(path_name(*return_statement, path_index), state.events,
+				        make_evidence(state.conservative ? "PATH-CONSERVATIVE" : "PATH-DFS",
+				            state.conservative ? "return path includes conservative control flow"
+				                               : "return path accumulated by DFS",
+				            return_statement->getSourceRange(), state.conservative,
+				            state.conservative ? "conservative" : "certain")));
 				++path_index;
 			}
 			return {};
@@ -2496,46 +2340,6 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		    llvm::isa<clang::SwitchStmt>(statement) || llvm::isa<clang::CXXTryStmt>(statement);
 	}
 
-	[[nodiscard]] static PathBurden build_path(
-	    std::string name, std::vector<PathEvent> const& events, PlanEvidence evidence)
-	{
-		PathBurden burden;
-		burden.name = std::move(name);
-
-		for (auto const& event : events)
-		{
-			switch (event.kind)
-			{
-				case DependencyKind::kQuery:
-					burden.observations.push_back(event.name);
-					burden.required_envelopes.emplace_back("dependency_boundary");
-					break;
-				case DependencyKind::kEffect:
-					burden.effects.push_back(event.name);
-					burden.required_envelopes.emplace_back("dependency_boundary");
-					break;
-				case DependencyKind::kOperation:
-					burden.operations.push_back(event.name);
-					burden.required_envelopes.emplace_back("dependency_boundary");
-					break;
-				case DependencyKind::kRecursiveCandidate:
-					break;
-			}
-		}
-
-		deduplicate_strings(burden.observations);
-		deduplicate_strings(burden.effects);
-		deduplicate_strings(burden.operations);
-		deduplicate_strings(burden.required_envelopes);
-		if (evidence.conservative)
-		{
-			burden.required_envelopes.emplace_back("conservative_control_flow");
-			burden.conservative_reason = evidence.reason;
-		}
-		burden.evidence = std::move(evidence);
-		return burden;
-	}
-
 	void build_gtest_preview()
 	{
 		auto target_name = sanitize_identifier(replace_colons(plan_.target.qualified_name));
@@ -2557,8 +2361,15 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			}
 		}
 
-		plan_.gtest_preview.lines.emplace_back("auto result = s.call(/* args */);");
-		plan_.gtest_preview.lines.emplace_back("EXPECT_EQ(result, /* expected */);");
+		if (method_.getReturnType()->isVoidType())
+		{
+			plan_.gtest_preview.lines.emplace_back("s.call(/* args */);");
+		}
+		else
+		{
+			plan_.gtest_preview.lines.emplace_back("auto result = s.call(/* args */);");
+			plan_.gtest_preview.lines.emplace_back("EXPECT_EQ(result, /* expected */);");
+		}
 
 		for (auto const& port : plan_.dependency_ports)
 		{
@@ -2573,55 +2384,6 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		{
 			plan_.gtest_preview.lines.emplace_back("s.effects.expect_none();");
 		}
-	}
-
-	static void append_events(std::vector<PathEvent>& target, std::vector<PathEvent> const& source)
-	{
-		target.insert(target.end(), source.begin(), source.end());
-		deduplicate_events(target);
-	}
-
-	static void append_events(std::vector<PathState>& states, std::vector<PathEvent> const& source)
-	{
-		for (auto& state : states)
-		{
-			append_events(state.events, source);
-		}
-	}
-
-	static void deduplicate_events(std::vector<PathEvent>& events)
-	{
-		std::set<std::pair<DependencyKind, std::string>> seen;
-		std::vector<PathEvent> filtered;
-		filtered.reserve(events.size());
-
-		for (auto const& event : events)
-		{
-			auto key = std::make_pair(event.kind, event.name);
-			if (seen.insert(key).second)
-			{
-				filtered.push_back(event);
-			}
-		}
-
-		events = std::move(filtered);
-	}
-
-	static void deduplicate_strings(std::vector<std::string>& values)
-	{
-		std::set<std::string> seen;
-		std::vector<std::string> filtered;
-		filtered.reserve(values.size());
-
-		for (auto const& value : values)
-		{
-			if (seen.insert(value).second)
-			{
-				filtered.push_back(value);
-			}
-		}
-
-		values = std::move(filtered);
 	}
 
 	clang::ASTContext& context_;
