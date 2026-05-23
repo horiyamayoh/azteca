@@ -420,6 +420,23 @@ std::string render_text_report(ExtractionPlan const& plan, ReportOptions const& 
 					output << path.operations[index];
 				}
 			}
+			output << "\n    loop body observations: ";
+			if (path.loop_body_observations.empty())
+			{
+				output << "none";
+			}
+			else
+			{
+				for (auto index = std::size_t{0}; index < path.loop_body_observations.size();
+				     ++index)
+				{
+					if (index != 0U)
+					{
+						output << ", ";
+					}
+					output << path.loop_body_observations[index];
+				}
+			}
 			output << "\n    required envelope: ";
 			if (path.required_envelopes.empty())
 			{
@@ -716,6 +733,8 @@ std::string render_json_report(ExtractionPlan const& plan)
 		append_string_array(output, path.effects);
 		output << ", \"operations\": ";
 		append_string_array(output, path.operations);
+		output << ", \"loop_body_observations\": ";
+		append_string_array(output, path.loop_body_observations);
 		output << ", \"required_envelopes\": ";
 		append_string_array(output, path.required_envelopes);
 		output << ", \"conservative_reason\": ";

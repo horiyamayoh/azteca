@@ -87,6 +87,8 @@ class SyntaxMatrix : public MatrixBase
 			case 0:
 				sum += own_;
 				break;
+			case 1:
+				sum += own_;
 			default:
 				sum += value;
 				break;

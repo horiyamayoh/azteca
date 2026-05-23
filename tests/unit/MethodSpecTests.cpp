@@ -30,12 +30,26 @@ TEST(MethodSpecParser, ParsesVolatileRvalueQualifiedMethod)
 	EXPECT_EQ(result.spec->ref_qualifier, azteca::RefQualifier::kRValue);
 }
 
-TEST(MethodSpecParser, RejectsTemplateMethodInPhaseA)
+TEST(MethodSpecParser, ParsesTemplateMethodArguments)
 {
 	auto result = azteca::parse_method_spec("C::f<int>(int)");
 
-	EXPECT_FALSE(result.spec.has_value());
-	EXPECT_NE(result.error.find("template"), std::string::npos);
+	ASSERT_TRUE(result.spec.has_value()) << result.error;
+	EXPECT_EQ(result.spec->method_name, "f");
+	ASSERT_EQ(result.spec->template_arguments.size(), 1U);
+	EXPECT_EQ(result.spec->template_arguments[0], "int");
+	ASSERT_EQ(result.spec->parameter_types.size(), 1U);
+	EXPECT_EQ(result.spec->parameter_types[0], "int");
+}
+
+TEST(MethodSpecParser, ParsesStandaloneTemplateArgumentList)
+{
+	auto result = azteca::parse_template_arguments("int, ns::Value<float>");
+
+	ASSERT_TRUE(result.arguments.has_value()) << result.error;
+	ASSERT_EQ(result.arguments->size(), 2U);
+	EXPECT_EQ((*result.arguments)[0], "int");
+	EXPECT_EQ((*result.arguments)[1], "ns::Value<float>");
 }
 
 TEST(MethodSpecParser, RejectsOperatorOverloadButAllowsOperatorPrefixIdentifier)

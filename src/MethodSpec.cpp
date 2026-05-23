@@ -104,6 +104,32 @@ namespace
 
 } // namespace
 
+TemplateArgumentParseResult parse_template_arguments(std::string_view input)
+{
+	auto text = trim(input);
+	if (text.empty())
+	{
+		return {
+		    .arguments = std::nullopt,
+		    .error = "template argument list is empty",
+		};
+	}
+
+	auto arguments = split_parameters(text);
+	if (arguments.empty())
+	{
+		return {
+		    .arguments = std::nullopt,
+		    .error = "template argument list is empty",
+		};
+	}
+
+	return {
+	    .arguments = std::move(arguments),
+	    .error = {},
+	};
+}
+
 MethodSpecParseResult parse_method_spec(std::string_view input)
 {
 	auto text = trim(input);
@@ -141,6 +167,26 @@ MethodSpecParseResult parse_method_spec(std::string_view input)
 		return parse_error("method name is empty");
 	}
 
+	if (auto open_angle = spec.method_name.find('<'); open_angle != std::string::npos)
+	{
+		auto close_angle = spec.method_name.rfind('>');
+		if (close_angle == std::string::npos || close_angle + 1U != spec.method_name.size() ||
+		    close_angle < open_angle)
+		{
+			return parse_error("template method spec has malformed template arguments");
+		}
+
+		auto template_arguments =
+		    parse_template_arguments(std::string_view(spec.method_name)
+		                                 .substr(open_angle + 1U, close_angle - open_angle - 1U));
+		if (!template_arguments.arguments.has_value())
+		{
+			return parse_error(template_arguments.error);
+		}
+		spec.template_arguments = std::move(*template_arguments.arguments);
+		spec.method_name.erase(open_angle);
+	}
+
 	if (spec.method_name.starts_with("operator") && spec.method_name.size() > 8U)
 	{
 		auto const kNext = static_cast<unsigned char>(spec.method_name[8]);
@@ -152,7 +198,7 @@ MethodSpecParseResult parse_method_spec(std::string_view input)
 
 	if (contains_template_marker(spec.method_name))
 	{
-		return parse_error("template method specs are not supported by Phase A inspect");
+		return parse_error("template method spec has malformed template arguments");
 	}
 
 	while (!suffix.empty())

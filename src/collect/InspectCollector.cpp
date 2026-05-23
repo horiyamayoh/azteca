@@ -172,7 +172,26 @@ namespace
 		type = type.substr(namespace_separator + 2);
 	}
 
-	type = sanitize_identifier(type);
+	std::string sanitized;
+	sanitized.reserve(type.size());
+	for (char character : type)
+	{
+		if (std::isalnum(static_cast<unsigned char>(character)) != 0)
+		{
+			sanitized.push_back(character);
+		}
+		else if (!sanitized.empty() && sanitized.back() != '_')
+		{
+			sanitized.push_back('_');
+		}
+	}
+
+	while (!sanitized.empty() && sanitized.back() == '_')
+	{
+		sanitized.pop_back();
+	}
+
+	type = std::move(sanitized);
 	if (type.empty())
 	{
 		return "DependencyShape";
@@ -214,8 +233,8 @@ void record_shape_observation(ExtractionPlan& plan, std::string const& dependenc
 	}
 }
 
-PathBurden build_path_burden(
-    std::string name, std::vector<PathEvent> const& events, PlanEvidence evidence)
+PathBurden build_path_burden(std::string name, std::vector<PathEvent> const& events,
+    PlanEvidence evidence, std::vector<std::string> loop_body_observations)
 {
 	PathBurden burden;
 	burden.name = std::move(name);
@@ -244,6 +263,8 @@ PathBurden build_path_burden(
 	deduplicate_strings(burden.observations);
 	deduplicate_strings(burden.effects);
 	deduplicate_strings(burden.operations);
+	deduplicate_strings(loop_body_observations);
+	burden.loop_body_observations = std::move(loop_body_observations);
 	deduplicate_strings(burden.required_envelopes);
 	if (evidence.conservative)
 	{

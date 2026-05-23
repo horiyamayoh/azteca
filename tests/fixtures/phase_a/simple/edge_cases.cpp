@@ -6,6 +6,14 @@ struct EdgeDependency
 	void store(int id);
 };
 
+struct ConstructedValue
+{
+	ConstructedValue(int input) : exposed(input), doubled(input * 2) {}
+
+	int exposed;
+	int doubled;
+};
+
 class EdgeCases
 {
    public:
@@ -54,6 +62,18 @@ class EdgeCases
 		return flag ? value_ : 0;
 	}
 
+	int member_pointer_report() const
+	{
+		auto pointer = &EdgeCases::pointer_target;
+		return pointer == nullptr ? 0 : 1;
+	}
+
+	int constructor_value_shape(int input) const
+	{
+		ConstructedValue value(input);
+		return value.exposed;
+	}
+
 	int cv_ref() const volatile&
 	{
 		return value_;
@@ -62,6 +82,7 @@ class EdgeCases
    private:
 	int helper(int value) const;
 	int helper(double value) const;
+	int pointer_target(int value) const;
 
 	int value_{0};
 	EdgeDependency dependency_;

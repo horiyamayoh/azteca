@@ -44,6 +44,18 @@ function(assert_not_contains haystack needle context)
 	endif()
 endfunction()
 
+function(assert_or_update_golden golden_path actual_output context)
+	if(DEFINED ENV{AZTECA_ACCEPT_GOLDEN} AND NOT "$ENV{AZTECA_ACCEPT_GOLDEN}" STREQUAL "")
+		file(WRITE "${golden_path}" "${actual_output}")
+		return()
+	endif()
+
+	file(READ "${golden_path}" expected_output)
+	if(NOT actual_output STREQUAL expected_output)
+		message(FATAL_ERROR "${context} differed from golden:\n${actual_output}")
+	endif()
+endfunction()
+
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
 			"${fixture_source}/service.cpp" --method "Service::handle(Id)" --format text
@@ -56,10 +68,11 @@ if(NOT inspect_text_result EQUAL 0)
 	message(FATAL_ERROR "text inspect failed:\n${inspect_text_output}\n${inspect_text_error}")
 endif()
 
-file(READ "${PROJECT_SOURCE_DIR}/tests/golden/phase_a/service_handle.inspect.txt" expected_text_output)
-if(NOT inspect_text_output STREQUAL expected_text_output)
-	message(FATAL_ERROR "text inspect output differed from golden:\n${inspect_text_output}")
-endif()
+assert_or_update_golden(
+	"${PROJECT_SOURCE_DIR}/tests/golden/phase_a/service_handle.inspect.txt"
+	"${inspect_text_output}"
+	"text inspect output"
+)
 
 foreach(required_line
 		"Receiver state:"
@@ -120,11 +133,16 @@ if(NOT parsed_schema STREQUAL "2")
 endif()
 
 string(REPLACE "${fixture_source}" "<fixture>" normalized_json_output "${inspect_json_output}")
-file(READ "${PROJECT_SOURCE_DIR}/tests/golden/phase_a/service_handle.inspect.json" expected_json_output)
-string(REGEX REPLACE "[ \t\r\n]" "" normalized_json_compact "${normalized_json_output}")
-string(REGEX REPLACE "[ \t\r\n]" "" expected_json_compact "${expected_json_output}")
-if(NOT normalized_json_compact STREQUAL expected_json_compact)
-	message(FATAL_ERROR "json inspect output differed from golden:\n${normalized_json_output}")
+set(json_golden_path "${PROJECT_SOURCE_DIR}/tests/golden/phase_a/service_handle.inspect.json")
+if(DEFINED ENV{AZTECA_ACCEPT_GOLDEN} AND NOT "$ENV{AZTECA_ACCEPT_GOLDEN}" STREQUAL "")
+	file(WRITE "${json_golden_path}" "${normalized_json_output}")
+else()
+	file(READ "${json_golden_path}" expected_json_output)
+	string(REGEX REPLACE "[ \t\r\n]" "" normalized_json_compact "${normalized_json_output}")
+	string(REGEX REPLACE "[ \t\r\n]" "" expected_json_compact "${expected_json_output}")
+	if(NOT normalized_json_compact STREQUAL expected_json_compact)
+		message(FATAL_ERROR "json inspect output differed from golden:\n${normalized_json_output}")
+	endif()
 endif()
 
 foreach(required_json
@@ -143,6 +161,7 @@ foreach(required_json
 		"\"rule_coverage\""
 		"\"confidence\""
 		"\"paths\""
+		"\"loop_body_observations\""
 		"\"gtest_preview\""
 		"\"diagnostics\""
 		"\"rule_id\""
@@ -260,7 +279,9 @@ endif()
 foreach(required_loop_line
 		"Extraction result: extracted-with-conservative-notes"
 		"AZTECA_PATH_CONSERVATIVE"
-		"observations: repo_exists"
+		"return_count__loop_zero_iterations"
+		"return_count__loop_one_or_more_iterations"
+		"loop body observations: repo_exists, notifier_send"
 		"effects: notifier_send")
 	assert_contains("${inspect_loop_output}" "${required_loop_line}" "loop inspect output")
 endforeach()
@@ -341,8 +362,11 @@ assert_syntax_inspect(
 
 assert_syntax_inspect(
 	"SyntaxMatrix::switch_loop(int)"
-	"switch_control_flow [conservative]"
+	"switch_control_flow [supported]"
 	"loop_control_flow [conservative]"
+	"return_sum__switch_case_0__loop_zero_iterations"
+	"return_sum__switch_case_1__loop_zero_iterations"
+	"return_sum__switch_default__loop_zero_iterations"
 	"LR-015 [conservative] observed"
 	"LR-016 [conservative] observed"
 )
@@ -383,8 +407,11 @@ assert_syntax_inspect(
 
 assert_syntax_inspect(
 	"SyntaxMatrix::structured()"
-	"structured_binding [conservative]"
-	"LR-037 [conservative] observed"
+	"structured_binding [supported]"
+	"MatrixPairShape"
+	"left"
+	"right"
+	"LR-037 [supported] observed"
 )
 
 assert_syntax_inspect(
@@ -470,6 +497,23 @@ assert_edge_inspect(
 )
 
 assert_edge_inspect(
+	"EdgeCases::member_pointer_report() const"
+	"member function pointer [not_yet_implemented]"
+	"pointer-to-member target EdgeCases::pointer_target"
+	"int (EdgeCases::*)(int) const"
+	"LR-030 [not_yet_implemented] observed"
+)
+
+assert_edge_inspect(
+	"EdgeCases::constructor_value_shape(int) const"
+	"ConstructedValueShape"
+	"local:value"
+	"exposed"
+	"doubled"
+	"LR-049 [conservative] observed"
+)
+
+assert_edge_inspect(
 	"EdgeCases::cv_ref() const volatile &"
 	"method_qualifier [supported]: target method qualifiers: const volatile &"
 	"LR-047 [supported] observed"
@@ -550,20 +594,63 @@ assert_contains("${static_error}" "AZTECA_STATIC_METHOD" "static method stderr")
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
-			"${fixture_source}/hardening.cpp" --method "TemplateExample::target(T)" --format text
+			"${fixture_source}/hardening.cpp" --method "TemplateExample::target(T)"
+			--template-args "int" --format text
 	RESULT_VARIABLE template_result
 	OUTPUT_VARIABLE template_output
 	ERROR_VARIABLE template_error
 )
 
-if(NOT template_result EQUAL 3)
+if(NOT template_result EQUAL 0)
 	message(
 		FATAL_ERROR
-		"template method should exit 3 but exited ${template_result}:\n"
+		"template method should exit 0 but exited ${template_result}:\n"
 		"${template_output}\n${template_error}"
 	)
 endif()
-assert_contains("${template_error}" "AZTECA_TEMPLATE_METHOD" "template method stderr")
+assert_contains("${template_output}" "template_specialization [supported]" "template method output")
+assert_contains("${template_output}" "LR-033 [supported] observed" "template method output")
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/hardening.cpp" --method "TemplateExample::target<int>(int)"
+			--format text
+	RESULT_VARIABLE embedded_template_result
+	OUTPUT_VARIABLE embedded_template_output
+	ERROR_VARIABLE embedded_template_error
+)
+
+if(NOT embedded_template_result EQUAL 0)
+	message(
+		FATAL_ERROR
+		"embedded template method should exit 0 but exited ${embedded_template_result}:\n"
+		"${embedded_template_output}\n${embedded_template_error}"
+	)
+endif()
+assert_contains(
+	"${embedded_template_output}" "template_specialization [supported]" "embedded template output"
+)
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/hardening.cpp" --method "TemplateExample::target(T)"
+			--template-args "double" --format text
+	RESULT_VARIABLE missing_template_result
+	OUTPUT_VARIABLE missing_template_output
+	ERROR_VARIABLE missing_template_error
+)
+
+if(NOT missing_template_result EQUAL 4)
+	message(
+		FATAL_ERROR
+		"missing template instantiation should exit 4 but exited ${missing_template_result}:\n"
+		"${missing_template_output}\n${missing_template_error}"
+	)
+endif()
+assert_contains(
+	"${missing_template_output}" "AZTECA_TEMPLATE_INSTANTIATION_NOT_FOUND"
+	"missing template output"
+)
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source

@@ -18,6 +18,8 @@ struct PathEvent
 struct PathState
 {
 	std::vector<PathEvent> events;
+	std::vector<std::string> labels;
+	std::vector<std::string> loop_body_observations;
 	bool conservative{false};
 };
 
@@ -44,8 +46,8 @@ void record_shape_observation(ExtractionPlan& plan, std::string const& dependenc
     std::optional<std::string> const& local_type, std::string observed_member,
     PlanEvidence evidence);
 
-[[nodiscard]] PathBurden build_path_burden(
-    std::string name, std::vector<PathEvent> const& events, PlanEvidence evidence);
+[[nodiscard]] PathBurden build_path_burden(std::string name, std::vector<PathEvent> const& events,
+    PlanEvidence evidence, std::vector<std::string> loop_body_observations = {});
 void append_events(std::vector<PathEvent>& target, std::vector<PathEvent> const& source);
 void append_events(std::vector<PathState>& states, std::vector<PathEvent> const& source);
 void deduplicate_events(std::vector<PathEvent>& events);

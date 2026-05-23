@@ -130,3 +130,5 @@ class TemplateExample
 		return value;
 	}
 };
+
+template int TemplateExample::target<int>(int);

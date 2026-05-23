@@ -56,21 +56,25 @@ Path-wise test burden:
     observations: none
     effects: none
     operations: none
+    loop body observations: none
     required envelope: none
   return_not_found:
     observations: repo_exists
     effects: none
     operations: none
+    loop body observations: none
     required envelope: dependency_boundary
   return_denied:
     observations: repo_exists, policy_allow
     effects: none
     operations: none
+    loop body observations: none
     required envelope: dependency_boundary
   return_ok:
     observations: repo_exists, policy_allow
     effects: notifier_send
     operations: none
+    loop body observations: none
     required envelope: dependency_boundary
 
 Rule coverage:
@@ -106,11 +110,11 @@ Rule coverage:
   - LR-030 [not_yet_implemented] not observed: member function pointer is reported only
   - LR-031 [not_yet_implemented] not observed: constructor target is outside Phase A
   - LR-032 [not_yet_implemented] not observed: destructor target is outside Phase A
-  - LR-033 [not_yet_implemented] not observed: template specialization support is future
+  - LR-033 [supported] not observed: instantiated function template specializations are inspectable
   - LR-034 [conservative] not observed: macro source mapping is conservative
   - LR-035 [supported] not observed: throw expression is preserved as exception intent
   - LR-036 [conservative] not observed: try/catch is conservative in Phase A
-  - LR-037 [conservative] not observed: structured binding is conservative in Phase A
+  - LR-037 [supported] not observed: structured binding field expansion when bindings resolve to record fields
   - LR-038 [not_yet_implemented] not observed: coroutines are future work
   - LR-039 [supported] not observed: unevaluated contexts are tracked without effects
   - LR-040 [not_yet_implemented] not observed: default member initializer is future work

@@ -361,8 +361,8 @@
     },
     {
       "rule_id": "LR-033",
-      "handling": "not_yet_implemented",
-      "note": "template specialization support is future",
+      "handling": "supported",
+      "note": "instantiated function template specializations are inspectable",
       "observed": false
     },
     {
@@ -385,8 +385,8 @@
     },
     {
       "rule_id": "LR-037",
-      "handling": "conservative",
-      "note": "structured binding is conservative in Phase A",
+      "handling": "supported",
+      "note": "structured binding field expansion when bindings resolve to record fields",
       "observed": false
     },
     {
@@ -468,6 +468,7 @@
       "observations": [],
       "effects": [],
       "operations": [],
+      "loop_body_observations": [],
       "required_envelopes": [],
       "conservative_reason": "",
       "rule_id": "PATH-DFS",
@@ -484,6 +485,7 @@
       "observations": ["repo_exists"],
       "effects": [],
       "operations": [],
+      "loop_body_observations": [],
       "required_envelopes": ["dependency_boundary"],
       "conservative_reason": "",
       "rule_id": "PATH-DFS",
@@ -500,6 +502,7 @@
       "observations": ["repo_exists", "policy_allow"],
       "effects": [],
       "operations": [],
+      "loop_body_observations": [],
       "required_envelopes": ["dependency_boundary"],
       "conservative_reason": "",
       "rule_id": "PATH-DFS",
@@ -516,6 +519,7 @@
       "observations": ["repo_exists", "policy_allow"],
       "effects": ["notifier_send"],
       "operations": [],
+      "loop_body_observations": [],
       "required_envelopes": ["dependency_boundary"],
       "conservative_reason": "",
       "rule_id": "PATH-DFS",

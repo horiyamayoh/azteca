@@ -40,6 +40,7 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 	    .observations = {"repo_exists"},
 	    .effects = {},
 	    .operations = {},
+	    .loop_body_observations = {},
 	    .required_envelopes = {"dependency_boundary"},
 	    .conservative_reason = {},
 	    .evidence = evidence,
@@ -56,6 +57,7 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 	EXPECT_NE(json.find("\"dependency_observations\""), std::string::npos);
 	EXPECT_NE(json.find("\"observable_effects\""), std::string::npos);
 	EXPECT_NE(json.find("\"operations\""), std::string::npos);
+	EXPECT_NE(json.find("\"loop_body_observations\""), std::string::npos);
 	EXPECT_NE(json.find("\"shape_candidates\""), std::string::npos);
 	EXPECT_NE(json.find("\"object_ref_requirements\""), std::string::npos);
 	EXPECT_NE(json.find("\"semantic_features\""), std::string::npos);
@@ -86,6 +88,16 @@ TEST(InspectReport, TextShowsCoreInspectSections)
 	});
 	plan.gtest_preview.sample_test_path = "tests/account_withdraw.sample_test.cpp";
 	plan.gtest_preview.lines = {"auto result = s.call(/* args */);"};
+	plan.paths.push_back({
+	    .name = "path_1",
+	    .observations = {},
+	    .effects = {},
+	    .operations = {},
+	    .loop_body_observations = {},
+	    .required_envelopes = {},
+	    .conservative_reason = {},
+	    .evidence = {},
+	});
 
 	auto text = azteca::render_text_report(plan);
 
@@ -96,6 +108,7 @@ TEST(InspectReport, TextShowsCoreInspectSections)
 	EXPECT_NE(text.find("Control flow summary:"), std::string::npos);
 	EXPECT_NE(text.find("Rule coverage:"), std::string::npos);
 	EXPECT_NE(text.find("Path-wise test burden:"), std::string::npos);
+	EXPECT_NE(text.find("loop body observations:"), std::string::npos);
 	EXPECT_NE(text.find("Google Test preview:"), std::string::npos);
 }
 

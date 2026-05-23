@@ -161,6 +161,7 @@ struct PathBurden
 	std::vector<std::string> observations;
 	std::vector<std::string> effects;
 	std::vector<std::string> operations;
+	std::vector<std::string> loop_body_observations;
 	std::vector<std::string> required_envelopes;
 	std::string conservative_reason;
 	PlanEvidence evidence;

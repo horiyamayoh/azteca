@@ -40,7 +40,9 @@ struct ToolState
 {
 	MethodSpec spec;
 	std::vector<ExtractionPlan> plans;
+	std::optional<ExtractionPlan> template_fallback_plan;
 	Diagnostics diagnostics;
+	bool selected_template_without_explicit_args{false};
 };
 
 using inspect_collect::append_events;
@@ -656,18 +658,26 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		if (unary_operator->getOpcode() == clang::UO_AddrOf)
 		{
 			auto const* ignored = unary_operator->getSubExpr()->IgnoreParenImpCasts();
-			if (auto const* member = llvm::dyn_cast<clang::MemberExpr>(ignored);
-			    member != nullptr && llvm::isa<clang::CXXMethodDecl>(member->getMemberDecl()))
+			if (auto const* method = member_function_pointer_target(ignored); method != nullptr)
 			{
+				auto const kTargetClass = method->getParent() == nullptr
+				    ? std::string{"<unknown class>"}
+				    : method->getParent()->getQualifiedNameAsString();
+				auto const kTarget =
+				    method->getQualifiedNameAsString() + " " + method_signature(context_, *method);
+				auto const kPointerType = type_string(context_, unary_operator->getType());
+				auto reason = "pointer-to-member target " + kTargetClass +
+				    "::" + method->getNameAsString() + " has signature " +
+				    method_signature(context_, *method) + " and pointer type " + kPointerType;
 				auto evidence = make_evidence("LR-030",
-				    "address of member function is reported as not yet implemented",
+				    "address of member function is reported with pointer-to-member type details",
 				    unary_operator->getSourceRange(), true, "conservative");
 				add_mmir(MmirNodeKind::kUnsupported, "member_function_pointer",
-				    unary_operator->getOperatorLoc(), unary_operator->getSourceRange(), evidence);
+				    unary_operator->getOperatorLoc(), unary_operator->getSourceRange(), evidence,
+				    {}, kTarget);
 				add_construct("member function pointer", ConstructHandling::kNotYetImplemented,
-				    "pointer-to-member representation is not a raw function pointer",
-				    {"dependency boundary", "live validation"}, unary_operator->getOperatorLoc(),
-				    evidence);
+				    std::move(reason), {"dependency boundary", "live validation"},
+				    unary_operator->getOperatorLoc(), evidence);
 				return true;
 			}
 		}
@@ -690,16 +700,13 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 	bool VisitSwitchStmt(clang::SwitchStmt* switch_statement)
 	{
 		plan_.control_flow_summary.has_switch = true;
-		plan_.control_flow_summary.conservative = true;
-		plan_.control_flow_summary.conservative_reasons.emplace_back(
-		    "switch statement is represented conservatively in Phase A");
 		auto evidence = make_evidence("LR-015",
-		    "switch statement is a conservative control-flow region in Phase A",
-		    switch_statement->getSourceRange(), true, "conservative");
+		    "switch statement is segmented into case/default paths in Phase A",
+		    switch_statement->getSourceRange());
 		add_mmir(MmirNodeKind::kSwitch, "switch", switch_statement->getSwitchLoc(),
 		    switch_statement->getSourceRange(), evidence);
-		add_semantic_feature("switch_control_flow", ConstructHandling::kConservative,
-		    "switch is included in path summary as conservative control flow", evidence);
+		add_semantic_feature("switch_control_flow", ConstructHandling::kSupported,
+		    "switch case/default labels are represented as path branches", evidence);
 		return true;
 	}
 
@@ -1145,6 +1152,7 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		auto evidence = make_evidence("LR-049",
 		    "non-trivial constructor call is represented as construction intent",
 		    construct_expression->getSourceRange(), true, "conservative");
+		record_constructor_local_shape(*construct_expression, *constructor, evidence);
 		add_mmir(MmirNodeKind::kLifetimeOp, "constructor_call", construct_expression->getBeginLoc(),
 		    construct_expression->getSourceRange(), evidence, "lifetime",
 		    constructor->getQualifiedNameAsString());
@@ -1230,6 +1238,18 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 
 	bool VisitDecompositionDecl(clang::DecompositionDecl* declaration)
 	{
+		if (record_structured_binding_shape(*declaration))
+		{
+			auto evidence = make_evidence("LR-037",
+			    "structured binding fields are expanded from resolved Clang bindings",
+			    declaration->getSourceRange());
+			add_mmir(MmirNodeKind::kStructuredBinding, declaration->getNameAsString(),
+			    declaration->getBeginLoc(), declaration->getSourceRange(), evidence);
+			add_semantic_feature("structured_binding", ConstructHandling::kSupported,
+			    "structured binding fields are represented as shape observations", evidence);
+			return true;
+		}
+
 		auto evidence =
 		    make_evidence("LR-037", "structured binding is represented conservatively in Phase A",
 		        declaration->getSourceRange(), true, "conservative");
@@ -1453,6 +1473,18 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 	}
 
    private:
+	struct SwitchSegment
+	{
+		std::string label;
+		std::vector<clang::Stmt const*> statements;
+	};
+
+	struct StructuredBindingSource
+	{
+		std::string source_dependency;
+		std::optional<std::string> local_type;
+	};
+
 	void initialize_rule_coverage()
 	{
 		auto add = [this](std::string rule_id, ConstructHandling handling, std::string note)
@@ -1501,14 +1533,14 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		    "constructor target is outside Phase A");
 		add("LR-032", ConstructHandling::kNotYetImplemented,
 		    "destructor target is outside Phase A");
-		add("LR-033", ConstructHandling::kNotYetImplemented,
-		    "template specialization support is future");
+		add("LR-033", ConstructHandling::kSupported,
+		    "instantiated function template specializations are inspectable");
 		add("LR-034", ConstructHandling::kConservative, "macro source mapping is conservative");
 		add("LR-035", ConstructHandling::kSupported,
 		    "throw expression is preserved as exception intent");
 		add("LR-036", ConstructHandling::kConservative, "try/catch is conservative in Phase A");
-		add("LR-037", ConstructHandling::kConservative,
-		    "structured binding is conservative in Phase A");
+		add("LR-037", ConstructHandling::kSupported,
+		    "structured binding field expansion when bindings resolve to record fields");
 		add("LR-038", ConstructHandling::kNotYetImplemented, "coroutines are future work");
 		add("LR-039", ConstructHandling::kSupported,
 		    "unevaluated contexts are tracked without effects");
@@ -1672,6 +1704,16 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			    "template-dependent source spelling may differ from instantiated AST",
 			    {"inspect instantiated semantics only", "future template-source mapping"},
 			    method_.getLocation(), evidence);
+		}
+
+		if (method_.isFunctionTemplateSpecialization())
+		{
+			auto evidence = make_evidence("LR-033",
+			    "target is an instantiated function template specialization",
+			    method_.getSourceRange());
+			add_semantic_feature("template_specialization", ConstructHandling::kSupported,
+			    "function template specialization is inspected from its instantiated body",
+			    evidence);
 		}
 	}
 
@@ -1891,6 +1933,27 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		auto const* variable = llvm::dyn_cast<clang::VarDecl>(reference->getDecl());
 		return variable != nullptr &&
 		    local_dependency_sources_.contains(variable->getCanonicalDecl());
+	}
+
+	[[nodiscard]] static clang::CXXMethodDecl const* member_function_pointer_target(
+	    clang::Expr const* expression)
+	{
+		if (expression == nullptr)
+		{
+			return nullptr;
+		}
+
+		if (auto const* member = llvm::dyn_cast<clang::MemberExpr>(expression))
+		{
+			return llvm::dyn_cast<clang::CXXMethodDecl>(member->getMemberDecl());
+		}
+
+		if (auto const* reference = llvm::dyn_cast<clang::DeclRefExpr>(expression))
+		{
+			return llvm::dyn_cast<clang::CXXMethodDecl>(reference->getDecl());
+		}
+
+		return nullptr;
 	}
 
 	[[nodiscard]] FieldAccess classify_field_access(clang::MemberExpr const& member)
@@ -2136,6 +2199,201 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		        member.getSourceRange()));
 	}
 
+	[[nodiscard]] bool record_structured_binding_shape(clang::DecompositionDecl const& declaration)
+	{
+		auto source = structured_binding_source(declaration);
+		if (!source.has_value())
+		{
+			return false;
+		}
+
+		auto observed_members = std::vector<std::string>{};
+		for (auto const* binding : declaration.bindings())
+		{
+			auto const* binding_expression = binding->getBinding();
+			if (binding_expression == nullptr)
+			{
+				return false;
+			}
+
+			auto const* member =
+			    llvm::dyn_cast<clang::MemberExpr>(binding_expression->IgnoreParenImpCasts());
+			if (member == nullptr)
+			{
+				return false;
+			}
+
+			auto const* field = llvm::dyn_cast<clang::FieldDecl>(member->getMemberDecl());
+			if (field == nullptr)
+			{
+				return false;
+			}
+			observed_members.push_back(field->getNameAsString());
+		}
+
+		if (observed_members.empty())
+		{
+			return false;
+		}
+
+		auto evidence = make_evidence("LR-037",
+		    "structured binding exposes fields from a visible record definition",
+		    declaration.getSourceRange());
+		for (auto const& member : observed_members)
+		{
+			inspect_collect::record_shape_observation(
+			    plan_, source->source_dependency, source->local_type, member, evidence);
+		}
+		return true;
+	}
+
+	[[nodiscard]] std::optional<StructuredBindingSource> structured_binding_source(
+	    clang::DecompositionDecl const& declaration)
+	{
+		auto const* initializer = unwrap_decomposition_initializer(declaration.getInit());
+		if (initializer == nullptr)
+		{
+			return std::nullopt;
+		}
+
+		if (auto const* member = llvm::dyn_cast<clang::MemberExpr>(initializer))
+		{
+			auto const* field = llvm::dyn_cast<clang::FieldDecl>(member->getMemberDecl());
+			if (field != nullptr)
+			{
+				return StructuredBindingSource{
+				    .source_dependency = field->getQualifiedNameAsString(),
+				    .local_type = type_string(context_, member->getType()),
+				};
+			}
+		}
+
+		if (auto const* reference = llvm::dyn_cast<clang::DeclRefExpr>(initializer))
+		{
+			auto const* variable = llvm::dyn_cast<clang::VarDecl>(reference->getDecl());
+			if (variable == nullptr)
+			{
+				return std::nullopt;
+			}
+
+			auto dependency = local_dependency_sources_.find(variable->getCanonicalDecl());
+			if (dependency != local_dependency_sources_.end())
+			{
+				auto type = local_types_.find(variable->getCanonicalDecl());
+				return StructuredBindingSource{
+				    .source_dependency = dependency->second,
+				    .local_type = type == local_types_.end() ? std::optional<std::string>{}
+				                                             : std::optional{type->second},
+				};
+			}
+
+			return StructuredBindingSource{
+			    .source_dependency = "local:" + variable->getNameAsString(),
+			    .local_type = type_string(context_, variable->getType()),
+			};
+		}
+
+		if (auto const* member_call = llvm::dyn_cast<clang::CXXMemberCallExpr>(initializer))
+		{
+			auto port = dependency_port_for_call(*member_call);
+			if (port.has_value())
+			{
+				auto source = port->name;
+				add_dependency_port(std::move(*port));
+				return StructuredBindingSource{
+				    .source_dependency = std::move(source),
+				    .local_type = type_string(context_, member_call->getType()),
+				};
+			}
+		}
+
+		if (auto const* call = llvm::dyn_cast<clang::CallExpr>(initializer))
+		{
+			auto port = dependency_port_for_call(*call);
+			if (port.has_value())
+			{
+				auto source = port->name;
+				add_dependency_port(std::move(*port));
+				return StructuredBindingSource{
+				    .source_dependency = std::move(source),
+				    .local_type = type_string(context_, call->getType()),
+				};
+			}
+		}
+
+		return std::nullopt;
+	}
+
+	[[nodiscard]] static clang::Expr const* unwrap_decomposition_initializer(
+	    clang::Expr const* expression)
+	{
+		while (expression != nullptr)
+		{
+			auto const* ignored = expression->IgnoreParenImpCasts();
+			if (auto const* construct = llvm::dyn_cast<clang::CXXConstructExpr>(ignored);
+			    construct != nullptr && construct->getNumArgs() == 1U)
+			{
+				expression = construct->getArg(0);
+				continue;
+			}
+			return ignored;
+		}
+
+		return nullptr;
+	}
+
+	void record_constructor_local_shape(clang::CXXConstructExpr const& expression,
+	    clang::CXXConstructorDecl const& constructor, PlanEvidence const& evidence)
+	{
+		auto const* variable = local_constructor_target(expression);
+		if (variable == nullptr)
+		{
+			return;
+		}
+
+		auto const* record = constructor.getParent();
+		auto const* definition = record == nullptr ? nullptr : record->getDefinition();
+		if (definition == nullptr)
+		{
+			return;
+		}
+
+		for (auto const* field : definition->fields())
+		{
+			if (field->getAccess() != clang::AS_public)
+			{
+				continue;
+			}
+			inspect_collect::record_shape_observation(plan_, "local:" + variable->getNameAsString(),
+			    std::optional{type_string(context_, variable->getType())}, field->getNameAsString(),
+			    evidence);
+		}
+	}
+
+	[[nodiscard]] clang::VarDecl const* local_constructor_target(
+	    clang::CXXConstructExpr const& expression) const
+	{
+		auto parents = context_.getParents(expression);
+		while (!parents.empty())
+		{
+			auto const& parent = *parents.begin();
+			if (auto const* variable = parent.get<clang::VarDecl>();
+			    variable != nullptr && variable->isLocalVarDecl() && variable->getInit() != nullptr)
+			{
+				return variable;
+			}
+
+			auto const* parent_expression = parent.get<clang::Expr>();
+			if (parent_expression == nullptr)
+			{
+				return nullptr;
+			}
+			parents = context_.getParents(*parent_expression);
+		}
+
+		return nullptr;
+	}
+
 	void add_dependency_port(DependencyPort port)
 	{
 		auto duplicate = std::ranges::any_of(plan_.dependency_ports,
@@ -2232,19 +2490,17 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		auto path_index = std::size_t{1};
 		auto fallthrough_states = analyze_statement(body, std::move(states), paths, path_index);
 
-		if (paths.empty())
+		for (auto const& state : fallthrough_states)
 		{
-			for (auto const& state : fallthrough_states)
-			{
-				paths.push_back(build_path_burden("path_" + std::to_string(path_index),
-				    state.events,
-				    make_evidence(state.conservative ? "PATH-CONSERVATIVE" : "PATH-DFS",
-				        state.conservative ? "fallthrough path includes conservative control flow"
-				                           : "fallthrough path accumulated by DFS",
-				        body.getSourceRange(), state.conservative,
-				        state.conservative ? "conservative" : "certain")));
-				++path_index;
-			}
+			paths.push_back(build_path_burden(
+			    path_name("path_" + std::to_string(path_index), state), state.events,
+			    make_evidence(state.conservative ? "PATH-CONSERVATIVE" : "PATH-DFS",
+			        state.conservative ? "fallthrough path includes conservative control flow"
+			                           : "fallthrough path accumulated by DFS",
+			        body.getSourceRange(), state.conservative,
+			        state.conservative ? "conservative" : "certain"),
+			    state.loop_body_observations));
+			++path_index;
 		}
 
 		return paths;
@@ -2272,14 +2528,21 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			for (auto const& state : states)
 			{
 				paths.push_back(
-				    build_path_burden(path_name(*return_statement, path_index), state.events,
+				    build_path_burden(path_name(*return_statement, path_index, state), state.events,
 				        make_evidence(state.conservative ? "PATH-CONSERVATIVE" : "PATH-DFS",
 				            state.conservative ? "return path includes conservative control flow"
 				                               : "return path accumulated by DFS",
 				            return_statement->getSourceRange(), state.conservative,
-				            state.conservative ? "conservative" : "certain")));
+				            state.conservative ? "conservative" : "certain"),
+				        state.loop_body_observations));
 				++path_index;
 			}
+			return {};
+		}
+
+		if (llvm::isa<clang::CXXThrowExpr>(&statement))
+		{
+			append_events(states, collect_events(statement));
 			return {};
 		}
 
@@ -2304,6 +2567,38 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 			return then_states;
 		}
 
+		if (auto const* for_statement = llvm::dyn_cast<clang::ForStmt>(&statement))
+		{
+			return analyze_loop(*for_statement, for_statement->getBody(), true, std::move(states));
+		}
+
+		if (auto const* while_statement = llvm::dyn_cast<clang::WhileStmt>(&statement))
+		{
+			return analyze_loop(
+			    *while_statement, while_statement->getBody(), true, std::move(states));
+		}
+
+		if (auto const* do_statement = llvm::dyn_cast<clang::DoStmt>(&statement))
+		{
+			return analyze_loop(*do_statement, do_statement->getBody(), false, std::move(states));
+		}
+
+		if (auto const* range_statement = llvm::dyn_cast<clang::CXXForRangeStmt>(&statement))
+		{
+			return analyze_loop(
+			    *range_statement, range_statement->getBody(), true, std::move(states));
+		}
+
+		if (auto const* switch_statement = llvm::dyn_cast<clang::SwitchStmt>(&statement))
+		{
+			return analyze_switch(*switch_statement, std::move(states), paths, path_index);
+		}
+
+		if (auto const* try_statement = llvm::dyn_cast<clang::CXXTryStmt>(&statement))
+		{
+			return analyze_try(*try_statement, states, paths, path_index);
+		}
+
 		if (is_conservative_control(statement))
 		{
 			append_events(states, collect_events(statement));
@@ -2321,23 +2616,339 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		return states;
 	}
 
+	[[nodiscard]] std::vector<PathState> analyze_loop(clang::ForStmt const& statement,
+	    clang::Stmt const* body, bool has_zero_iteration_path, std::vector<PathState> states)
+	{
+		std::vector<PathEvent> before_events;
+		std::vector<PathEvent> after_one_iteration_events;
+		if (statement.getInit() != nullptr)
+		{
+			append_events(before_events, collect_events(*statement.getInit()));
+		}
+		if (statement.getCond() != nullptr)
+		{
+			append_events(before_events, collect_events(*statement.getCond()));
+		}
+		if (statement.getInc() != nullptr)
+		{
+			append_events(after_one_iteration_events, collect_events(*statement.getInc()));
+		}
+		return analyze_loop_body(statement, body, before_events, after_one_iteration_events,
+		    has_zero_iteration_path, std::move(states));
+	}
+
+	[[nodiscard]] std::vector<PathState> analyze_loop(clang::WhileStmt const& statement,
+	    clang::Stmt const* body, bool has_zero_iteration_path, std::vector<PathState> states)
+	{
+		std::vector<PathEvent> before_events;
+		if (statement.getCond() != nullptr)
+		{
+			append_events(before_events, collect_events(*statement.getCond()));
+		}
+		return analyze_loop_body(
+		    statement, body, before_events, {}, has_zero_iteration_path, std::move(states));
+	}
+
+	[[nodiscard]] std::vector<PathState> analyze_loop(clang::DoStmt const& statement,
+	    clang::Stmt const* body, bool has_zero_iteration_path, std::vector<PathState> states)
+	{
+		std::vector<PathEvent> after_one_iteration_events;
+		if (statement.getCond() != nullptr)
+		{
+			append_events(after_one_iteration_events, collect_events(*statement.getCond()));
+		}
+		return analyze_loop_body(statement, body, {}, after_one_iteration_events,
+		    has_zero_iteration_path, std::move(states));
+	}
+
+	[[nodiscard]] std::vector<PathState> analyze_loop(clang::CXXForRangeStmt const& statement,
+	    clang::Stmt const* body, bool has_zero_iteration_path, std::vector<PathState> states)
+	{
+		std::vector<PathEvent> before_events;
+		if (statement.getRangeInit() != nullptr)
+		{
+			append_events(before_events, collect_events(*statement.getRangeInit()));
+		}
+		return analyze_loop_body(
+		    statement, body, before_events, {}, has_zero_iteration_path, std::move(states));
+	}
+
+	[[nodiscard]] std::vector<PathState> analyze_loop_body(clang::Stmt const& statement,
+	    clang::Stmt const* body, std::vector<PathEvent> const& before_events,
+	    std::vector<PathEvent> const& after_one_iteration_events, bool has_zero_iteration_path,
+	    std::vector<PathState> states)
+	{
+		append_events(states, before_events);
+		auto body_events = body == nullptr ? std::vector<PathEvent>{} : collect_events(*body);
+		auto loop_body_observations = event_names(body_events);
+		std::vector<PathState> result;
+
+		if (has_zero_iteration_path)
+		{
+			auto zero_states = states;
+			append_path_label(zero_states, "loop_zero_iterations");
+			mark_path_conservative(zero_states);
+			result.insert(result.end(), zero_states.begin(), zero_states.end());
+		}
+
+		auto one_or_more_states = std::move(states);
+		append_path_label(one_or_more_states, "loop_one_or_more_iterations");
+		append_events(one_or_more_states, body_events);
+		append_events(one_or_more_states, after_one_iteration_events);
+		append_loop_body_observations(one_or_more_states, loop_body_observations);
+		mark_path_conservative(one_or_more_states);
+		result.insert(result.end(), one_or_more_states.begin(), one_or_more_states.end());
+
+		mark_conservative("AZTECA_PATH_CONSERVATIVE",
+		    "loop statement is approximated as zero/one-or-more execution paths",
+		    statement.getBeginLoc());
+		return result;
+	}
+
+	[[nodiscard]] std::vector<PathState> analyze_switch(clang::SwitchStmt const& statement,
+	    std::vector<PathState> states, std::vector<PathBurden>& paths, std::size_t& path_index)
+	{
+		if (statement.getCond() != nullptr)
+		{
+			append_events(states, collect_events(*statement.getCond()));
+		}
+
+		auto segments = switch_segments(statement);
+		if (segments.empty())
+		{
+			append_events(states, collect_events(statement));
+			mark_path_conservative(states);
+			mark_conservative("AZTECA_PATH_CONSERVATIVE",
+			    "switch statement could not be segmented and remains conservative",
+			    statement.getBeginLoc());
+			return states;
+		}
+
+		std::vector<PathState> result;
+		auto has_default = false;
+		for (auto segment_index = std::size_t{0}; segment_index < segments.size(); ++segment_index)
+		{
+			has_default = has_default || segments[segment_index].label == "switch_default";
+			auto active_states = states;
+			append_path_label(active_states, segments[segment_index].label);
+
+			for (auto fallthrough_index = segment_index; fallthrough_index < segments.size();
+			     ++fallthrough_index)
+			{
+				auto stopped_by_break = false;
+				for (auto const* child : segments[fallthrough_index].statements)
+				{
+					if (llvm::isa<clang::BreakStmt>(child))
+					{
+						stopped_by_break = true;
+						break;
+					}
+					active_states =
+					    analyze_statement(*child, std::move(active_states), paths, path_index);
+					if (active_states.empty())
+					{
+						break;
+					}
+				}
+
+				if (stopped_by_break)
+				{
+					result.insert(result.end(), active_states.begin(), active_states.end());
+					break;
+				}
+
+				if (active_states.empty())
+				{
+					break;
+				}
+
+				if (fallthrough_index + 1U == segments.size())
+				{
+					result.insert(result.end(), active_states.begin(), active_states.end());
+				}
+			}
+		}
+
+		if (!has_default)
+		{
+			auto no_match_states = states;
+			append_path_label(no_match_states, "switch_no_match");
+			result.insert(result.end(), no_match_states.begin(), no_match_states.end());
+		}
+
+		return result;
+	}
+
+	[[nodiscard]] std::vector<PathState> analyze_try(clang::CXXTryStmt const& statement,
+	    std::vector<PathState> const& states, std::vector<PathBurden>& paths,
+	    std::size_t& path_index)
+	{
+		std::vector<PathState> result;
+		auto try_states = states;
+		append_path_label(try_states, "try_no_exception");
+		auto try_result =
+		    analyze_statement(*statement.getTryBlock(), std::move(try_states), paths, path_index);
+		result.insert(result.end(), try_result.begin(), try_result.end());
+
+		for (auto handler_index = unsigned{0}; handler_index < statement.getNumHandlers();
+		     ++handler_index)
+		{
+			auto const* handler = statement.getHandler(handler_index);
+			auto catch_states = states;
+			append_path_label(catch_states, catch_label(*handler, handler_index));
+			mark_path_conservative(catch_states);
+			auto catch_result = analyze_statement(
+			    *handler->getHandlerBlock(), std::move(catch_states), paths, path_index);
+			result.insert(result.end(), catch_result.begin(), catch_result.end());
+		}
+
+		mark_conservative("AZTECA_PATH_CONSERVATIVE",
+		    "try/catch paths are split into no-exception and conservative catch paths",
+		    statement.getBeginLoc());
+		return result;
+	}
+
 	[[nodiscard]] std::string path_name(
-	    clang::ReturnStmt const& return_statement, std::size_t index) const
+	    clang::ReturnStmt const& return_statement, std::size_t index, PathState const& state) const
 	{
 		auto text = source_text(context_, return_statement.getSourceRange());
 		if (text.empty())
 		{
-			return "path_" + std::to_string(index);
+			return path_name("path_" + std::to_string(index), state);
 		}
 
-		return sanitize_identifier(text);
+		return path_name(sanitize_identifier(text), state);
+	}
+
+	[[nodiscard]] static std::string path_name(std::string base_name, PathState const& state)
+	{
+		for (auto const& label : state.labels)
+		{
+			base_name += "__" + label;
+		}
+		return base_name;
+	}
+
+	[[nodiscard]] static std::vector<std::string> event_names(std::vector<PathEvent> const& events)
+	{
+		std::vector<std::string> names;
+		names.reserve(events.size());
+		for (auto const& event : events)
+		{
+			names.push_back(event.name);
+		}
+		deduplicate_strings(names);
+		return names;
+	}
+
+	static void append_path_label(std::vector<PathState>& states, std::string const& label)
+	{
+		for (auto& state : states)
+		{
+			state.labels.push_back(label);
+		}
+	}
+
+	static void mark_path_conservative(std::vector<PathState>& states)
+	{
+		for (auto& state : states)
+		{
+			state.conservative = true;
+		}
+	}
+
+	static void append_loop_body_observations(
+	    std::vector<PathState>& states, std::vector<std::string> const& observations)
+	{
+		for (auto& state : states)
+		{
+			state.loop_body_observations.insert(
+			    state.loop_body_observations.end(), observations.begin(), observations.end());
+			deduplicate_strings(state.loop_body_observations);
+		}
+	}
+
+	[[nodiscard]] std::vector<SwitchSegment> switch_segments(
+	    clang::SwitchStmt const& statement) const
+	{
+		std::vector<SwitchSegment> segments;
+		auto const* body = statement.getBody();
+		if (auto const* compound = llvm::dyn_cast_or_null<clang::CompoundStmt>(body))
+		{
+			for (auto const* child : compound->body())
+			{
+				append_switch_segment(*child, segments);
+			}
+			return segments;
+		}
+
+		if (body != nullptr)
+		{
+			append_switch_segment(*body, segments);
+		}
+		return segments;
+	}
+
+	void append_switch_segment(
+	    clang::Stmt const& statement, std::vector<SwitchSegment>& segments) const
+	{
+		if (auto const* case_statement = llvm::dyn_cast<clang::CaseStmt>(&statement))
+		{
+			segments.push_back({.label = case_label(*case_statement), .statements = {}});
+			if (case_statement->getSubStmt() != nullptr)
+			{
+				append_switch_segment(*case_statement->getSubStmt(), segments);
+			}
+			return;
+		}
+
+		if (auto const* default_statement = llvm::dyn_cast<clang::DefaultStmt>(&statement))
+		{
+			segments.push_back({.label = "switch_default", .statements = {}});
+			if (default_statement->getSubStmt() != nullptr)
+			{
+				append_switch_segment(*default_statement->getSubStmt(), segments);
+			}
+			return;
+		}
+
+		if (!segments.empty())
+		{
+			segments.back().statements.push_back(&statement);
+		}
+	}
+
+	[[nodiscard]] std::string case_label(clang::CaseStmt const& statement) const
+	{
+		auto text = statement.getLHS() == nullptr
+		    ? std::string{}
+		    : source_text(context_, statement.getLHS()->getSourceRange());
+		if (text.empty())
+		{
+			text = "case";
+		}
+		return "switch_case_" + sanitize_identifier(text);
+	}
+
+	[[nodiscard]] std::string catch_label(
+	    clang::CXXCatchStmt const& statement, unsigned handler_index) const
+	{
+		if (statement.getExceptionDecl() == nullptr)
+		{
+			return "catch_all";
+		}
+		auto type = sanitize_identifier(type_string(context_, statement.getCaughtType()));
+		if (type.empty())
+		{
+			return "catch_" + std::to_string(handler_index + 1U);
+		}
+		return "catch_" + type;
 	}
 
 	[[nodiscard]] static bool is_conservative_control(clang::Stmt const& statement)
 	{
 		return llvm::isa<clang::ForStmt>(statement) || llvm::isa<clang::WhileStmt>(statement) ||
-		    llvm::isa<clang::DoStmt>(statement) || llvm::isa<clang::CXXForRangeStmt>(statement) ||
-		    llvm::isa<clang::SwitchStmt>(statement) || llvm::isa<clang::CXXTryStmt>(statement);
+		    llvm::isa<clang::DoStmt>(statement) || llvm::isa<clang::CXXForRangeStmt>(statement);
 	}
 
 	void build_gtest_preview()
@@ -2468,11 +3079,39 @@ class MethodLookupVisitor : public clang::RecursiveASTVisitor<MethodLookupVisito
 			return true;
 		}
 
-		if (method->getTemplatedKind() != clang::FunctionDecl::TK_NonTemplate)
+		if (auto const* function_template = method->getDescribedFunctionTemplate();
+		    function_template != nullptr)
 		{
-			state_.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_TEMPLATE_METHOD",
-			    "template methods are outside Phase A inspect scope",
-			    source_location(context_, method->getLocation()));
+			if (inspect_template_specializations(*function_template))
+			{
+				return true;
+			}
+			record_template_fallback(*method);
+			return true;
+		}
+
+		if (method->isFunctionTemplateSpecialization())
+		{
+			if (state_.spec.template_arguments.empty() &&
+			    state_.selected_template_without_explicit_args)
+			{
+				return true;
+			}
+
+			auto const* definition =
+			    llvm::dyn_cast_or_null<clang::CXXMethodDecl>(method->getDefinition());
+			if (definition == nullptr)
+			{
+				record_template_fallback(*method);
+				return true;
+			}
+
+			PlanBuilder builder(context_, *definition);
+			state_.plans.push_back(builder.build());
+			if (state_.spec.template_arguments.empty())
+			{
+				state_.selected_template_without_explicit_args = true;
+			}
 			return true;
 		}
 
@@ -2492,6 +3131,65 @@ class MethodLookupVisitor : public clang::RecursiveASTVisitor<MethodLookupVisito
 	}
 
    private:
+	[[nodiscard]] bool inspect_template_specializations(
+	    clang::FunctionTemplateDecl const& function_template)
+	{
+		for (auto const* specialization : function_template.specializations())
+		{
+			auto const* method = llvm::dyn_cast_or_null<clang::CXXMethodDecl>(specialization);
+			if (method == nullptr || !method_matches_spec(state_.spec, context_, *method))
+			{
+				continue;
+			}
+
+			if (state_.spec.template_arguments.empty() &&
+			    state_.selected_template_without_explicit_args)
+			{
+				return true;
+			}
+
+			auto const* definition =
+			    llvm::dyn_cast_or_null<clang::CXXMethodDecl>(method->getDefinition());
+			if (definition == nullptr)
+			{
+				if (!state_.spec.template_arguments.empty())
+				{
+					record_template_fallback(*method);
+					return true;
+				}
+				continue;
+			}
+
+			PlanBuilder builder(context_, *definition);
+			state_.plans.push_back(builder.build());
+			if (state_.spec.template_arguments.empty())
+			{
+				state_.selected_template_without_explicit_args = true;
+			}
+			return true;
+		}
+
+		return false;
+	}
+
+	void record_template_fallback(clang::CXXMethodDecl const& method)
+	{
+		if (state_.template_fallback_plan.has_value())
+		{
+			return;
+		}
+
+		PlanBuilder builder(context_, method);
+		auto plan = builder.build();
+		plan.result = "not-yet-implemented";
+		plan.confidence = "low";
+		plan.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_TEMPLATE_INSTANTIATION_NOT_FOUND",
+		    "matching template method has no instantiated body for the requested template "
+		    "arguments",
+		    source_location(context_, method.getLocation()));
+		state_.template_fallback_plan = std::move(plan);
+	}
+
 	clang::ASTContext& context_;
 	ToolState& state_;
 };
@@ -2622,6 +3320,15 @@ InspectResult inspect_method(InspectOptions const& options)
 		result.status = InspectStatus::kCompileDatabaseError;
 		result.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_CLANG_PARSE_FAILED",
 		    "Clang failed to parse at least one translation unit");
+		return result;
+	}
+
+	if (state.plans.empty() && state.template_fallback_plan.has_value())
+	{
+		result.plan = std::move(*state.template_fallback_plan);
+		result.status = result.plan->diagnostics.has_errors()
+		    ? InspectStatus::kExtractionPlanningError
+		    : InspectStatus::kSuccess;
 		return result;
 	}
 

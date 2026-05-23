@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <optional>
@@ -25,6 +26,7 @@ struct CliOptions
 	std::string command;
 	std::string build_dir;
 	std::string method_spec;
+	std::optional<std::string> template_args;
 	std::optional<std::string> source_file;
 	OutputFormat format{OutputFormat::kText};
 };
@@ -34,7 +36,8 @@ void print_help()
 	std::cout << "Usage:\n"
 	          << "  azteca --help\n"
 	          << "  azteca inspect -p <build-dir> --method 'C::m(args...)' "
-	          << "[--source <file>] [--format text|json] [--verbose|--quiet]\n";
+	          << "[--template-args 'T,...'] [--source <file>] [--format text|json] "
+	          << "[--verbose|--quiet]\n";
 }
 
 [[nodiscard]] bool has_value(int index, int argc)
@@ -97,6 +100,16 @@ void print_help()
 			}
 			++index;
 			options.source_file = std::string(argv[index]);
+		}
+		else if (argument == "--template-args")
+		{
+			if (!has_value(index, argc))
+			{
+				std::cerr << "missing value for --template-args\n";
+				return std::nullopt;
+			}
+			++index;
+			options.template_args = std::string(argv[index]);
 		}
 		else if (argument == "--format")
 		{
@@ -172,6 +185,33 @@ int main(int argc, char** argv)
 	{
 		std::cerr << "invalid --method: " << parse_result.error << '\n';
 		return static_cast<int>(azteca::InspectStatus::kUserInputError);
+	}
+
+	if (options->template_args.has_value())
+	{
+		auto template_args = azteca::parse_template_arguments(*options->template_args);
+		if (!template_args.arguments.has_value())
+		{
+			std::cerr << "invalid --template-args: " << template_args.error << '\n';
+			return static_cast<int>(azteca::InspectStatus::kUserInputError);
+		}
+
+		auto const kTemplateArgumentsMatch =
+		    parse_result.spec->template_arguments.size() == template_args.arguments->size() &&
+		    std::equal(parse_result.spec->template_arguments.begin(),
+		        parse_result.spec->template_arguments.end(), template_args.arguments->begin(),
+		        [](std::string const& lhs, std::string const& rhs)
+		        {
+			        return azteca::normalize_type_for_match(lhs) ==
+			            azteca::normalize_type_for_match(rhs);
+		        });
+		if (!parse_result.spec->template_arguments.empty() && !kTemplateArgumentsMatch)
+		{
+			std::cerr
+			    << "invalid --template-args: values differ from --method template arguments\n";
+			return static_cast<int>(azteca::InspectStatus::kUserInputError);
+		}
+		parse_result.spec->template_arguments = std::move(*template_args.arguments);
 	}
 
 	azteca::InspectOptions inspect_options{
