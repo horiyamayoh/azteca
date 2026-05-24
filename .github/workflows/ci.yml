@@ -132,6 +132,9 @@ jobs:
       - name: Phase A — coverage matrix
         run: ctest --preset dev-clang --output-on-failure -R "^phase_a_coverage_matrix$"
 
+      - name: Phase A — output quality
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_output_quality$"
+
       - name: Phase A — encoding robustness
         run: ctest --preset dev-clang --output-on-failure -R "^phase_a_encoding_robustness$"
 

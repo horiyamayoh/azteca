@@ -27,8 +27,8 @@ Checks: >
   -modernize-use-trailing-return-type,
   -readability-function-cognitive-complexity,
   -readability-magic-numbers
-WarningsAsErrors: '*'
-HeaderFilterRegex: '(^|.*/)(include|src|tests)/'
+WarningsAsErrors: "*"
+HeaderFilterRegex: "(^|.*/)(include|src|tests)/"
 FormatStyle: file
 CheckOptions:
   readability-identifier-naming.ClassCase: CamelCase

@@ -79,6 +79,9 @@
     {
       "name": "asan-clang",
       "configurePreset": "asan-clang",
+      "environment": {
+        "ASAN_OPTIONS": "allow_user_poisoning=0"
+      },
       "output": {
         "outputOnFailure": true
       }

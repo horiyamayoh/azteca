@@ -134,11 +134,15 @@ endif()
 add_library(
 	azteca_core
 	src/collect/InspectCollector.cpp
+	src/collect/PathAnalyzer.cpp
 	src/frontend/InspectFrontend.cpp
+	src/frontend/InspectSource.cpp
+	src/gtest/GTestPreview.cpp
 	src/mmir/MMIR.cpp
 	src/plan/ExtractionPlan.cpp
 	src/report/DiagnosticCatalog.cpp
 	src/report/InspectReport.cpp
+	src/report/JsonWriter.cpp
 	src/resolve/MethodSelector.cpp
 	src/MethodSpec.cpp
 )
@@ -252,8 +256,11 @@ if(BUILD_TESTING)
 			tests/unit/AssertTests.cpp
 			tests/unit/DiagnosticCatalogTests.cpp
 			tests/unit/ExtractionPlanTests.cpp
+			tests/unit/InspectCollectorTests.cpp
+			tests/unit/JsonWriterTests.cpp
 			tests/unit/MethodSpecTests.cpp
 		)
+		target_include_directories(azteca_unit_tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
 		target_link_libraries(azteca_unit_tests PRIVATE azteca_core GTest::gtest_main)
 		list(APPEND AZTECA_TEST_DEPENDENCIES azteca_unit_tests)
 		include(GoogleTest)
@@ -320,6 +327,20 @@ add_custom_target(
 	COMMAND ${NPM_EXECUTABLE} run docs:reference
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 	COMMENT "Regenerating all-in-one design reference"
+	VERBATIM
+)
+
+add_custom_target(
+	phase-a-accept-goldens
+	COMMAND
+		${CMAKE_COMMAND}
+		-E env AZTECA_ACCEPT_GOLDEN=1
+		${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
+		-R "^phase_a_(inspect_fixture|cli_surface)$"
+	COMMAND ${NPM_EXECUTABLE} run format:phase-a-goldens
+	DEPENDS azteca
+	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+	COMMENT "Regenerating Phase A inspect and CLI goldens"
 	VERBATIM
 )
 

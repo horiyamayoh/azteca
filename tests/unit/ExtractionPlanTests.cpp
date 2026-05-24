@@ -5,6 +5,23 @@
 namespace
 {
 
+TEST(ExtractionPlan, DefaultsKeepPhaseAContractForCodegenInputs)
+{
+	azteca::ExtractionPlan plan;
+
+	EXPECT_EQ(plan.schema_version, 2);
+	EXPECT_EQ(plan.azteca_phase, "A");
+	EXPECT_EQ(plan.result, "extracted");
+	EXPECT_EQ(plan.confidence, "high");
+	EXPECT_TRUE(plan.receiver_state.empty());
+	EXPECT_TRUE(plan.dependency_ports.empty());
+	EXPECT_TRUE(plan.paths.empty());
+	EXPECT_TRUE(plan.gtest_preview.sample_test_path.empty());
+	EXPECT_TRUE(plan.gtest_preview.lines.empty());
+	EXPECT_TRUE(plan.mmir.target_name.empty());
+	EXPECT_TRUE(plan.mmir.nodes.empty());
+}
+
 TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 {
 	azteca::ExtractionPlan plan;

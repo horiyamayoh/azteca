@@ -7,7 +7,8 @@
     "docs:reference": "node scripts/generate-reference.mjs",
     "docs:reference:check": "node scripts/generate-reference.mjs --check",
     "format:docs": "prettier --write \"**/*.{md,json,yml,yaml}\"",
-    "format:docs:check": "prettier --check \"**/*.{md,json,yml,yaml}\""
+    "format:docs:check": "prettier --check \"**/*.{md,json,yml,yaml}\"",
+    "format:phase-a-goldens": "prettier --write \"tests/golden/phase_a/*.inspect.json\""
   },
   "devDependencies": {
     "prettier": "3.8.3"

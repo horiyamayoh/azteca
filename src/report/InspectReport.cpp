@@ -3,48 +3,12 @@
 #include <algorithm>
 #include <sstream>
 
+#include "JsonWriter.hpp"
+
 namespace azteca
 {
 namespace
 {
-
-[[nodiscard]] std::string json_escape(std::string const& value)
-{
-	std::string escaped;
-	escaped.reserve(value.size() + 8U);
-
-	for (char character : value)
-	{
-		switch (character)
-		{
-			case '"':
-				escaped += "\\\"";
-				break;
-			case '\\':
-				escaped += "\\\\";
-				break;
-			case '\n':
-				escaped += "\\n";
-				break;
-			case '\r':
-				escaped += "\\r";
-				break;
-			case '\t':
-				escaped += "\\t";
-				break;
-			default:
-				escaped.push_back(character);
-				break;
-		}
-	}
-
-	return escaped;
-}
-
-void append_json_string(std::ostringstream& output, std::string const& value)
-{
-	output << '"' << json_escape(value) << '"';
-}
 
 [[nodiscard]] std::string to_json_string(FieldAccess access)
 {
@@ -142,70 +106,60 @@ void append_json_string(std::ostringstream& output, std::string const& value)
 	return canonical;
 }
 
-void append_string_array(std::ostringstream& output, std::vector<std::string> const& values)
+void append_string_array(report::JsonWriter& output, std::vector<std::string> const& values)
 {
-	output << '[';
-	for (auto index = std::size_t{0}; index < values.size(); ++index)
+	output.begin_array();
+	for (auto const& value : values)
 	{
-		if (index != 0U)
-		{
-			output << ", ";
-		}
-		append_json_string(output, values[index]);
+		output.string(value);
 	}
-	output << ']';
+	output.end_array();
 }
 
 void append_canonical_token_array(
-    std::ostringstream& output, std::vector<std::string> const& values)
+    report::JsonWriter& output, std::vector<std::string> const& values)
 {
-	output << '[';
-	for (auto index = std::size_t{0}; index < values.size(); ++index)
+	output.begin_array();
+	for (auto const& value : values)
 	{
-		if (index != 0U)
-		{
-			output << ", ";
-		}
-		append_json_string(output, to_json_canonical_token(values[index]));
+		output.string(to_json_canonical_token(value));
 	}
-	output << ']';
+	output.end_array();
 }
 
-void append_bool(std::ostringstream& output, bool value)
+void append_location(report::JsonWriter& output, SourceLocation const& location)
 {
-	output << (value ? "true" : "false");
+	output.begin_object();
+	output.key("file");
+	output.string(location.file);
+	output.key("line");
+	output.unsigned_integer(location.line);
+	output.key("column");
+	output.unsigned_integer(location.column);
+	output.end_object();
 }
 
-void append_location(std::ostringstream& output, SourceLocation const& location)
+void append_source_range(report::JsonWriter& output, SourceRange const& range)
 {
-	output << "{";
-	output << "\"file\": ";
-	append_json_string(output, location.file);
-	output << ", \"line\": " << location.line;
-	output << ", \"column\": " << location.column;
-	output << "}";
-}
-
-void append_source_range(std::ostringstream& output, SourceRange const& range)
-{
-	output << "{";
-	output << "\"begin\": ";
+	output.begin_object();
+	output.key("begin");
 	append_location(output, range.begin);
-	output << ", \"end\": ";
+	output.key("end");
 	append_location(output, range.end);
-	output << "}";
+	output.end_object();
 }
 
-void append_evidence(std::ostringstream& output, PlanEvidence const& evidence)
+void append_evidence(report::JsonWriter& output, PlanEvidence const& evidence)
 {
-	output << "\"rule_id\": ";
-	append_json_string(output, evidence.rule_id);
-	output << ", \"reason\": ";
-	append_json_string(output, evidence.reason);
-	output << ", \"certainty\": ";
-	append_json_string(output, evidence.certainty);
-	output << ", \"conservative\": " << (evidence.conservative ? "true" : "false");
-	output << ", \"source_range\": ";
+	output.key("rule_id");
+	output.string(evidence.rule_id);
+	output.key("reason");
+	output.string(evidence.reason);
+	output.key("certainty");
+	output.string(evidence.certainty);
+	output.key("conservative");
+	output.boolean(evidence.conservative);
+	output.key("source_range");
 	append_source_range(output, evidence.source_range);
 }
 
@@ -614,282 +568,264 @@ std::string render_text_report(ExtractionPlan const& plan, ReportOptions const& 
 
 std::string render_json_report(ExtractionPlan const& plan)
 {
-	std::ostringstream output;
-	output << "{\n";
-	output << "  \"schema_version\": " << plan.schema_version << ",\n";
-	output << "  \"azteca_phase\": ";
-	append_json_string(output, plan.azteca_phase);
-	output << ",\n";
-	output << "  \"target\": {\n";
-	output << "    \"qualified_name\": ";
-	append_json_string(output, plan.target.qualified_name);
-	output << ",\n    \"signature\": ";
-	append_json_string(output, plan.target.signature);
-	output << ",\n    \"source_file\": ";
-	append_json_string(output, plan.target.source_file);
-	output << ",\n    \"line\": " << plan.target.line << "\n";
-	output << "  },\n";
-	output << "  \"result\": ";
-	append_json_string(output, plan.result);
-	output << ",\n";
-	output << "  \"confidence\": ";
-	append_json_string(output, plan.confidence);
-	output << ",\n";
+	std::ostringstream stream;
+	report::JsonWriter output{stream};
 
-	output << "  \"receiver_state\": [\n";
-	for (auto index = std::size_t{0}; index < plan.receiver_state.size(); ++index)
+	auto append_port = [&output](DependencyPort const& port)
 	{
-		auto const& field = plan.receiver_state[index];
-		output << "    {\"name\": ";
-		append_json_string(output, field.name);
-		output << ", \"type\": ";
-		append_json_string(output, field.type);
-		output << ", \"access\": ";
-		append_json_string(output, to_json_string(field.access));
-		output << ", \"mutable\": " << (field.is_mutable ? "true" : "false");
-		output << ", \"access_specifier\": ";
-		append_json_string(output, field.access_specifier);
-		output << ", \"location\": ";
-		append_location(output, field.location);
-		output << ", ";
-		append_evidence(output, field.evidence);
-		output << "}";
-		output << (index + 1U == plan.receiver_state.size() ? "\n" : ",\n");
-	}
-	output << "  ],\n";
-
-	auto append_ports = [&output](std::string const& key, std::vector<DependencyPort> const& ports)
-	{
-		output << "  \"" << key << "\": [\n";
-		for (auto index = std::size_t{0}; index < ports.size(); ++index)
-		{
-			auto const& port = ports[index];
-			output << "    {\"kind\": ";
-			append_json_string(output, to_json_string(port.kind));
-			output << ", \"name\": ";
-			append_json_string(output, port.name);
-			output << ", \"original_callee\": ";
-			append_json_string(output, port.original_callee);
-			output << ", \"return_type\": ";
-			append_json_string(output, port.return_type);
-			output << ", \"argument_types\": ";
-			append_string_array(output, port.argument_types);
-			output << ", \"location\": ";
-			append_location(output, port.location);
-			output << ", ";
-			append_evidence(output, port.evidence);
-			output << "}";
-			output << (index + 1U == ports.size() ? "\n" : ",\n");
-		}
-		output << "  ],\n";
+		output.begin_object();
+		output.key("kind");
+		output.string(to_json_string(port.kind));
+		output.key("name");
+		output.string(port.name);
+		output.key("original_callee");
+		output.string(port.original_callee);
+		output.key("return_type");
+		output.string(port.return_type);
+		output.key("argument_types");
+		append_string_array(output, port.argument_types);
+		output.key("location");
+		append_location(output, port.location);
+		append_evidence(output, port.evidence);
+		output.end_object();
 	};
+
+	auto append_ports = [&output, &append_port](
+	                        std::string_view key, std::vector<DependencyPort> const& ports)
+	{
+		output.key(key);
+		output.begin_array();
+		for (auto const& port : ports)
+		{
+			append_port(port);
+		}
+		output.end_array();
+	};
+
+	output.begin_object();
+	output.key("schema_version");
+	output.integer(plan.schema_version);
+	output.key("azteca_phase");
+	output.string(plan.azteca_phase);
+	output.key("target");
+	output.begin_object();
+	output.key("qualified_name");
+	output.string(plan.target.qualified_name);
+	output.key("signature");
+	output.string(plan.target.signature);
+	output.key("source_file");
+	output.string(plan.target.source_file);
+	output.key("line");
+	output.unsigned_integer(plan.target.line);
+	output.end_object();
+	output.key("result");
+	output.string(plan.result);
+	output.key("confidence");
+	output.string(plan.confidence);
+
+	output.key("receiver_state");
+	output.begin_array();
+	for (auto const& field : plan.receiver_state)
+	{
+		output.begin_object();
+		output.key("name");
+		output.string(field.name);
+		output.key("type");
+		output.string(field.type);
+		output.key("access");
+		output.string(to_json_string(field.access));
+		output.key("mutable");
+		output.boolean(field.is_mutable);
+		output.key("access_specifier");
+		output.string(field.access_specifier);
+		output.key("location");
+		append_location(output, field.location);
+		append_evidence(output, field.evidence);
+		output.end_object();
+	}
+	output.end_array();
 
 	append_ports("dependency_observations", ports_of_kind(plan, DependencyKind::kQuery));
 	append_ports("observable_effects", ports_of_kind(plan, DependencyKind::kEffect));
 	append_ports("operations", ports_of_kind(plan, DependencyKind::kOperation));
+	append_ports(
+	    "recursive_helper_candidates", ports_of_kind(plan, DependencyKind::kRecursiveCandidate));
 
-	output << "  \"recursive_helper_candidates\": [\n";
-	auto recursive_ports = ports_of_kind(plan, DependencyKind::kRecursiveCandidate);
-	for (auto index = std::size_t{0}; index < recursive_ports.size(); ++index)
+	output.key("shape_candidates");
+	output.begin_array();
+	for (auto const& shape : plan.shape_candidates)
 	{
-		auto const& port = recursive_ports[index];
-		output << "    {\"kind\": ";
-		append_json_string(output, to_json_string(port.kind));
-		output << ", \"name\": ";
-		append_json_string(output, port.name);
-		output << ", \"original_callee\": ";
-		append_json_string(output, port.original_callee);
-		output << ", \"return_type\": ";
-		append_json_string(output, port.return_type);
-		output << ", \"argument_types\": ";
-		append_string_array(output, port.argument_types);
-		output << ", \"location\": ";
-		append_location(output, port.location);
-		output << ", ";
-		append_evidence(output, port.evidence);
-		output << "}";
-		output << (index + 1U == recursive_ports.size() ? "\n" : ",\n");
-	}
-	output << "  ],\n";
-
-	output << "  \"shape_candidates\": [\n";
-	for (auto index = std::size_t{0}; index < plan.shape_candidates.size(); ++index)
-	{
-		auto const& shape = plan.shape_candidates[index];
-		output << "    {\"name\": ";
-		append_json_string(output, shape.name);
-		output << ", \"source_dependency\": ";
-		append_json_string(output, shape.source_dependency);
-		output << ", \"observed_members\": ";
+		output.begin_object();
+		output.key("name");
+		output.string(shape.name);
+		output.key("source_dependency");
+		output.string(shape.source_dependency);
+		output.key("observed_members");
 		append_string_array(output, shape.observed_members);
-		output << ", ";
 		append_evidence(output, shape.evidence);
-		output << "}";
-		output << (index + 1U == plan.shape_candidates.size() ? "\n" : ",\n");
+		output.end_object();
 	}
-	output << "  ],\n";
+	output.end_array();
 
-	output << "  \"object_ref_requirements\": [\n";
-	for (auto index = std::size_t{0}; index < plan.object_ref_requirements.size(); ++index)
+	output.key("object_ref_requirements");
+	output.begin_array();
+	for (auto const& requirement : plan.object_ref_requirements)
 	{
-		auto const& requirement = plan.object_ref_requirements[index];
-		output << "    {\"requirement_reason\": ";
-		append_json_string(output, requirement.reason);
-		output << ", \"expression\": ";
-		append_json_string(output, requirement.expression);
-		output << ", \"location\": ";
+		output.begin_object();
+		output.key("requirement_reason");
+		output.string(requirement.reason);
+		output.key("expression");
+		output.string(requirement.expression);
+		output.key("location");
 		append_location(output, requirement.location);
-		output << ", ";
 		append_evidence(output, requirement.evidence);
-		output << "}";
-		output << (index + 1U == plan.object_ref_requirements.size() ? "\n" : ",\n");
+		output.end_object();
 	}
-	output << "  ],\n";
+	output.end_array();
 
-	output << "  \"semantic_features\": [\n";
-	for (auto index = std::size_t{0}; index < plan.semantic_features.size(); ++index)
+	output.key("semantic_features");
+	output.begin_array();
+	for (auto const& feature : plan.semantic_features)
 	{
-		auto const& feature = plan.semantic_features[index];
-		output << "    {\"name\": ";
-		append_json_string(output, feature.name);
-		output << ", \"handling\": ";
-		append_json_string(output, to_json_string(feature.handling));
-		output << ", \"detail\": ";
-		append_json_string(output, feature.detail);
-		output << ", ";
+		output.begin_object();
+		output.key("name");
+		output.string(feature.name);
+		output.key("handling");
+		output.string(to_json_string(feature.handling));
+		output.key("detail");
+		output.string(feature.detail);
 		append_evidence(output, feature.evidence);
-		output << "}";
-		output << (index + 1U == plan.semantic_features.size() ? "\n" : ",\n");
+		output.end_object();
 	}
-	output << "  ],\n";
+	output.end_array();
 
-	output << "  \"unsupported_or_modeled_constructs\": [\n";
-	for (auto index = std::size_t{0}; index < plan.unsupported_or_modeled_constructs.size();
-	     ++index)
+	output.key("unsupported_or_modeled_constructs");
+	output.begin_array();
+	for (auto const& construct : plan.unsupported_or_modeled_constructs)
 	{
-		auto const& construct = plan.unsupported_or_modeled_constructs[index];
-		output << "    {\"construct\": ";
-		append_json_string(output, construct.construct);
-		output << ", \"handling\": ";
-		append_json_string(output, to_json_string(construct.handling));
-		output << ", \"construct_reason\": ";
-		append_json_string(output, construct.reason);
-		output << ", \"fallbacks\": ";
+		output.begin_object();
+		output.key("construct");
+		output.string(construct.construct);
+		output.key("handling");
+		output.string(to_json_string(construct.handling));
+		output.key("construct_reason");
+		output.string(construct.reason);
+		output.key("fallbacks");
 		append_string_array(output, construct.fallbacks);
-		output << ", \"location\": ";
+		output.key("location");
 		append_location(output, construct.location);
-		output << ", ";
 		append_evidence(output, construct.evidence);
-		output << "}";
-		output << (index + 1U == plan.unsupported_or_modeled_constructs.size() ? "\n" : ",\n");
+		output.end_object();
 	}
-	output << "  ],\n";
+	output.end_array();
 
-	output << "  \"control_flow_summary\": {";
-	output << "\"has_if\": ";
-	append_bool(output, plan.control_flow_summary.has_if);
-	output << ", \"has_switch\": ";
-	append_bool(output, plan.control_flow_summary.has_switch);
-	output << ", \"has_loop\": ";
-	append_bool(output, plan.control_flow_summary.has_loop);
-	output << ", \"has_range_for\": ";
-	append_bool(output, plan.control_flow_summary.has_range_for);
-	output << ", \"has_try\": ";
-	append_bool(output, plan.control_flow_summary.has_try);
-	output << ", \"has_throw\": ";
-	append_bool(output, plan.control_flow_summary.has_throw);
-	output << ", \"has_return\": ";
-	append_bool(output, plan.control_flow_summary.has_return);
-	output << ", \"conservative\": ";
-	append_bool(output, plan.control_flow_summary.conservative);
-	output << ", \"conservative_reasons\": ";
+	output.key("control_flow_summary");
+	output.begin_object();
+	output.key("has_if");
+	output.boolean(plan.control_flow_summary.has_if);
+	output.key("has_switch");
+	output.boolean(plan.control_flow_summary.has_switch);
+	output.key("has_loop");
+	output.boolean(plan.control_flow_summary.has_loop);
+	output.key("has_range_for");
+	output.boolean(plan.control_flow_summary.has_range_for);
+	output.key("has_try");
+	output.boolean(plan.control_flow_summary.has_try);
+	output.key("has_throw");
+	output.boolean(plan.control_flow_summary.has_throw);
+	output.key("has_return");
+	output.boolean(plan.control_flow_summary.has_return);
+	output.key("conservative");
+	output.boolean(plan.control_flow_summary.conservative);
+	output.key("conservative_reasons");
 	append_string_array(output, plan.control_flow_summary.conservative_reasons);
-	output << "},\n";
+	output.end_object();
 
-	output << "  \"envelope_requirements\": [\n";
-	for (auto index = std::size_t{0}; index < plan.envelope_requirements.size(); ++index)
+	output.key("envelope_requirements");
+	output.begin_array();
+	for (auto const& requirement : plan.envelope_requirements)
 	{
-		auto const& requirement = plan.envelope_requirements[index];
-		output << "    {\"kind\": ";
-		append_json_string(output, to_json_string(requirement.kind));
-		output << ", \"requirement_reason\": ";
-		append_json_string(output, requirement.reason);
-		output << ", \"source\": ";
-		append_json_string(output, requirement.source);
-		output << ", ";
+		output.begin_object();
+		output.key("kind");
+		output.string(to_json_string(requirement.kind));
+		output.key("requirement_reason");
+		output.string(requirement.reason);
+		output.key("source");
+		output.string(requirement.source);
 		append_evidence(output, requirement.evidence);
-		output << "}";
-		output << (index + 1U == plan.envelope_requirements.size() ? "\n" : ",\n");
+		output.end_object();
 	}
-	output << "  ],\n";
+	output.end_array();
 
-	output << "  \"rule_coverage\": [\n";
-	for (auto index = std::size_t{0}; index < plan.rule_coverage.size(); ++index)
+	output.key("rule_coverage");
+	output.begin_array();
+	for (auto const& coverage : plan.rule_coverage)
 	{
-		auto const& coverage = plan.rule_coverage[index];
-		output << "    {\"rule_id\": ";
-		append_json_string(output, coverage.rule_id);
-		output << ", \"handling\": ";
-		append_json_string(output, to_json_string(coverage.handling));
-		output << ", \"note\": ";
-		append_json_string(output, coverage.note);
-		output << ", \"observed\": ";
-		append_bool(output, coverage.observed);
-		output << "}";
-		output << (index + 1U == plan.rule_coverage.size() ? "\n" : ",\n");
+		output.begin_object();
+		output.key("rule_id");
+		output.string(coverage.rule_id);
+		output.key("handling");
+		output.string(to_json_string(coverage.handling));
+		output.key("note");
+		output.string(coverage.note);
+		output.key("observed");
+		output.boolean(coverage.observed);
+		output.end_object();
 	}
-	output << "  ],\n";
+	output.end_array();
 
-	output << "  \"paths\": [\n";
-	for (auto index = std::size_t{0}; index < plan.paths.size(); ++index)
+	output.key("paths");
+	output.begin_array();
+	for (auto const& path : plan.paths)
 	{
-		auto const& path = plan.paths[index];
-		output << "    {\"name\": ";
-		append_json_string(output, path.name);
-		output << ", \"observations\": ";
+		output.begin_object();
+		output.key("name");
+		output.string(path.name);
+		output.key("observations");
 		append_string_array(output, path.observations);
-		output << ", \"effects\": ";
+		output.key("effects");
 		append_string_array(output, path.effects);
-		output << ", \"operations\": ";
+		output.key("operations");
 		append_string_array(output, path.operations);
-		output << ", \"loop_body_observations\": ";
+		output.key("loop_body_observations");
 		append_string_array(output, path.loop_body_observations);
-		output << ", \"required_envelopes\": ";
+		output.key("required_envelopes");
 		append_canonical_token_array(output, path.required_envelopes);
-		output << ", \"conservative_reason\": ";
-		append_json_string(output, path.conservative_reason);
-		output << ", ";
+		output.key("conservative_reason");
+		output.string(path.conservative_reason);
 		append_evidence(output, path.evidence);
-		output << "}";
-		output << (index + 1U == plan.paths.size() ? "\n" : ",\n");
+		output.end_object();
 	}
-	output << "  ],\n";
+	output.end_array();
 
-	output << R"(  "gtest_preview": {"sample_test_path": )";
-	append_json_string(output, plan.gtest_preview.sample_test_path);
-	output << ", \"lines\": ";
+	output.key("gtest_preview");
+	output.begin_object();
+	output.key("sample_test_path");
+	output.string(plan.gtest_preview.sample_test_path);
+	output.key("lines");
 	append_string_array(output, plan.gtest_preview.lines);
-	output << "},\n";
+	output.end_object();
 
-	output << "  \"diagnostics\": [\n";
-	for (auto index = std::size_t{0}; index < plan.diagnostics.entries().size(); ++index)
+	output.key("diagnostics");
+	output.begin_array();
+	for (auto const& diagnostic : plan.diagnostics.entries())
 	{
-		auto const& diagnostic = plan.diagnostics.entries()[index];
-		output << "    {\"severity\": ";
-		append_json_string(output, to_string(diagnostic.severity));
-		output << ", \"code\": ";
-		append_json_string(output, diagnostic.code);
-		output << ", \"message\": ";
-		append_json_string(output, diagnostic.message);
-		output << ", \"location\": ";
+		output.begin_object();
+		output.key("severity");
+		output.string(to_string(diagnostic.severity));
+		output.key("code");
+		output.string(diagnostic.code);
+		output.key("message");
+		output.string(diagnostic.message);
+		output.key("location");
 		append_location(output, diagnostic.location);
-		output << "}";
-		output << (index + 1U == plan.diagnostics.entries().size() ? "\n" : ",\n");
+		output.end_object();
 	}
-	output << "  ]\n";
-	output << "}\n";
+	output.end_array();
+	output.end_object();
+	stream << '\n';
 
-	return output.str();
+	return stream.str();
 }
 
 } // namespace azteca
