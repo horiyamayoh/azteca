@@ -137,6 +137,7 @@ add_library(
 	src/frontend/InspectFrontend.cpp
 	src/mmir/MMIR.cpp
 	src/plan/ExtractionPlan.cpp
+	src/report/DiagnosticCatalog.cpp
 	src/report/InspectReport.cpp
 	src/resolve/MethodSelector.cpp
 	src/MethodSpec.cpp
@@ -174,9 +175,60 @@ if(BUILD_TESTING)
 			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseAInspect.cmake
 	)
 
+	add_test(
+		NAME phase_a_cli_surface
+		COMMAND
+			${CMAKE_COMMAND}
+			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
+			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseACliSurface.cmake
+	)
+
+	add_test(
+		NAME phase_a_schema_v2_check
+		COMMAND
+			${CMAKE_COMMAND}
+			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
+			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-P ${PROJECT_SOURCE_DIR}/tests/contract/schema_v2/PhaseASchemaV2.cmake
+	)
+
+	add_test(
+		NAME phase_a_encoding_robustness
+		COMMAND
+			${CMAKE_COMMAND}
+			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
+			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseAEncodingRobustness.cmake
+	)
+
+	add_test(
+		NAME phase_a_perf_smoke
+		COMMAND
+			${CMAKE_COMMAND}
+			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
+			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+			-P ${PROJECT_SOURCE_DIR}/tests/perf/phase_a/PhaseAPerfSmoke.cmake
+	)
+
+	add_test(
+		NAME phase_a_coverage_matrix
+		COMMAND
+			${CMAKE_COMMAND}
+			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
+			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseACoverageMatrix.cmake
+	)
+
 	if(GTest_FOUND)
 		add_executable(
 			azteca_unit_tests
+			tests/unit/AssertTests.cpp
+			tests/unit/DiagnosticCatalogTests.cpp
 			tests/unit/ExtractionPlanTests.cpp
 			tests/unit/MethodSpecTests.cpp
 		)
@@ -296,5 +348,18 @@ add_custom_target(
 	COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
 	DEPENDS ${AZTECA_TEST_DEPENDENCIES} format-check prettier-check reference-check lint
 	COMMENT "Running all local quality gates"
+	VERBATIM
+)
+
+# Phase A release gate: runs only the contract / surface tests that must
+# pass before tagging a Phase A release. Intended for CI release jobs and
+# pre-tag local verification. Excludes lint/perf to keep it fast.
+add_custom_target(
+	release-check
+	COMMAND
+		${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
+		-R "phase_a_(cli_surface|schema_v2_check|inspect_fixture|encoding_robustness|coverage_matrix)|DiagnosticCatalog|InspectReport"
+	DEPENDS ${AZTECA_TEST_DEPENDENCIES} format-check prettier-check
+	COMMENT "Running Phase A release contract gates"
 	VERBATIM
 )

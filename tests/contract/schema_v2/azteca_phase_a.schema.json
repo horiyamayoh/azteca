@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://azteca.dev/schema/phase_a/v2",
+  "title": "Azteca Phase A Inspect Report",
+  "description": "Frozen contract for `azteca inspect --format json` (schema_version 2).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "azteca_phase",
+    "target",
+    "result",
+    "confidence",
+    "receiver_state",
+    "dependency_observations",
+    "observable_effects",
+    "operations",
+    "recursive_helper_candidates",
+    "shape_candidates",
+    "object_ref_requirements",
+    "semantic_features",
+    "unsupported_or_modeled_constructs",
+    "control_flow_summary",
+    "envelope_requirements",
+    "rule_coverage",
+    "paths",
+    "gtest_preview",
+    "diagnostics"
+  ],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "azteca_phase": { "const": "A" },
+    "result": {
+      "enum": ["extracted", "extracted-with-conservative-notes", "invalid-plan"]
+    },
+    "confidence": { "enum": ["high", "medium", "low"] }
+  }
+}

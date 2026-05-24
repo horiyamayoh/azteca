@@ -1,0 +1,31 @@
+azteca - extract C++ non-static member function logic for Google Test (Phase A)
+
+Usage:
+  azteca --help
+  azteca inspect -p <build-dir> --method 'C::m(args...)'
+                 [--template-args 'T,...'] [--source <file>]
+                 [--format text|json] [--verbose|--quiet]
+  azteca explain <diagnostic-id>
+
+Phase A subcommands:
+  inspect   Display the Extraction Plan for the target method.
+  explain   Describe a diagnostic id (AZT-E* / AZT-W*).
+
+Common options:
+  -p, --build-dir <dir>     Directory containing compile_commands.json (required).
+  --method <spec>           Method spec, e.g. 'C::m(int)' (required for inspect).
+  --template-args <csv>     Override template arguments in --method.
+  --source <file>           Translation unit file for disambiguation.
+  --format <text|json>      Output format (default: text).
+  --verbose                 Emit per-element evidence (text only).
+  --quiet                   Suppress stdout; communicate via exit code.
+  -h, --help                Show this help and exit.
+
+Exit codes:
+  0  success
+  1  user input error
+  2  compile database error
+  3  method resolution error
+  4  extraction planning error
+
+Phase A contract: docs/spec/phase_a_cli.md

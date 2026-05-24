@@ -1,5 +1,6 @@
 {
   "schema_version": 2,
+  "azteca_phase": "A",
   "target": {
     "qualified_name": "EscapeExample::link",
     "signature": "void()",

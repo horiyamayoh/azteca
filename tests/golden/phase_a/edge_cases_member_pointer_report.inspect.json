@@ -1,5 +1,6 @@
 {
   "schema_version": 2,
+  "azteca_phase": "A",
   "target": {
     "qualified_name": "EdgeCases::member_pointer_report",
     "signature": "int() const",

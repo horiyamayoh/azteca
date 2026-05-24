@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "azteca/DiagnosticCatalog.hpp"
 #include "azteca/InspectFrontend.hpp"
 #include "azteca/InspectReport.hpp"
 #include "azteca/MethodSpec.hpp"
@@ -33,11 +34,43 @@ struct CliOptions
 
 void print_help()
 {
-	std::cout << "Usage:\n"
-	          << "  azteca --help\n"
-	          << "  azteca inspect -p <build-dir> --method 'C::m(args...)' "
-	          << "[--template-args 'T,...'] [--source <file>] [--format text|json] "
-	          << "[--verbose|--quiet]\n";
+	std::cout
+	    << "azteca - extract C++ non-static member function logic for Google Test (Phase A)\n"
+	    << "\n"
+	    << "Usage:\n"
+	    << "  azteca --help\n"
+	    << "  azteca inspect -p <build-dir> --method 'C::m(args...)'\n"
+	    << "                 [--template-args 'T,...'] [--source <file>]\n"
+	    << "                 [--format text|json] [--verbose|--quiet]\n"
+	    << "  azteca explain <diagnostic-id>\n"
+	    << "\n"
+	    << "Phase A subcommands:\n"
+	    << "  inspect   Display the Extraction Plan for the target method.\n"
+	    << "  explain   Describe a diagnostic id (AZT-E* / AZT-W*).\n"
+	    << "\n"
+	    << "Common options:\n"
+	    << "  -p, --build-dir <dir>     Directory containing compile_commands.json (required).\n"
+	    << "  --method <spec>           Method spec, e.g. 'C::m(int)' (required for inspect).\n"
+	    << "  --template-args <csv>     Override template arguments in --method.\n"
+	    << "  --source <file>           Translation unit file for disambiguation.\n"
+	    << "  --format <text|json>      Output format (default: text).\n"
+	    << "  --verbose                 Emit per-element evidence (text only).\n"
+	    << "  --quiet                   Suppress stdout; communicate via exit code.\n"
+	    << "  -h, --help                Show this help and exit.\n"
+	    << "\n"
+	    << "Exit codes:\n"
+	    << "  0  success\n"
+	    << "  1  user input error\n"
+	    << "  2  compile database error\n"
+	    << "  3  method resolution error\n"
+	    << "  4  extraction planning error\n"
+	    << "\n"
+	    << "Phase A contract: docs/spec/phase_a_cli.md\n";
+}
+
+void cli_error(std::string_view diagnostic_id, std::string_view message)
+{
+	std::cerr << diagnostic_id << ": " << message << '\n';
 }
 
 [[nodiscard]] bool has_value(int index, int argc)
@@ -71,11 +104,19 @@ void print_help()
 			continue;
 		}
 
+		// For `explain`, accept a single positional argument as the diagnostic id.
+		if (options.command == "explain" && options.method_spec.empty() && !argument.empty() &&
+		    argument.front() != '-')
+		{
+			options.method_spec = argument;
+			continue;
+		}
+
 		if (argument == "-p" || argument == "--build-dir")
 		{
 			if (!has_value(index, argc))
 			{
-				std::cerr << "missing value for " << argument << '\n';
+				cli_error("AZT-E0001", std::string{"missing value for "} + argument);
 				return std::nullopt;
 			}
 			++index;
@@ -85,7 +126,7 @@ void print_help()
 		{
 			if (!has_value(index, argc))
 			{
-				std::cerr << "missing value for --method\n";
+				cli_error("AZT-E0001", "missing value for --method");
 				return std::nullopt;
 			}
 			++index;
@@ -95,7 +136,7 @@ void print_help()
 		{
 			if (!has_value(index, argc))
 			{
-				std::cerr << "missing value for --source\n";
+				cli_error("AZT-E0001", "missing value for --source");
 				return std::nullopt;
 			}
 			++index;
@@ -115,7 +156,7 @@ void print_help()
 		{
 			if (!has_value(index, argc))
 			{
-				std::cerr << "missing value for --format\n";
+				cli_error("AZT-E0001", "missing value for --format");
 				return std::nullopt;
 			}
 			++index;
@@ -130,7 +171,7 @@ void print_help()
 			}
 			else
 			{
-				std::cerr << "unsupported format: " << format << '\n';
+				cli_error("AZT-E0006", std::string{"unsupported format: "} + format);
 				return std::nullopt;
 			}
 		}
@@ -144,7 +185,7 @@ void print_help()
 		}
 		else
 		{
-			std::cerr << "unknown option: " << argument << '\n';
+			cli_error("AZT-E0001", std::string{"unknown option: "} + argument);
 			return std::nullopt;
 		}
 	}
@@ -168,22 +209,39 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
+	if (options->command == "explain")
+	{
+		if (options->method_spec.empty())
+		{
+			cli_error("AZT-E0001", "explain requires a diagnostic id argument");
+			return static_cast<int>(azteca::InspectStatus::kUserInputError);
+		}
+		auto info = azteca::find_diagnostic(options->method_spec);
+		if (!info.has_value())
+		{
+			cli_error("AZT-E0003", std::string{"unknown diagnostic id: "} + options->method_spec);
+			return static_cast<int>(azteca::InspectStatus::kUserInputError);
+		}
+		std::cout << azteca::render_explain(*info);
+		return 0;
+	}
+
 	if (options->command != "inspect")
 	{
-		std::cerr << "unsupported command: " << options->command << '\n';
+		cli_error("AZT-E0002", std::string{"unknown command: "} + options->command);
 		return static_cast<int>(azteca::InspectStatus::kUserInputError);
 	}
 
 	if (options->build_dir.empty())
 	{
-		std::cerr << "inspect requires -p/--build-dir\n";
+		cli_error("AZT-E0001", "inspect requires -p/--build-dir");
 		return static_cast<int>(azteca::InspectStatus::kUserInputError);
 	}
 
 	auto parse_result = azteca::parse_method_spec(options->method_spec);
 	if (!parse_result.spec.has_value())
 	{
-		std::cerr << "invalid --method: " << parse_result.error << '\n';
+		cli_error("AZT-E0004", std::string{"invalid --method: "} + parse_result.error);
 		return static_cast<int>(azteca::InspectStatus::kUserInputError);
 	}
 
@@ -192,7 +250,7 @@ int main(int argc, char** argv)
 		auto template_args = azteca::parse_template_arguments(*options->template_args);
 		if (!template_args.arguments.has_value())
 		{
-			std::cerr << "invalid --template-args: " << template_args.error << '\n';
+			cli_error("AZT-E0005", std::string{"invalid --template-args: "} + template_args.error);
 			return static_cast<int>(azteca::InspectStatus::kUserInputError);
 		}
 
@@ -207,8 +265,8 @@ int main(int argc, char** argv)
 		        });
 		if (!parse_result.spec->template_arguments.empty() && !kTemplateArgumentsMatch)
 		{
-			std::cerr
-			    << "invalid --template-args: values differ from --method template arguments\n";
+			cli_error("AZT-E0005",
+			    "invalid --template-args: values differ from --method template arguments");
 			return static_cast<int>(azteca::InspectStatus::kUserInputError);
 		}
 		parse_result.spec->template_arguments = std::move(*template_args.arguments);
@@ -225,6 +283,11 @@ int main(int argc, char** argv)
 	{
 		for (auto const& diagnostic : result.diagnostics.entries())
 		{
+			auto public_id = azteca::public_diagnostic_id(diagnostic.code);
+			if (public_id.has_value())
+			{
+				std::cerr << *public_id << ' ';
+			}
 			std::cerr << azteca::to_string(diagnostic.severity) << ' ' << diagnostic.code << ": "
 			          << diagnostic.message << '\n';
 		}

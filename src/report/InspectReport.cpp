@@ -182,6 +182,7 @@ std::string render_text_report(ExtractionPlan const& plan, ReportOptions const& 
 	std::ostringstream output;
 
 	output << "Azteca can inspect " << plan.target.qualified_name << ".\n\n";
+	output << "Azteca phase: " << plan.azteca_phase << "\n\n";
 	output << "Extraction result: " << plan.result << "\n\n";
 	output << "Confidence: " << plan.confidence << "\n\n";
 	output << "Generated Google Test preview:\n";
@@ -505,6 +506,9 @@ std::string render_json_report(ExtractionPlan const& plan)
 	std::ostringstream output;
 	output << "{\n";
 	output << "  \"schema_version\": " << plan.schema_version << ",\n";
+	output << "  \"azteca_phase\": ";
+	append_json_string(output, plan.azteca_phase);
+	output << ",\n";
 	output << "  \"target\": {\n";
 	output << "    \"qualified_name\": ";
 	append_json_string(output, plan.target.qualified_name);

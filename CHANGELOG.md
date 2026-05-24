@@ -1,0 +1,55 @@
+# Changelog
+
+All notable changes to Azteca are documented here. The Phase A `inspect`
+schema and CLI surface follow [Semantic Versioning](https://semver.org/).
+
+The public contract covered by semver is:
+
+- `azteca inspect --format json` document shape (`schema_version`, top-level
+  keys, enum values) — see [docs/spec/phase_a_inspect_schema_v2.md](docs/spec/phase_a_inspect_schema_v2.md)
+- `azteca inspect --format text` section order and headings — see
+  [docs/spec/phase_a_text_output.md](docs/spec/phase_a_text_output.md)
+- CLI subcommands, options, exit codes — see
+  [docs/spec/phase_a_cli.md](docs/spec/phase_a_cli.md)
+- Diagnostic id registry (`AZT-Exxxx` / `AZT-Wxxxx`) — see
+  [include/azteca/DiagnosticCatalog.hpp](include/azteca/DiagnosticCatalog.hpp)
+
+Removing or semantically changing any of the above requires a major bump.
+Additive changes (new optional JSON keys, new diagnostic ids, new optional
+CLI flags) are minor bumps. Bug fixes and text-detail improvements are
+patch bumps.
+
+## [Unreleased]
+
+### Added
+
+- `azteca_phase: "A"` top-level field in the inspect JSON report.
+- `azteca explain <diagnostic-id>` subcommand backed by a frozen 12-entry
+  diagnostic catalog (`AZT-E0001` … `AZT-E0011`, `AZT-W0001`).
+- CLI error messages now carry stable `AZT-E*` ids on stderr.
+- Internal `AZTECA_*` diagnostic codes are mapped to public `AZT-E*` ids
+  in `inspect` failure output.
+- `AZTECA_ASSERT` macro for tool-bug invariants (always-on; emits
+  `AZT-E0011` and aborts).
+- New contract tests: `phase_a_cli_surface` (help golden, AZT-\* id
+  coverage, JSON stdout-purity on failure) and `phase_a_schema_v2_check`.
+- New robustness tests: `phase_a_encoding_robustness` (BOM / CRLF / UTF-8
+  identifier source files) and `phase_a_coverage_matrix` (gap-fillers for
+  `operator` / destructor / coroutine targets from
+  `docs/planning/25_phase_a_inspect_coverage.md`).
+- New baseline test: `phase_a_perf_smoke` (50 filler TUs, warns above a
+  generous wall-time threshold; non-blocking baseline for H5).
+- Strict `.clang-tidy`: `cert-*` and `cppcoreguidelines-*` are now
+  warnings-as-errors; documented per-check exclusions only for known
+  noise (visitor-pattern reference members, libTooling const_cast,
+  GoogleTest static initializers, magic numbers, c-arrays).
+- CI: `release-check` job now runs each Phase A contract test as a
+  named step; new non-blocking `perf-smoke` job tracks H5 baseline.
+- New Phase A specs: `docs/spec/phase_a_cli.md`,
+  `docs/spec/phase_a_inspect_schema_v2.md`,
+  `docs/spec/phase_a_text_output.md`.
+
+### Changed
+
+- Inspect JSON `schema_version` is now `2`; the document layout is frozen
+  per the schema spec above.

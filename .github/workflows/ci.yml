@@ -81,3 +81,95 @@ jobs:
 
       - name: Test
         run: ctest --preset asan-clang
+
+  release-check:
+    name: Phase A Release Gates
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install LLVM and build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang-18 \
+            clang-format-18 \
+            clang-tidy-18 \
+            llvm-18-dev \
+            libclang-18-dev \
+            libgtest-dev \
+            cmake \
+            ninja-build
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Configure
+        run: cmake --preset dev-clang
+
+      - name: Build
+        run: cmake --build --preset dev-clang --parallel
+
+      - name: Phase A contract gates
+        run: cmake --build --preset dev-clang --target release-check
+
+      - name: Phase A — CLI surface
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_cli_surface$"
+
+      - name: Phase A — schema v2
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_schema_v2_check$"
+
+      - name: Phase A — inspect fixtures
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_inspect_fixture$"
+
+      - name: Phase A — coverage matrix
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_coverage_matrix$"
+
+      - name: Phase A — encoding robustness
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_encoding_robustness$"
+
+      - name: Phase A — diagnostic id catalog
+        run: ctest --preset dev-clang --output-on-failure -R "DiagnosticCatalog|InspectReport"
+
+      - name: Verify goldens are not auto-updated in CI
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Working tree dirty after release-check; goldens must not change in CI."
+            git --no-pager diff
+            exit 1
+          fi
+
+  perf-smoke:
+    name: Phase A Perf Smoke (non-blocking)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install LLVM and build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang-18 \
+            llvm-18-dev \
+            libclang-18-dev \
+            libgtest-dev \
+            cmake \
+            ninja-build
+
+      - name: Configure
+        run: cmake --preset dev-clang
+
+      - name: Build
+        run: cmake --build --preset dev-clang --parallel
+
+      - name: Run perf smoke
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_perf_smoke$"

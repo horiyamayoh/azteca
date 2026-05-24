@@ -823,7 +823,7 @@ if(NOT unknown_command_result EQUAL 1)
 		"${unknown_command_output}\n${unknown_command_error}"
 	)
 endif()
-assert_contains("${unknown_command_error}" "unsupported command: scan" "unknown command stderr")
+assert_contains("${unknown_command_error}" "AZT-E0002" "unknown command stderr")
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect --bogus
@@ -838,7 +838,7 @@ if(NOT unknown_option_result EQUAL 1)
 		"${unknown_option_output}\n${unknown_option_error}"
 	)
 endif()
-assert_contains("${unknown_option_error}" "unknown option: --bogus" "unknown option stderr")
+assert_contains("${unknown_option_error}" "AZT-E0001" "unknown option stderr")
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect --method "Service::handle(Id)"
@@ -853,7 +853,7 @@ if(NOT missing_build_result EQUAL 1)
 		"${missing_build_output}\n${missing_build_error}"
 	)
 endif()
-assert_contains("${missing_build_error}" "inspect requires -p/--build-dir" "missing build stderr")
+assert_contains("${missing_build_error}" "AZT-E0001" "missing build stderr")
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}"
@@ -868,7 +868,7 @@ if(NOT missing_method_spec_result EQUAL 1)
 		"${missing_method_spec_output}\n${missing_method_spec_error}"
 	)
 endif()
-assert_contains("${missing_method_spec_error}" "invalid --method" "missing method spec stderr")
+assert_contains("${missing_method_spec_error}" "AZT-E0004" "missing method spec stderr")
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
@@ -884,7 +884,7 @@ if(NOT unsupported_format_result EQUAL 1)
 		"${unsupported_format_output}\n${unsupported_format_error}"
 	)
 endif()
-assert_contains("${unsupported_format_error}" "unsupported format: yaml" "unsupported format stderr")
+assert_contains("${unsupported_format_error}" "AZT-E0006" "unsupported format stderr")
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
@@ -902,7 +902,7 @@ if(NOT invalid_template_args_result EQUAL 1)
 	)
 endif()
 assert_contains(
-	"${invalid_template_args_error}" "invalid --template-args" "invalid template args stderr"
+	"${invalid_template_args_error}" "AZT-E0005" "invalid template args stderr"
 )
 
 execute_process(

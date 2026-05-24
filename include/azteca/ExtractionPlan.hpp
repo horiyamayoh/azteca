@@ -176,6 +176,7 @@ struct GTestPreview
 struct ExtractionPlan
 {
 	int schema_version{2};
+	std::string azteca_phase{"A"};
 	TargetInfo target;
 	std::string result{"extracted"};
 	std::string confidence{"high"};
