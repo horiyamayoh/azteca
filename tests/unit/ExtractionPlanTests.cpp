@@ -278,14 +278,14 @@ TEST(InspectReport, JsonErrorResultEmitsDiagnosticsAndPreservesSchemaKeys)
 	azteca::ExtractionPlan plan;
 	plan.target.qualified_name = "Missing::method";
 	plan.target.signature = "void()";
-	plan.result = "error";
+	plan.result = "invalid-plan";
 	plan.confidence = "low";
 	plan.diagnostics.add(
 	    azteca::DiagnosticSeverity::kError, "AZT-E0008", "method not found in any TU");
 
 	auto json = azteca::render_json_report(plan);
 
-	EXPECT_NE(json.find("\"result\": \"error\""), std::string::npos);
+	EXPECT_NE(json.find("\"result\": \"invalid-plan\""), std::string::npos);
 	EXPECT_NE(json.find("\"confidence\": \"low\""), std::string::npos);
 	EXPECT_NE(json.find("\"AZT-E0008\""), std::string::npos);
 	EXPECT_NE(json.find("\"severity\": \"error\""), std::string::npos);
@@ -294,6 +294,21 @@ TEST(InspectReport, JsonErrorResultEmitsDiagnosticsAndPreservesSchemaKeys)
 	// do not need to branch on success vs error when parsing.
 	EXPECT_NE(json.find("\"receiver_state\""), std::string::npos);
 	EXPECT_NE(json.find("\"diagnostics\""), std::string::npos);
+}
+
+TEST(InspectReport, JsonResultValuesStayInsidePhaseAContract)
+{
+	for (auto const* result : {"extracted", "extracted-with-conservative-notes", "invalid-plan"})
+	{
+		azteca::ExtractionPlan plan;
+		plan.target.qualified_name = "Contract::method";
+		plan.result = result;
+
+		auto json = azteca::render_json_report(plan);
+
+		EXPECT_NE(json.find(std::string{"\"result\": \""} + result + "\""), std::string::npos)
+		    << result;
+	}
 }
 
 TEST(InspectReport, JsonDiagnosticsIncludePublicIdForInternalCodes)

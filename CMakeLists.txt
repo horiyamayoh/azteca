@@ -141,10 +141,15 @@ add_library(
 	src/collect/InspectCollector.cpp
 	src/collect/PathAnalyzer.cpp
 	src/frontend/InspectFrontend.cpp
+	src/frontend/PlanBuilder.cpp
+	src/frontend/PlanBuilderAst.cpp
+	src/frontend/PlanBuilderDependencies.cpp
+	src/frontend/PlanBuilderState.cpp
 	src/frontend/InspectSource.cpp
 	src/gtest/GTestPreview.cpp
 	src/mmir/MMIR.cpp
 	src/plan/ExtractionPlan.cpp
+	src/plan/RuleCoverageRegistry.cpp
 	src/report/DiagnosticCatalog.cpp
 	src/report/InspectReport.cpp
 	src/report/JsonWriter.cpp
@@ -296,6 +301,7 @@ if(BUILD_TESTING)
 			tests/unit/InspectCollectorTests.cpp
 			tests/unit/JsonWriterTests.cpp
 			tests/unit/MethodSpecTests.cpp
+			tests/unit/RuleCoverageRegistryTests.cpp
 		)
 		target_include_directories(azteca_unit_tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
 		target_link_libraries(azteca_unit_tests PRIVATE azteca_core GTest::gtest_main)
