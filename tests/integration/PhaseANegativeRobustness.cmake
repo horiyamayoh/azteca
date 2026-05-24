@@ -13,6 +13,8 @@ endif()
 # Build the simple fixture so we have a valid compile DB to attack against.
 set(fixture_source "${PROJECT_SOURCE_DIR}/tests/fixtures/phase_a/simple")
 set(fixture_build "${PROJECT_BINARY_DIR}/test-work/phase_a/simple")
+set(malformed_source "${PROJECT_SOURCE_DIR}/tests/negative/phase_a_malformed")
+set(malformed_build "${PROJECT_BINARY_DIR}/test-work/phase_a/malformed")
 
 execute_process(
 	COMMAND
@@ -29,6 +31,23 @@ execute_process(
 
 if(NOT configure_result EQUAL 0)
 	message(FATAL_ERROR "fixture configure failed:\n${configure_output}\n${configure_error}")
+endif()
+
+execute_process(
+	COMMAND
+		${CMAKE_COMMAND}
+		-S "${malformed_source}"
+		-B "${malformed_build}"
+		-G Ninja
+		-DCMAKE_CXX_COMPILER=clang++-18
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	RESULT_VARIABLE malformed_configure_result
+	OUTPUT_VARIABLE malformed_configure_output
+	ERROR_VARIABLE malformed_configure_error
+)
+
+if(NOT malformed_configure_result EQUAL 0)
+	message(FATAL_ERROR "malformed fixture configure failed:\n${malformed_configure_output}\n${malformed_configure_error}")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -148,7 +167,55 @@ foreach(bad_spec
 endforeach()
 
 # ---------------------------------------------------------------------------
-# 5. Repeated --format value: last one wins or rejected — must not crash.
+# 5. --source not present in compile_commands.json -> exit 2, AZT-E0007.
+# ---------------------------------------------------------------------------
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}"
+			--source "${fixture_source}/include/real_project/api.hpp"
+			--method "real::project::Runner::inspect(int)" --format json
+	RESULT_VARIABLE source_not_found_result
+	OUTPUT_VARIABLE source_not_found_stdout
+	ERROR_VARIABLE source_not_found_stderr
+)
+assert_failure_contract(
+	"--source not in compile DB" 2 "AZT-E0007" ${source_not_found_result}
+	"${source_not_found_stdout}" "${source_not_found_stderr}" TRUE
+)
+
+# ---------------------------------------------------------------------------
+# 6. Alias/type spelling mismatch -> exit 3, AZT-E0008.
+# ---------------------------------------------------------------------------
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}"
+			--source "${fixture_source}/real_project.cpp"
+			--method "real::project::Runner::inspect(NoSuchAlias)" --format json
+	RESULT_VARIABLE alias_mismatch_result
+	OUTPUT_VARIABLE alias_mismatch_stdout
+	ERROR_VARIABLE alias_mismatch_stderr
+)
+assert_failure_contract(
+	"alias/type spelling mismatch" 3 "AZT-E0008" ${alias_mismatch_result}
+	"${alias_mismatch_stdout}" "${alias_mismatch_stderr}" TRUE
+)
+
+# ---------------------------------------------------------------------------
+# 7. Malformed macro-heavy TU -> exit 2, AZT-E0007.
+# ---------------------------------------------------------------------------
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${malformed_build}"
+			--source "${malformed_source}/malformed_macro.cpp"
+			--method "BrokenMacroHost::run(int)" --format json
+	RESULT_VARIABLE malformed_result
+	OUTPUT_VARIABLE malformed_stdout
+	ERROR_VARIABLE malformed_stderr
+)
+assert_failure_contract(
+	"malformed macro-heavy TU" 2 "AZT-E0007" ${malformed_result}
+	"${malformed_stdout}" "${malformed_stderr}" TRUE
+)
+
+# ---------------------------------------------------------------------------
+# 8. Repeated --format value: last one wins or rejected — must not crash.
 #    Either AZT-E0001/0006 (rejection) or exit 0 (last-wins) is acceptable;
 #    a crash (exit > 127 or negative) is not.
 # ---------------------------------------------------------------------------
@@ -169,7 +236,7 @@ if(repeated_result LESS 0 OR repeated_result GREATER 127)
 endif()
 
 # ---------------------------------------------------------------------------
-# 6. JSON output on success must be parseable. Re-confirm here so this
+# 9. JSON output on success must be parseable. Re-confirm here so this
 #    test fails fast if a regression makes JSON malformed for any reason.
 # ---------------------------------------------------------------------------
 execute_process(

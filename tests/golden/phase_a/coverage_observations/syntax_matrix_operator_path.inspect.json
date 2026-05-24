@@ -487,12 +487,16 @@
   "gtest_preview": {
     "sample_test_path": "tests/syntaxmatrix_operator_path.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::syntaxmatrix_operator_path{};",
-      "s.self.lhs_ = /* value */;",
-      "s.self.rhs_ = /* value */;",
-      "s.when.op_operator(/* args */).returns(/* value */);",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);"
+      "TEST(syntaxmatrix_operator_path, return_lhs_rhs_value)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_operator_path{};",
+      "  s.self.lhs_ = /* value */;",
+      "  s.self.rhs_ = /* value */;",
+      "  s.when.op_operator(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_lhs_rhs_value */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

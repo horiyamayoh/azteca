@@ -422,11 +422,14 @@
   "gtest_preview": {
     "sample_test_path": "tests/edgecases_ternary.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::edgecases_ternary{};",
-      "s.self.value_ = /* value */;",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.expect_none();"
+      "TEST(edgecases_ternary, return_flag_value_0)",
+      "{",
+      "  auto s = azteca_gen::scenario::edgecases_ternary{};",
+      "  s.self.value_ = /* value */;",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_flag_value_0 */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

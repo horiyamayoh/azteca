@@ -477,11 +477,14 @@
   "gtest_preview": {
     "sample_test_path": "tests/syntaxmatrix_lambda_run.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::syntaxmatrix_lambda_run{};",
-      "s.self.own_ = /* value */;",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.expect_none();"
+      "TEST(syntaxmatrix_lambda_run, return_add_self_value)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_lambda_run{};",
+      "  s.self.own_ = /* value */;",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_add_self_value */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

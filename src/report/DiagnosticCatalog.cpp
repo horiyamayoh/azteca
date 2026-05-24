@@ -80,13 +80,14 @@ std::optional<std::string_view> public_diagnostic_id(std::string_view internal_c
 		std::string_view internal;
 		std::string_view public_id;
 	};
-	static constexpr std::array<Mapping, 21> kMap = {{
+	static constexpr std::array<Mapping, 22> kMap = {{
 	    {"AZTECA_ANONYMOUS_UNION_PARTIAL", "AZT-W0001"},
 	    {"AZTECA_BIT_FIELD_PARTIAL", "AZT-W0001"},
 	    {"AZTECA_CLANG_PARSE_FAILED", "AZT-E0007"},
 	    {"AZTECA_COMPILE_DB_EMPTY", "AZT-E0007"},
 	    {"AZTECA_COMPILE_DB_LOAD_FAILED", "AZT-E0007"},
 	    {"AZTECA_COMPILE_DB_MISSING", "AZT-E0007"},
+	    {"AZTECA_COMPILE_DB_SOURCE_NOT_FOUND", "AZT-E0007"},
 	    {"AZTECA_CONSERVATIVE_CONSTRUCT", "AZT-W0001"},
 	    {"AZTECA_METHOD_AMBIGUOUS", "AZT-E0009"},
 	    {"AZTECA_METHOD_DECL_ONLY", "AZT-E0010"},

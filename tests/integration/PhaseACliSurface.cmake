@@ -172,6 +172,29 @@ assert_or_update_golden(
 	"azteca explain AZT-E0008 output"
 )
 
+# --- explain known internal alias succeeds --------------------------------
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" explain AZTECA_PATH_CONSERVATIVE
+	RESULT_VARIABLE explain_alias_result
+	OUTPUT_VARIABLE explain_alias_output
+	ERROR_VARIABLE explain_alias_error
+)
+
+if(NOT explain_alias_result EQUAL 0)
+	message(
+		FATAL_ERROR
+		"azteca explain AZTECA_PATH_CONSERVATIVE exit was ${explain_alias_result}, expected 0"
+	)
+endif()
+
+if(NOT explain_alias_output MATCHES "AZT-W0001")
+	message(
+		FATAL_ERROR
+		"azteca explain AZTECA_PATH_CONSERVATIVE missing public id in stdout:\n${explain_alias_output}"
+	)
+endif()
+
 # --- explain unknown id fails with AZT-E0003 -----------------------------
 
 execute_process(

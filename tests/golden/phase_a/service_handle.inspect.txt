@@ -131,11 +131,41 @@ Rule coverage:
   - LR-049 [conservative] not observed: constructor calls in method bodies require construction-aware lowering
 
 Google Test preview:
-  auto s = azteca_gen::scenario::service_handle{};
-  s.self.enabled_ = /* value */;
-  s.when.policy_allow(/* args */).returns(/* value */);
-  s.when.repo_exists(/* args */).returns(/* value */);
-  auto result = s.call(/* args */);
-  EXPECT_EQ(result, /* expected */);
-  s.effects.notifier_send.expect_once(/* args */);
+  TEST(service_handle, return_disabled)
+  {
+    auto s = azteca_gen::scenario::service_handle{};
+    s.self.enabled_ = /* value */;
+    auto result = s.call(/* args */);
+    EXPECT_EQ(result, /* expected for return_disabled */);
+    s.effects.expect_none();
+  }
+  TEST(service_handle, return_not_found)
+  {
+    auto s = azteca_gen::scenario::service_handle{};
+    s.self.enabled_ = /* value */;
+    s.when.repo_exists(/* args */).returns(/* value */);
+    auto result = s.call(/* args */);
+    EXPECT_EQ(result, /* expected for return_not_found */);
+    s.effects.expect_none();
+  }
+  TEST(service_handle, return_denied)
+  {
+    auto s = azteca_gen::scenario::service_handle{};
+    s.self.enabled_ = /* value */;
+    s.when.repo_exists(/* args */).returns(/* value */);
+    s.when.policy_allow(/* args */).returns(/* value */);
+    auto result = s.call(/* args */);
+    EXPECT_EQ(result, /* expected for return_denied */);
+    s.effects.expect_none();
+  }
+  TEST(service_handle, return_ok)
+  {
+    auto s = azteca_gen::scenario::service_handle{};
+    s.self.enabled_ = /* value */;
+    s.when.repo_exists(/* args */).returns(/* value */);
+    s.when.policy_allow(/* args */).returns(/* value */);
+    auto result = s.call(/* args */);
+    EXPECT_EQ(result, /* expected for return_ok */);
+    s.effects.notifier_send.expect_once(/* args */);
+  }
 

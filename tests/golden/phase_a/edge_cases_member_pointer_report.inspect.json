@@ -407,16 +407,20 @@
   "gtest_preview": {
     "sample_test_path": "tests/edgecases_member_pointer_report.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::edgecases_member_pointer_report{};",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.expect_none();"
+      "TEST(edgecases_member_pointer_report, return_pointer_nullptr_0_1)",
+      "{",
+      "  auto s = azteca_gen::scenario::edgecases_member_pointer_report{};",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_pointer_nullptr_0_1 */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": [
     {
       "severity": "warning",
       "code": "AZTECA_UNSUPPORTED_CONSTRUCT",
+      "public_id": "AZT-W0001",
       "message": "member function pointer: pointer-to-member target EdgeCases::pointer_target has signature int(int) const and pointer type int (EdgeCases::*)(int) const",
       "location": { "file": "<fixture>/edge_cases.cpp", "line": 73, "column": 18 }
     }

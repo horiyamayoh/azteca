@@ -467,17 +467,21 @@
   "gtest_preview": {
     "sample_test_path": "tests/syntaxmatrix_macro_use.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::syntaxmatrix_macro_use{};",
-      "s.self.own_ = /* value */;",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.expect_none();"
+      "TEST(syntaxmatrix_macro_use, return_azteca_touch_own)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_macro_use{};",
+      "  s.self.own_ = /* value */;",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_azteca_touch_own */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": [
     {
       "severity": "warning",
       "code": "AZTECA_CONSERVATIVE_CONSTRUCT",
+      "public_id": "AZT-W0001",
       "message": "macro expansion: macro expansion requires source-map-aware regeneration",
       "location": { "file": "<fixture>/syntax_matrix.cpp", "line": 158, "column": 3 }
     }

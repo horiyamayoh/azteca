@@ -409,11 +409,14 @@
   "gtest_preview": {
     "sample_test_path": "tests/edgecases_explicit_this_read.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::edgecases_explicit_this_read{};",
-      "s.self.value_ = /* value */;",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.expect_none();"
+      "TEST(edgecases_explicit_this_read, return_this_value)",
+      "{",
+      "  auto s = azteca_gen::scenario::edgecases_explicit_this_read{};",
+      "  s.self.value_ = /* value */;",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_this_value */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

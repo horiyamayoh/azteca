@@ -410,9 +410,12 @@
   "gtest_preview": {
     "sample_test_path": "tests/escapeexample_link.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::escapeexample_link{};",
-      "s.call(/* args */);",
-      "s.effects.publish.expect_once(/* args */);"
+      "TEST(escapeexample_link, path_1)",
+      "{",
+      "  auto s = azteca_gen::scenario::escapeexample_link{};",
+      "  s.call(/* args */);",
+      "  s.effects.publish.expect_once(/* args */);",
+      "}"
     ]
   },
   "diagnostics": []

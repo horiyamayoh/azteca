@@ -455,10 +455,20 @@
   "gtest_preview": {
     "sample_test_path": "tests/syntaxmatrix_release.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::syntaxmatrix_release{};",
-      "s.self.own_ = /* value */;",
-      "s.call(/* args */);",
-      "s.effects.expect_none();"
+      "TEST(syntaxmatrix_release, path_1)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_release{};",
+      "  s.self.own_ = /* value */;",
+      "  s.call(/* args */);",
+      "  s.effects.expect_none();",
+      "}",
+      "TEST(syntaxmatrix_release, path_2)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_release{};",
+      "  s.self.own_ = /* value */;",
+      "  s.call(/* args */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

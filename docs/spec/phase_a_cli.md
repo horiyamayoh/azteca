@@ -57,8 +57,10 @@ azteca explain <diagnostic-id>
 
 引数:
 
-- `<diagnostic-id>` (必須): `AZT-E0001` などの ID。lowering rule の `LR-xxx`
-  は本コマンドの対象外 (将来別コマンドで提供する可能性あり)
+- `<diagnostic-id>` (必須): `AZT-E0001` などの公開 ID。既知の内部
+  `AZTECA_*` code も alias として受け付け、対応する公開 ID の説明を返す。
+  lowering rule の `LR-xxx` は本コマンドの対象外 (将来別コマンドで提供する
+  可能性あり)
 
 stdout に説明テキストを返す。未知 ID は `AZT-E0003 unknown diagnostic id` を
 stderr に出して exit 1。

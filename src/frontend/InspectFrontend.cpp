@@ -22,6 +22,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -2494,6 +2495,11 @@ class MethodLookupVisitor : public clang::RecursiveASTVisitor<MethodLookupVisito
 			return true;
 		}
 
+		if (!method->isThisDeclarationADefinition() && method->getDefinition() != nullptr)
+		{
+			return true;
+		}
+
 		if (auto const* function_template = method->getDescribedFunctionTemplate();
 		    function_template != nullptr)
 		{
@@ -2655,6 +2661,36 @@ class InspectActionFactory final : public clang::tooling::FrontendActionFactory
 	ToolState& state_;
 };
 
+[[nodiscard]] std::filesystem::path comparable_source_path(std::string const& path)
+{
+	std::error_code error;
+	auto absolute = std::filesystem::absolute(std::filesystem::path(path), error);
+	if (error)
+	{
+		return std::filesystem::path(path).lexically_normal();
+	}
+
+	auto canonical = std::filesystem::weakly_canonical(absolute, error);
+	if (error)
+	{
+		return absolute.lexically_normal();
+	}
+
+	return canonical.lexically_normal();
+}
+
+[[nodiscard]] bool source_file_is_in_database(
+    clang::tooling::CompilationDatabase const& database, std::string const& requested_source)
+{
+	auto requested_path = comparable_source_path(requested_source);
+	auto source_files = database.getAllFiles();
+	return std::ranges::any_of(source_files,
+	    [&requested_path](std::string const& source_file)
+	    {
+		    return comparable_source_path(source_file) == requested_path;
+	    });
+}
+
 [[nodiscard]] std::vector<std::string> source_files(
     clang::tooling::CompilationDatabase const& database,
     std::optional<std::string> const& requested_source)
@@ -2710,6 +2746,15 @@ InspectResult inspect_method(InspectOptions const& options)
 		result.status = InspectStatus::kCompileDatabaseError;
 		result.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_COMPILE_DB_LOAD_FAILED",
 		    error.empty() ? "failed to load compile_commands.json" : error);
+		return result;
+	}
+
+	if (options.source_file.has_value() &&
+	    !source_file_is_in_database(*database, *options.source_file))
+	{
+		result.status = InspectStatus::kCompileDatabaseError;
+		result.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_COMPILE_DB_SOURCE_NOT_FOUND",
+		    "--source is not present in compile_commands.json");
 		return result;
 	}
 

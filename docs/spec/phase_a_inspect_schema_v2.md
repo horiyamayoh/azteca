@@ -71,7 +71,14 @@ evidence fields としてフラットに持つ。
 - 全 diagnostic は JSON `diagnostics` 配列に集約 (stderr へは出さない)
 - 終端は `}\n`
 
-## 5. 互換性ルール
+## 5. Diagnostics object
+
+`diagnostics[]` の `code` は実装内部の `AZTECA_*` code または公開 `AZT-*`
+code を保持する。内部 code に対応する公開診断がある場合、任意 key
+`public_id` に `AZT-E*` / `AZT-W*` を出してよい。これは additive key であり、
+`schema_version: 2` のまま許可する。
+
+## 6. 互換性ルール
 
 1. 新規 key 追加は minor (クライアントは未知 key を無視すべき)
 2. 既存 key 削除は major
@@ -79,7 +86,7 @@ evidence fields としてフラットに持つ。
 4. enum 値の追加は minor、削除は major
 5. `schema_version` を変えずに 1-4 の破壊的変更を行ってはならない
 
-## 6. 検証
+## 7. 検証
 
 - `tests/contract/schema_v2/` 配下の JSON Schema validator が CI 必須
 - すべての `tests/golden/phase_a/*.inspect.json` は schema validator を pass

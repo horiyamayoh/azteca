@@ -473,13 +473,25 @@
   "gtest_preview": {
     "sample_test_path": "tests/dependencykinds_run.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::dependencykinds_run{};",
-      "s.when.repo_exists(/* args */).returns(/* value */);",
-      "s.when.repo_refresh(/* args */).returns(/* value */);",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.notifier_send.expect_once(/* args */);",
-      "s.effects.repo_refresh.expect_once(/* args */);"
+      "TEST(dependencykinds_run, return_refreshed)",
+      "{",
+      "  auto s = azteca_gen::scenario::dependencykinds_run{};",
+      "  s.when.repo_exists(/* args */).returns(/* value */);",
+      "  s.when.repo_refresh(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_refreshed */);",
+      "  s.effects.notifier_send.expect_once(/* args */);",
+      "  s.effects.repo_refresh.expect_once(/* args */);",
+      "}",
+      "TEST(dependencykinds_run, return_refreshed__2)",
+      "{",
+      "  auto s = azteca_gen::scenario::dependencykinds_run{};",
+      "  s.when.repo_exists(/* args */).returns(/* value */);",
+      "  s.when.repo_refresh(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_refreshed */);",
+      "  s.effects.repo_refresh.expect_once(/* args */);",
+      "}"
     ]
   },
   "diagnostics": []

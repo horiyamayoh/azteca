@@ -408,10 +408,13 @@
   "gtest_preview": {
     "sample_test_path": "tests/syntaxmatrix_first_byte.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::syntaxmatrix_first_byte{};",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.expect_none();"
+      "TEST(syntaxmatrix_first_byte, return_bytes_0)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_first_byte{};",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_bytes_0 */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

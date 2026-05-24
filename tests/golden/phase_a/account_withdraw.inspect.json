@@ -472,11 +472,26 @@
   "gtest_preview": {
     "sample_test_path": "tests/account_withdraw.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::account_withdraw{};",
-      "s.self.balance_ = /* value */;",
-      "s.self.locked_ = /* value */;",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);"
+      "TEST(account_withdraw, return_1)",
+      "{",
+      "  auto s = azteca_gen::scenario::account_withdraw{};",
+      "  s.self.balance_ = /* value */;",
+      "  s.self.locked_ = /* value */;",
+      "  // recursive helper candidate: fee(int) -> int",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_1 */);",
+      "  s.effects.expect_none();",
+      "}",
+      "TEST(account_withdraw, return_balance)",
+      "{",
+      "  auto s = azteca_gen::scenario::account_withdraw{};",
+      "  s.self.balance_ = /* value */;",
+      "  s.self.locked_ = /* value */;",
+      "  // recursive helper candidate: fee(int) -> int",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_balance */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

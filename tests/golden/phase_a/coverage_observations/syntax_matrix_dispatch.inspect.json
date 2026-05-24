@@ -465,11 +465,15 @@
   "gtest_preview": {
     "sample_test_path": "tests/syntaxmatrix_dispatch.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::syntaxmatrix_dispatch{};",
-      "s.self.own_ = /* value */;",
-      "s.when.dispatch_virtual_score(/* args */).returns(/* value */);",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);"
+      "TEST(syntaxmatrix_dispatch, return_virtual_score_value_own)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_dispatch{};",
+      "  s.self.own_ = /* value */;",
+      "  s.when.dispatch_virtual_score(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_virtual_score_value_own */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

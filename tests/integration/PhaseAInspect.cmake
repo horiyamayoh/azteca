@@ -259,6 +259,11 @@ assert_phase_a_json_golden(
 	"Gauge::record(int)"
 	"gauge_record.inspect.json"
 )
+assert_phase_a_json_golden(
+	"${fixture_source}/real_project.cpp"
+	"real::project::Runner::inspect(int)"
+	"real_project_runner_inspect.inspect.json"
+)
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
@@ -278,6 +283,32 @@ foreach(required_shape_line
 			"deadline"
 			"amount")
 	assert_contains("${inspect_shape_output}" "${required_shape_line}" "shape inspect output")
+endforeach()
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/real_project.cpp" --method "real::project::Runner::inspect(int)"
+			--format text
+	RESULT_VARIABLE inspect_real_project_result
+	OUTPUT_VARIABLE inspect_real_project_output
+	ERROR_VARIABLE inspect_real_project_error
+)
+
+if(NOT inspect_real_project_result EQUAL 0)
+	message(FATAL_ERROR "real project inspect failed:\n${inspect_real_project_output}\n${inspect_real_project_error}")
+endif()
+
+foreach(required_real_project_line
+		"Azteca can inspect real::project::Runner::inspect."
+		"query repo_load(AliasId) -> Widget"
+		"effect repo_audit(AliasId)"
+		"WidgetShape"
+		"amount"
+		"penalty"
+		"macro_expansion [conservative]"
+		"LR-034 [conservative] observed"
+		"TEST(real_project_runner_inspect,")
+	assert_contains("${inspect_real_project_output}" "${required_real_project_line}" "real project inspect output")
 endforeach()
 
 execute_process(

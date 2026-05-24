@@ -73,6 +73,22 @@ void cli_error(std::string_view diagnostic_id, std::string_view message)
 	std::cerr << diagnostic_id << ": " << message << '\n';
 }
 
+[[nodiscard]] std::optional<azteca::DiagnosticInfo> resolve_explain_target(
+    std::string_view diagnostic_id)
+{
+	if (auto info = azteca::find_diagnostic(diagnostic_id); info.has_value())
+	{
+		return info;
+	}
+
+	if (auto public_id = azteca::public_diagnostic_id(diagnostic_id); public_id.has_value())
+	{
+		return azteca::find_diagnostic(*public_id);
+	}
+
+	return std::nullopt;
+}
+
 [[nodiscard]] bool has_value(int index, int argc)
 {
 	return index + 1 < argc;
@@ -216,7 +232,7 @@ int main(int argc, char** argv)
 			cli_error("AZT-E0001", "explain requires a diagnostic id argument");
 			return static_cast<int>(azteca::InspectStatus::kUserInputError);
 		}
-		auto info = azteca::find_diagnostic(options->method_spec);
+		auto info = resolve_explain_target(options->method_spec);
 		if (!info.has_value())
 		{
 			cli_error("AZT-E0003", std::string{"unknown diagnostic id: "} + options->method_spec);

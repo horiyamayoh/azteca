@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "JsonWriter.hpp"
+#include "azteca/DiagnosticCatalog.hpp"
 
 namespace azteca
 {
@@ -815,6 +816,11 @@ std::string render_json_report(ExtractionPlan const& plan)
 		output.string(to_string(diagnostic.severity));
 		output.key("code");
 		output.string(diagnostic.code);
+		if (auto public_id = public_diagnostic_id(diagnostic.code); public_id.has_value())
+		{
+			output.key("public_id");
+			output.string(*public_id);
+		}
 		output.key("message");
 		output.string(diagnostic.message);
 		output.key("location");

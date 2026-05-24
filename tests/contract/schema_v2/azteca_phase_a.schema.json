@@ -224,6 +224,7 @@
         "properties": {
           "severity": { "$ref": "#/$defs/diagnostic_severity" },
           "code": { "type": "string" },
+          "public_id": { "type": "string", "pattern": "^AZT-[EW][0-9]{4}$" },
           "message": { "type": "string" },
           "location": { "$ref": "#/$defs/source_location" }
         }

@@ -409,16 +409,27 @@
   "gtest_preview": {
     "sample_test_path": "tests/syntaxmatrix_exception_run.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::syntaxmatrix_exception_run{};",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.expect_none();"
+      "TEST(syntaxmatrix_exception_run, return_value_try_no_exception)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_exception_run{};",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_value__try_no_exception */);",
+      "  s.effects.expect_none();",
+      "}",
+      "TEST(syntaxmatrix_exception_run, return_1_catch_all)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_exception_run{};",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_1__catch_all */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": [
     {
       "severity": "warning",
       "code": "AZTECA_PATH_CONSERVATIVE",
+      "public_id": "AZT-W0001",
       "message": "try/catch paths are split into no-exception and conservative catch paths",
       "location": { "file": "<fixture>/syntax_matrix.cpp", "line": 77, "column": 3 }
     }

@@ -427,10 +427,22 @@
   "gtest_preview": {
     "sample_test_path": "tests/orderservice_check.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::orderservice_check{};",
-      "s.when.repo_load(/* args */).returns(/* value */);",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);"
+      "TEST(orderservice_check, return_1)",
+      "{",
+      "  auto s = azteca_gen::scenario::orderservice_check{};",
+      "  s.when.repo_load(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_1 */);",
+      "  s.effects.expect_none();",
+      "}",
+      "TEST(orderservice_check, return_order_amount)",
+      "{",
+      "  auto s = azteca_gen::scenario::orderservice_check{};",
+      "  s.when.repo_load(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_order_amount */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

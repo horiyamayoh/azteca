@@ -39,7 +39,12 @@ add_library(
 	edge_cases.cpp
 	hardening.cpp
 	order_service.cpp
+	real_project.cpp
+	real_project_duplicate_a.cpp
+	real_project_duplicate_b.cpp
 	service.cpp
 	simple_scenarios.cpp
 	syntax_matrix.cpp
 )
+
+target_include_directories(phase_a_simple_fixture PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")

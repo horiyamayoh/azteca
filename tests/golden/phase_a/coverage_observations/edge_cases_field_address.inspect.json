@@ -451,11 +451,14 @@
   "gtest_preview": {
     "sample_test_path": "tests/edgecases_field_address.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::edgecases_field_address{};",
-      "s.self.value_ = /* value */;",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.expect_none();"
+      "TEST(edgecases_field_address, return_value)",
+      "{",
+      "  auto s = azteca_gen::scenario::edgecases_field_address{};",
+      "  s.self.value_ = /* value */;",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_value */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

@@ -548,10 +548,14 @@
   "gtest_preview": {
     "sample_test_path": "tests/syntaxmatrix_identity_and_type.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::syntaxmatrix_identity_and_type{};",
-      "s.when.op_std_type_info_operator(/* args */).returns(/* value */);",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);"
+      "TEST(syntaxmatrix_identity_and_type, return_this_other_dynamic_cast_syntaxmatrix_this_nullptr_typeid_this_typeid_syntaxmatrix)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_identity_and_type{};",
+      "  s.when.op_std_type_info_operator(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_this_other_dynamic_cast_syntaxmatrix_this_nullptr_typeid_this_typeid_syntaxmatrix */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

@@ -396,10 +396,13 @@
   "gtest_preview": {
     "sample_test_path": "tests/gauge_record.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::gauge_record{};",
-      "s.self.value_ = /* value */;",
-      "s.call(/* args */);",
-      "s.effects.expect_none();"
+      "TEST(gauge_record, path_1)",
+      "{",
+      "  auto s = azteca_gen::scenario::gauge_record{};",
+      "  s.self.value_ = /* value */;",
+      "  s.call(/* args */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

@@ -420,10 +420,13 @@
   "gtest_preview": {
     "sample_test_path": "tests/edgecases_value_category_and_casts.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::edgecases_value_category_and_casts{};",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.expect_none();"
+      "TEST(edgecases_value_category_and_casts, return_static_cast_int_moved)",
+      "{",
+      "  auto s = azteca_gen::scenario::edgecases_value_category_and_casts{};",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_static_cast_int_moved */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

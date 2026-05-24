@@ -2,55 +2,131 @@
   "schema_version": 2,
   "azteca_phase": "A",
   "target": {
-    "qualified_name": "EdgeCases::default_argument",
-    "signature": "int(int)",
-    "source_file": "<fixture>/edge_cases.cpp",
-    "line": 25
+    "qualified_name": "real::project::Runner::inspect",
+    "signature": "Score(AliasId)",
+    "source_file": "<fixture>/real_project.cpp",
+    "line": 6
   },
-  "result": "extracted",
-  "confidence": "high",
+  "result": "extracted-with-conservative-notes",
+  "confidence": "medium",
   "receiver_state": [],
   "dependency_observations": [
     {
       "kind": "query",
-      "name": "dependency_value",
-      "original_callee": "EdgeDependency::value",
-      "return_type": "int",
-      "argument_types": ["int", "int"],
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 27, "column": 22 },
+      "name": "repo_load",
+      "original_callee": "vendor::Repo::load",
+      "return_type": "Widget",
+      "argument_types": ["AliasId"],
+      "location": { "file": "<fixture>/real_project.cpp", "line": 8, "column": 20 },
       "rule_id": "DEP-MEMBER-QUERY",
       "reason": "const non-void member object call is a query",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 27, "column": 10 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 27, "column": 31 }
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 8, "column": 14 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 8, "column": 28 }
       }
     }
   ],
-  "observable_effects": [],
-  "operations": [],
-  "recursive_helper_candidates": [],
-  "shape_candidates": [],
-  "object_ref_requirements": [],
-  "semantic_features": [
+  "observable_effects": [
     {
-      "name": "default_argument",
-      "handling": "supported",
-      "detail": "default argument is visible as a semantic call argument",
-      "rule_id": "LR-042",
-      "reason": "default argument use is supplied by Clang Sema",
+      "kind": "effect",
+      "name": "repo_audit",
+      "original_callee": "vendor::Repo::audit",
+      "return_type": "void",
+      "argument_types": ["AliasId"],
+      "location": { "file": "<fixture>/real_project.cpp", "line": 11, "column": 9 },
+      "rule_id": "DEP-MEMBER-EFFECT",
+      "reason": "void or ignored-return member object call is an effect",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "", "line": 0, "column": 0 },
-        "end": { "file": "", "line": 0, "column": 0 }
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 11, "column": 3 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 11, "column": 18 }
       }
     }
   ],
-  "unsupported_or_modeled_constructs": [],
+  "operations": [],
+  "recursive_helper_candidates": [],
+  "shape_candidates": [
+    {
+      "name": "WidgetShape",
+      "source_dependency": "repo_load",
+      "observed_members": ["amount", "penalty"],
+      "rule_id": "SHAPE-DEPENDENCY-RETURN",
+      "reason": "member access on dependency return local suggests a shape candidate",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 9, "column": 6 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 9, "column": 18 }
+      }
+    }
+  ],
+  "object_ref_requirements": [],
+  "semantic_features": [
+    {
+      "name": "auto_type",
+      "handling": "supported",
+      "detail": "auto is reported after semantic type resolution",
+      "rule_id": "LR-043",
+      "reason": "auto type is resolved by Clang Sema",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 8, "column": 2 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 8, "column": 28 }
+      }
+    },
+    {
+      "name": "local_variable",
+      "handling": "supported",
+      "detail": "local variable declaration is part of inspect MMIR",
+      "rule_id": "LR-014",
+      "reason": "local variable declaration",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 8, "column": 2 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 8, "column": 28 }
+      }
+    },
+    {
+      "name": "macro_expansion",
+      "handling": "conservative",
+      "detail": "source spelling may differ from AST semantics",
+      "rule_id": "LR-034",
+      "reason": "macro-expanded source range is tracked conservatively",
+      "certainty": "conservative",
+      "conservative": true,
+      "source_range": {
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 9 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 52 }
+      }
+    }
+  ],
+  "unsupported_or_modeled_constructs": [
+    {
+      "construct": "macro expansion",
+      "handling": "conservative",
+      "construct_reason": "macro expansion requires source-map-aware regeneration",
+      "fallbacks": [
+        "use AST semantics for inspect",
+        "treat complex macro spelling as conservative"
+      ],
+      "location": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 9 },
+      "rule_id": "LR-034",
+      "reason": "macro-expanded source range is tracked conservatively",
+      "certainty": "conservative",
+      "conservative": true,
+      "source_range": {
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 9 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 52 }
+      }
+    }
+  ],
   "control_flow_summary": {
-    "has_if": false,
+    "has_if": true,
     "has_switch": false,
     "has_loop": false,
     "has_range_for": false,
@@ -64,14 +140,66 @@
     {
       "kind": "dependency-boundary",
       "requirement_reason": "dependency call is represented by transcript port",
-      "source": "EdgeDependency::value",
+      "source": "vendor::Repo::audit",
+      "rule_id": "DEP-MEMBER-EFFECT",
+      "reason": "void or ignored-return member object call is an effect",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 11, "column": 3 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 11, "column": 18 }
+      }
+    },
+    {
+      "kind": "dependency-boundary",
+      "requirement_reason": "dependency call is represented by transcript port",
+      "source": "vendor::Repo::load",
       "rule_id": "DEP-MEMBER-QUERY",
       "reason": "const non-void member object call is a query",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 27, "column": 10 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 27, "column": 31 }
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 8, "column": 14 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 8, "column": 28 }
+      }
+    },
+    {
+      "kind": "macro-source-map",
+      "requirement_reason": "macro source mapping is required for faithful diagnostics",
+      "source": "<fixture>/include/real_project/api.hpp:27:43-27:53",
+      "rule_id": "LR-034",
+      "reason": "macro-expanded source range is tracked conservatively",
+      "certainty": "conservative",
+      "conservative": true,
+      "source_range": {
+        "begin": { "file": "<fixture>/include/real_project/api.hpp", "line": 27, "column": 43 },
+        "end": { "file": "<fixture>/include/real_project/api.hpp", "line": 27, "column": 53 }
+      }
+    },
+    {
+      "kind": "macro-source-map",
+      "requirement_reason": "macro source mapping is required for faithful diagnostics",
+      "source": "<fixture>/real_project.cpp:13:49-13:49",
+      "rule_id": "LR-034",
+      "reason": "macro-expanded source range is tracked conservatively",
+      "certainty": "conservative",
+      "conservative": true,
+      "source_range": {
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 49 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 49 }
+      }
+    },
+    {
+      "kind": "macro-source-map",
+      "requirement_reason": "macro source mapping is required for faithful diagnostics",
+      "source": "<fixture>/real_project.cpp:13:9-13:52",
+      "rule_id": "LR-034",
+      "reason": "macro-expanded source range is tracked conservatively",
+      "certainty": "conservative",
+      "conservative": true,
+      "source_range": {
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 9 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 52 }
       }
     }
   ],
@@ -95,12 +223,12 @@
       "observed": false
     },
     { "rule_id": "LR-004", "handling": "supported", "note": "return statement", "observed": true },
-    { "rule_id": "LR-005", "handling": "supported", "note": "if statement", "observed": false },
+    { "rule_id": "LR-005", "handling": "supported", "note": "if statement", "observed": true },
     {
       "rule_id": "LR-006",
       "handling": "supported",
       "note": "built-in expression",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-007",
@@ -148,7 +276,7 @@
       "rule_id": "LR-014",
       "handling": "supported",
       "note": "local variable declaration",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-015",
@@ -268,7 +396,7 @@
       "rule_id": "LR-034",
       "handling": "conservative",
       "note": "macro source mapping is conservative",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-035",
@@ -316,13 +444,13 @@
       "rule_id": "LR-042",
       "handling": "supported",
       "note": "default arguments are supplied by Clang Sema",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-043",
       "handling": "supported",
       "note": "auto type is recorded after semantic resolution",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-044",
@@ -363,8 +491,25 @@
   ],
   "paths": [
     {
-      "name": "return_dependency_value_id",
-      "observations": ["dependency_value"],
+      "name": "return_item_amount_azteca_real_project_bonus_id_item_penalty",
+      "observations": ["repo_load"],
+      "effects": ["repo_audit"],
+      "operations": [],
+      "loop_body_observations": [],
+      "required_envelopes": ["dependency-boundary"],
+      "conservative_reason": "",
+      "rule_id": "PATH-DFS",
+      "reason": "return path accumulated by DFS",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 2 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 67 }
+      }
+    },
+    {
+      "name": "return_item_amount_azteca_real_project_bonus_id_item_penalty",
+      "observations": ["repo_load"],
       "effects": [],
       "operations": [],
       "loop_body_observations": [],
@@ -375,23 +520,39 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 27, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 27, "column": 31 }
+        "begin": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 2 },
+        "end": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 67 }
       }
     }
   ],
   "gtest_preview": {
-    "sample_test_path": "tests/edgecases_default_argument.sample_test.cpp",
+    "sample_test_path": "tests/real_project_runner_inspect.sample_test.cpp",
     "lines": [
-      "TEST(edgecases_default_argument, return_dependency_value_id)",
+      "TEST(real_project_runner_inspect, return_item_amount_azteca_real_project_bonus_id_item_penalty)",
       "{",
-      "  auto s = azteca_gen::scenario::edgecases_default_argument{};",
-      "  s.when.dependency_value(/* args */).returns(/* value */);",
+      "  auto s = azteca_gen::scenario::real_project_runner_inspect{};",
+      "  s.when.repo_load(/* args */).returns(/* value */);",
       "  auto result = s.call(/* args */);",
-      "  EXPECT_EQ(result, /* expected for return_dependency_value_id */);",
+      "  EXPECT_EQ(result, /* expected for return_item_amount_azteca_real_project_bonus_id_item_penalty */);",
+      "  s.effects.repo_audit.expect_once(/* args */);",
+      "}",
+      "TEST(real_project_runner_inspect, return_item_amount_azteca_real_project_bonus_id_item_penalty__2)",
+      "{",
+      "  auto s = azteca_gen::scenario::real_project_runner_inspect{};",
+      "  s.when.repo_load(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_item_amount_azteca_real_project_bonus_id_item_penalty */);",
       "  s.effects.expect_none();",
       "}"
     ]
   },
-  "diagnostics": []
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "AZTECA_CONSERVATIVE_CONSTRUCT",
+      "public_id": "AZT-W0001",
+      "message": "macro expansion: macro expansion requires source-map-aware regeneration",
+      "location": { "file": "<fixture>/real_project.cpp", "line": 13, "column": 9 }
+    }
+  ]
 }

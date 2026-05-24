@@ -443,17 +443,28 @@
   "gtest_preview": {
     "sample_test_path": "tests/loopexample_run.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::loopexample_run{};",
-      "s.when.repo_exists(/* args */).returns(/* value */);",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.notifier_send.expect_once(/* args */);"
+      "TEST(loopexample_run, return_count_loop_zero_iterations)",
+      "{",
+      "  auto s = azteca_gen::scenario::loopexample_run{};",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_count__loop_zero_iterations */);",
+      "  s.effects.expect_none();",
+      "}",
+      "TEST(loopexample_run, return_count_loop_one_or_more_iterations)",
+      "{",
+      "  auto s = azteca_gen::scenario::loopexample_run{};",
+      "  s.when.repo_exists(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_count__loop_one_or_more_iterations */);",
+      "  s.effects.notifier_send.expect_once(/* args */);",
+      "}"
     ]
   },
   "diagnostics": [
     {
       "severity": "warning",
       "code": "AZTECA_PATH_CONSERVATIVE",
+      "public_id": "AZT-W0001",
       "message": "loop statement is approximated as zero/one-or-more execution paths",
       "location": { "file": "<fixture>/hardening.cpp", "line": 81, "column": 3 }
     }

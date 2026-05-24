@@ -455,15 +455,19 @@
   "gtest_preview": {
     "sample_test_path": "tests/syntaxmatrix_reset_in_place.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::syntaxmatrix_reset_in_place{};",
-      "s.call(/* args */);",
-      "s.effects.expect_none();"
+      "TEST(syntaxmatrix_reset_in_place, path_1)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_reset_in_place{};",
+      "  s.call(/* args */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": [
     {
       "severity": "warning",
       "code": "AZTECA_CONSERVATIVE_CONSTRUCT",
+      "public_id": "AZT-W0001",
       "message": "constructor call: constructor semantics are reported but not code-generated in Phase A",
       "location": { "file": "<fixture>/syntax_matrix.cpp", "line": 142, "column": 14 }
     }

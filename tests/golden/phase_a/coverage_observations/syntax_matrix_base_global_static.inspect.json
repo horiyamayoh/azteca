@@ -439,11 +439,15 @@
   "gtest_preview": {
     "sample_test_path": "tests/syntaxmatrix_base_global_static.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::syntaxmatrix_base_global_static{};",
-      "s.self.base_ = /* value */;",
-      "s.when.syntaxmatrix_clamp(/* args */).returns(/* value */);",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);"
+      "TEST(syntaxmatrix_base_global_static, return_base_global_limit_clamp_value)",
+      "{",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_base_global_static{};",
+      "  s.self.base_ = /* value */;",
+      "  s.when.syntaxmatrix_clamp(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_base_global_limit_clamp_value */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []

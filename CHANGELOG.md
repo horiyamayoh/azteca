@@ -23,6 +23,14 @@ patch bumps.
 
 ### Added
 
+- Inspect JSON diagnostics now include optional `public_id` for known internal
+  `AZTECA_*` diagnostics, and `azteca explain` accepts those internal codes as
+  aliases for their public `AZT-*` explanations.
+- Google Test preview is now path-aware: each inspected path gets a `TEST(...)`
+  skeleton with path-specific `when` observations and `effects` expectations.
+- Real-project-style Phase A fixture coverage now exercises include paths,
+  typedef/using aliases, nested namespaces, macro expansion, and source-file
+  compile database validation.
 - `azteca_phase: "A"` top-level field in the inspect JSON report.
 - `azteca explain <diagnostic-id>` subcommand backed by a frozen 12-entry
   diagnostic catalog (`AZT-E0001` … `AZT-E0011`, `AZT-W0001`).

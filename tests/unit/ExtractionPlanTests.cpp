@@ -296,6 +296,19 @@ TEST(InspectReport, JsonErrorResultEmitsDiagnosticsAndPreservesSchemaKeys)
 	EXPECT_NE(json.find("\"diagnostics\""), std::string::npos);
 }
 
+TEST(InspectReport, JsonDiagnosticsIncludePublicIdForInternalCodes)
+{
+	azteca::ExtractionPlan plan;
+	plan.target.qualified_name = "Loop::run";
+	plan.diagnostics.add(azteca::DiagnosticSeverity::kWarning, "AZTECA_PATH_CONSERVATIVE",
+	    "loop statement is approximated");
+
+	auto json = azteca::render_json_report(plan);
+
+	EXPECT_NE(json.find("\"code\": \"AZTECA_PATH_CONSERVATIVE\""), std::string::npos);
+	EXPECT_NE(json.find("\"public_id\": \"AZT-W0001\""), std::string::npos);
+}
+
 TEST(InspectReport, TextRendersDiagnosticsAndPathConservativeReason)
 {
 	azteca::ExtractionPlan plan;

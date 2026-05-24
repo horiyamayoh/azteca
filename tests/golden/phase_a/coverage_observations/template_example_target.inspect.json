@@ -352,10 +352,13 @@
   "gtest_preview": {
     "sample_test_path": "tests/templateexample_target.sample_test.cpp",
     "lines": [
-      "auto s = azteca_gen::scenario::templateexample_target{};",
-      "auto result = s.call(/* args */);",
-      "EXPECT_EQ(result, /* expected */);",
-      "s.effects.expect_none();"
+      "TEST(templateexample_target, return_value)",
+      "{",
+      "  auto s = azteca_gen::scenario::templateexample_target{};",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_value */);",
+      "  s.effects.expect_none();",
+      "}"
     ]
   },
   "diagnostics": []
