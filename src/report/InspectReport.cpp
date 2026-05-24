@@ -46,6 +46,102 @@ void append_json_string(std::ostringstream& output, std::string const& value)
 	output << '"' << json_escape(value) << '"';
 }
 
+[[nodiscard]] std::string to_json_string(FieldAccess access)
+{
+	switch (access)
+	{
+		case FieldAccess::kRead:
+			return "read";
+		case FieldAccess::kWrite:
+			return "write";
+		case FieldAccess::kReadWrite:
+			return "read-write";
+		case FieldAccess::kAddress:
+			return "address";
+	}
+
+	return "read";
+}
+
+[[nodiscard]] std::string to_json_string(DependencyKind kind)
+{
+	switch (kind)
+	{
+		case DependencyKind::kRecursiveCandidate:
+			return "recursive-candidate";
+		case DependencyKind::kQuery:
+			return "query";
+		case DependencyKind::kEffect:
+			return "effect";
+		case DependencyKind::kOperation:
+			return "operation";
+	}
+
+	return "query";
+}
+
+[[nodiscard]] std::string to_json_string(ConstructHandling handling)
+{
+	switch (handling)
+	{
+		case ConstructHandling::kSupported:
+			return "supported";
+		case ConstructHandling::kModeled:
+			return "modeled";
+		case ConstructHandling::kBoundary:
+			return "boundary";
+		case ConstructHandling::kConservative:
+			return "conservative";
+		case ConstructHandling::kNotYetImplemented:
+			return "not-yet-implemented";
+		case ConstructHandling::kNotMeaningful:
+			return "not-meaningful";
+	}
+
+	return "not-yet-implemented";
+}
+
+[[nodiscard]] std::string to_json_string(EnvelopeRequirementKind kind)
+{
+	switch (kind)
+	{
+		case EnvelopeRequirementKind::kSelfState:
+			return "self-state";
+		case EnvelopeRequirementKind::kBaseState:
+			return "base-state";
+		case EnvelopeRequirementKind::kAddressableCell:
+			return "addressable-cell";
+		case EnvelopeRequirementKind::kObjectRef:
+			return "object-ref";
+		case EnvelopeRequirementKind::kDependencyBoundary:
+			return "dependency-boundary";
+		case EnvelopeRequirementKind::kDispatchTable:
+			return "dispatch-table";
+		case EnvelopeRequirementKind::kTypeTag:
+			return "type-tag";
+		case EnvelopeRequirementKind::kLifetimeState:
+			return "lifetime-state";
+		case EnvelopeRequirementKind::kByteView:
+			return "byte-view";
+		case EnvelopeRequirementKind::kGlobalEnvironment:
+			return "global-environment";
+		case EnvelopeRequirementKind::kExceptionModel:
+			return "exception-model";
+		case EnvelopeRequirementKind::kMacroSourceMap:
+			return "macro-source-map";
+	}
+
+	return "self-state";
+}
+
+[[nodiscard]] std::string to_json_canonical_token(std::string const& value)
+{
+	std::string canonical = value;
+	std::ranges::replace(canonical, '_', '-');
+	std::ranges::replace(canonical, '/', '-');
+	return canonical;
+}
+
 void append_string_array(std::ostringstream& output, std::vector<std::string> const& values)
 {
 	output << '[';
@@ -56,6 +152,21 @@ void append_string_array(std::ostringstream& output, std::vector<std::string> co
 			output << ", ";
 		}
 		append_json_string(output, values[index]);
+	}
+	output << ']';
+}
+
+void append_canonical_token_array(
+    std::ostringstream& output, std::vector<std::string> const& values)
+{
+	output << '[';
+	for (auto index = std::size_t{0}; index < values.size(); ++index)
+	{
+		if (index != 0U)
+		{
+			output << ", ";
+		}
+		append_json_string(output, to_json_canonical_token(values[index]));
 	}
 	output << ']';
 }
@@ -534,7 +645,7 @@ std::string render_json_report(ExtractionPlan const& plan)
 		output << ", \"type\": ";
 		append_json_string(output, field.type);
 		output << ", \"access\": ";
-		append_json_string(output, to_string(field.access));
+		append_json_string(output, to_json_string(field.access));
 		output << ", \"mutable\": " << (field.is_mutable ? "true" : "false");
 		output << ", \"access_specifier\": ";
 		append_json_string(output, field.access_specifier);
@@ -554,7 +665,7 @@ std::string render_json_report(ExtractionPlan const& plan)
 		{
 			auto const& port = ports[index];
 			output << "    {\"kind\": ";
-			append_json_string(output, to_string(port.kind));
+			append_json_string(output, to_json_string(port.kind));
 			output << ", \"name\": ";
 			append_json_string(output, port.name);
 			output << ", \"original_callee\": ";
@@ -582,7 +693,9 @@ std::string render_json_report(ExtractionPlan const& plan)
 	for (auto index = std::size_t{0}; index < recursive_ports.size(); ++index)
 	{
 		auto const& port = recursive_ports[index];
-		output << "    {\"name\": ";
+		output << "    {\"kind\": ";
+		append_json_string(output, to_json_string(port.kind));
+		output << ", \"name\": ";
 		append_json_string(output, port.name);
 		output << ", \"original_callee\": ";
 		append_json_string(output, port.original_callee);
@@ -590,6 +703,8 @@ std::string render_json_report(ExtractionPlan const& plan)
 		append_json_string(output, port.return_type);
 		output << ", \"argument_types\": ";
 		append_string_array(output, port.argument_types);
+		output << ", \"location\": ";
+		append_location(output, port.location);
 		output << ", ";
 		append_evidence(output, port.evidence);
 		output << "}";
@@ -618,7 +733,7 @@ std::string render_json_report(ExtractionPlan const& plan)
 	for (auto index = std::size_t{0}; index < plan.object_ref_requirements.size(); ++index)
 	{
 		auto const& requirement = plan.object_ref_requirements[index];
-		output << "    {\"reason\": ";
+		output << "    {\"requirement_reason\": ";
 		append_json_string(output, requirement.reason);
 		output << ", \"expression\": ";
 		append_json_string(output, requirement.expression);
@@ -638,7 +753,7 @@ std::string render_json_report(ExtractionPlan const& plan)
 		output << "    {\"name\": ";
 		append_json_string(output, feature.name);
 		output << ", \"handling\": ";
-		append_json_string(output, to_string(feature.handling));
+		append_json_string(output, to_json_string(feature.handling));
 		output << ", \"detail\": ";
 		append_json_string(output, feature.detail);
 		output << ", ";
@@ -656,7 +771,7 @@ std::string render_json_report(ExtractionPlan const& plan)
 		output << "    {\"construct\": ";
 		append_json_string(output, construct.construct);
 		output << ", \"handling\": ";
-		append_json_string(output, to_string(construct.handling));
+		append_json_string(output, to_json_string(construct.handling));
 		output << ", \"construct_reason\": ";
 		append_json_string(output, construct.reason);
 		output << ", \"fallbacks\": ";
@@ -696,7 +811,7 @@ std::string render_json_report(ExtractionPlan const& plan)
 	{
 		auto const& requirement = plan.envelope_requirements[index];
 		output << "    {\"kind\": ";
-		append_json_string(output, to_string(requirement.kind));
+		append_json_string(output, to_json_string(requirement.kind));
 		output << ", \"requirement_reason\": ";
 		append_json_string(output, requirement.reason);
 		output << ", \"source\": ";
@@ -715,7 +830,7 @@ std::string render_json_report(ExtractionPlan const& plan)
 		output << "    {\"rule_id\": ";
 		append_json_string(output, coverage.rule_id);
 		output << ", \"handling\": ";
-		append_json_string(output, to_string(coverage.handling));
+		append_json_string(output, to_json_string(coverage.handling));
 		output << ", \"note\": ";
 		append_json_string(output, coverage.note);
 		output << ", \"observed\": ";
@@ -740,7 +855,7 @@ std::string render_json_report(ExtractionPlan const& plan)
 		output << ", \"loop_body_observations\": ";
 		append_string_array(output, path.loop_body_observations);
 		output << ", \"required_envelopes\": ";
-		append_string_array(output, path.required_envelopes);
+		append_canonical_token_array(output, path.required_envelopes);
 		output << ", \"conservative_reason\": ";
 		append_json_string(output, path.conservative_reason);
 		output << ", ";

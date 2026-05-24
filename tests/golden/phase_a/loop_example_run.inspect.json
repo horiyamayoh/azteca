@@ -92,7 +92,7 @@
   },
   "envelope_requirements": [
     {
-      "kind": "dependency_boundary",
+      "kind": "dependency-boundary",
       "requirement_reason": "dependency call is represented by transcript port",
       "source": "HardeningNotifier::send",
       "rule_id": "DEP-MEMBER-EFFECT",
@@ -105,7 +105,7 @@
       }
     },
     {
-      "kind": "dependency_boundary",
+      "kind": "dependency-boundary",
       "requirement_reason": "dependency call is represented by transcript port",
       "source": "HardeningRepo::exists",
       "rule_id": "DEP-MEMBER-QUERY",
@@ -285,19 +285,19 @@
     },
     {
       "rule_id": "LR-030",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "member function pointer is reported only",
       "observed": false
     },
     {
       "rule_id": "LR-031",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "constructor target is outside Phase A",
       "observed": false
     },
     {
       "rule_id": "LR-032",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "destructor target is outside Phase A",
       "observed": false
     },
@@ -333,7 +333,7 @@
     },
     {
       "rule_id": "LR-038",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "coroutines are future work",
       "observed": false
     },
@@ -345,7 +345,7 @@
     },
     {
       "rule_id": "LR-040",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "default member initializer is future work",
       "observed": false
     },
@@ -411,7 +411,7 @@
       "effects": [],
       "operations": [],
       "loop_body_observations": [],
-      "required_envelopes": ["conservative_control_flow"],
+      "required_envelopes": ["conservative-control-flow"],
       "conservative_reason": "return path includes conservative control flow",
       "rule_id": "PATH-CONSERVATIVE",
       "reason": "return path includes conservative control flow",
@@ -428,7 +428,7 @@
       "effects": ["notifier_send"],
       "operations": [],
       "loop_body_observations": ["repo_exists", "notifier_send"],
-      "required_envelopes": ["dependency_boundary", "conservative_control_flow"],
+      "required_envelopes": ["dependency-boundary", "conservative-control-flow"],
       "conservative_reason": "return path includes conservative control flow",
       "rule_id": "PATH-CONSERVATIVE",
       "reason": "return path includes conservative control flow",

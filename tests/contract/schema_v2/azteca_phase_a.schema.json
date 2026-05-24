@@ -29,9 +29,337 @@
   "properties": {
     "schema_version": { "const": 2 },
     "azteca_phase": { "const": "A" },
+    "target": {
+      "type": "object",
+      "required": ["qualified_name", "signature", "source_file", "line"],
+      "properties": {
+        "qualified_name": { "type": "string" },
+        "signature": { "type": "string" },
+        "source_file": { "type": "string" },
+        "line": { "$ref": "#/$defs/non_negative_integer" }
+      }
+    },
     "result": {
       "enum": ["extracted", "extracted-with-conservative-notes", "invalid-plan"]
     },
-    "confidence": { "enum": ["high", "medium", "low"] }
+    "confidence": { "enum": ["high", "medium", "low"] },
+    "receiver_state": {
+      "type": "array",
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/evidence_fields" }],
+        "type": "object",
+        "required": ["name", "type", "access", "mutable", "access_specifier", "location"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "access": { "$ref": "#/$defs/field_access" },
+          "mutable": { "type": "boolean" },
+          "access_specifier": { "type": "string" },
+          "location": { "$ref": "#/$defs/source_location" }
+        }
+      }
+    },
+    "dependency_observations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/query_port" }
+    },
+    "observable_effects": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/effect_port" }
+    },
+    "operations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/operation_port" }
+    },
+    "recursive_helper_candidates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/recursive_candidate_port" }
+    },
+    "shape_candidates": {
+      "type": "array",
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/evidence_fields" }],
+        "type": "object",
+        "required": ["name", "source_dependency", "observed_members"],
+        "properties": {
+          "name": { "type": "string" },
+          "source_dependency": { "type": "string" },
+          "observed_members": { "$ref": "#/$defs/string_array" }
+        }
+      }
+    },
+    "object_ref_requirements": {
+      "type": "array",
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/evidence_fields" }],
+        "type": "object",
+        "required": ["requirement_reason", "expression", "location"],
+        "properties": {
+          "requirement_reason": { "type": "string" },
+          "expression": { "type": "string" },
+          "location": { "$ref": "#/$defs/source_location" }
+        }
+      }
+    },
+    "semantic_features": {
+      "type": "array",
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/evidence_fields" }],
+        "type": "object",
+        "required": ["name", "handling", "detail"],
+        "properties": {
+          "name": { "type": "string" },
+          "handling": { "$ref": "#/$defs/construct_handling" },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "unsupported_or_modeled_constructs": {
+      "type": "array",
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/evidence_fields" }],
+        "type": "object",
+        "required": ["construct", "handling", "construct_reason", "fallbacks", "location"],
+        "properties": {
+          "construct": { "type": "string" },
+          "handling": { "$ref": "#/$defs/construct_handling" },
+          "construct_reason": { "type": "string" },
+          "fallbacks": { "$ref": "#/$defs/string_array" },
+          "location": { "$ref": "#/$defs/source_location" }
+        }
+      }
+    },
+    "control_flow_summary": {
+      "type": "object",
+      "required": [
+        "has_if",
+        "has_switch",
+        "has_loop",
+        "has_range_for",
+        "has_try",
+        "has_throw",
+        "has_return",
+        "conservative",
+        "conservative_reasons"
+      ],
+      "properties": {
+        "has_if": { "type": "boolean" },
+        "has_switch": { "type": "boolean" },
+        "has_loop": { "type": "boolean" },
+        "has_range_for": { "type": "boolean" },
+        "has_try": { "type": "boolean" },
+        "has_throw": { "type": "boolean" },
+        "has_return": { "type": "boolean" },
+        "conservative": { "type": "boolean" },
+        "conservative_reasons": { "$ref": "#/$defs/string_array" }
+      }
+    },
+    "envelope_requirements": {
+      "type": "array",
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/evidence_fields" }],
+        "type": "object",
+        "required": ["kind", "requirement_reason", "source"],
+        "properties": {
+          "kind": { "$ref": "#/$defs/envelope_requirement_kind" },
+          "requirement_reason": { "type": "string" },
+          "source": { "type": "string" }
+        }
+      }
+    },
+    "rule_coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "handling", "note", "observed"],
+        "properties": {
+          "rule_id": { "$ref": "#/$defs/rule_id" },
+          "handling": { "$ref": "#/$defs/construct_handling" },
+          "note": { "type": "string" },
+          "observed": { "type": "boolean" }
+        }
+      }
+    },
+    "paths": {
+      "type": "array",
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/evidence_fields" }],
+        "type": "object",
+        "required": [
+          "name",
+          "observations",
+          "effects",
+          "operations",
+          "loop_body_observations",
+          "required_envelopes",
+          "conservative_reason"
+        ],
+        "properties": {
+          "name": { "type": "string" },
+          "observations": { "$ref": "#/$defs/string_array" },
+          "effects": { "$ref": "#/$defs/string_array" },
+          "operations": { "$ref": "#/$defs/string_array" },
+          "loop_body_observations": { "$ref": "#/$defs/string_array" },
+          "required_envelopes": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/path_required_envelope" }
+          },
+          "conservative_reason": { "type": "string" }
+        }
+      }
+    },
+    "gtest_preview": {
+      "type": "object",
+      "required": ["sample_test_path", "lines"],
+      "properties": {
+        "sample_test_path": { "type": "string" },
+        "lines": { "$ref": "#/$defs/string_array" }
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "code", "message", "location"],
+        "properties": {
+          "severity": { "$ref": "#/$defs/diagnostic_severity" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "location": { "$ref": "#/$defs/source_location" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "non_negative_integer": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "string_array": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "rule_id": {
+      "type": "string",
+      "pattern": "^(LR|DEP|PATH|CALL|MMIR|SHAPE)-[A-Z0-9][A-Z0-9-]*$"
+    },
+    "field_access": {
+      "enum": ["read", "write", "read-write", "address"]
+    },
+    "dependency_kind": {
+      "enum": ["query", "effect", "operation", "recursive-candidate"]
+    },
+    "construct_handling": {
+      "enum": [
+        "supported",
+        "modeled",
+        "boundary",
+        "conservative",
+        "not-yet-implemented",
+        "not-meaningful"
+      ]
+    },
+    "envelope_requirement_kind": {
+      "enum": [
+        "self-state",
+        "base-state",
+        "addressable-cell",
+        "object-ref",
+        "dependency-boundary",
+        "dispatch-table",
+        "type-tag",
+        "lifetime-state",
+        "byte-view",
+        "global-environment",
+        "exception-model",
+        "macro-source-map"
+      ]
+    },
+    "path_required_envelope": {
+      "enum": [
+        "self-state",
+        "base-state",
+        "addressable-cell",
+        "object-ref",
+        "dependency-boundary",
+        "dispatch-table",
+        "type-tag",
+        "lifetime-state",
+        "byte-view",
+        "global-environment",
+        "exception-model",
+        "macro-source-map",
+        "conservative-control-flow"
+      ]
+    },
+    "diagnostic_severity": {
+      "enum": ["info", "warning", "error"]
+    },
+    "source_location": {
+      "type": "object",
+      "required": ["file", "line", "column"],
+      "properties": {
+        "file": { "type": "string" },
+        "line": { "$ref": "#/$defs/non_negative_integer" },
+        "column": { "$ref": "#/$defs/non_negative_integer" }
+      }
+    },
+    "source_range": {
+      "type": "object",
+      "required": ["begin", "end"],
+      "properties": {
+        "begin": { "$ref": "#/$defs/source_location" },
+        "end": { "$ref": "#/$defs/source_location" }
+      }
+    },
+    "evidence_fields": {
+      "type": "object",
+      "required": ["rule_id", "reason", "certainty", "conservative", "source_range"],
+      "properties": {
+        "rule_id": { "$ref": "#/$defs/rule_id" },
+        "reason": { "type": "string" },
+        "certainty": { "enum": ["certain", "heuristic", "conservative"] },
+        "conservative": { "type": "boolean" },
+        "source_range": { "$ref": "#/$defs/source_range" }
+      },
+      "not": { "required": ["evidence"] }
+    },
+    "dependency_port_base": {
+      "allOf": [{ "$ref": "#/$defs/evidence_fields" }],
+      "type": "object",
+      "required": ["kind", "name", "original_callee", "return_type", "argument_types", "location"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/dependency_kind" },
+        "name": { "type": "string" },
+        "original_callee": { "type": "string" },
+        "return_type": { "type": "string" },
+        "argument_types": { "$ref": "#/$defs/string_array" },
+        "location": { "$ref": "#/$defs/source_location" }
+      }
+    },
+    "query_port": {
+      "allOf": [
+        { "$ref": "#/$defs/dependency_port_base" },
+        { "properties": { "kind": { "const": "query" } } }
+      ]
+    },
+    "effect_port": {
+      "allOf": [
+        { "$ref": "#/$defs/dependency_port_base" },
+        { "properties": { "kind": { "const": "effect" } } }
+      ]
+    },
+    "operation_port": {
+      "allOf": [
+        { "$ref": "#/$defs/dependency_port_base" },
+        { "properties": { "kind": { "const": "operation" } } }
+      ]
+    },
+    "recursive_candidate_port": {
+      "allOf": [
+        { "$ref": "#/$defs/dependency_port_base" },
+        { "properties": { "kind": { "const": "recursive-candidate" } } }
+      ]
+    }
   }
 }

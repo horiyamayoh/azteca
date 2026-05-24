@@ -92,6 +92,29 @@ if(NOT missing_bd_error MATCHES "AZT-E0001")
 	message(FATAL_ERROR "azteca inspect missing -p stderr missing AZT-E0001:\n${missing_bd_error}")
 endif()
 
+# --- inspect missing --template-args value exits 1 with AZT-E0001 -------
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p . --method "C::m()" --template-args
+	RESULT_VARIABLE missing_template_args_result
+	OUTPUT_VARIABLE missing_template_args_output
+	ERROR_VARIABLE missing_template_args_error
+)
+
+if(NOT missing_template_args_result EQUAL 1)
+	message(
+		FATAL_ERROR
+		"azteca inspect missing --template-args exit was ${missing_template_args_result}, expected 1"
+	)
+endif()
+
+if(NOT missing_template_args_error MATCHES "AZT-E0001")
+	message(
+		FATAL_ERROR
+		"azteca inspect missing --template-args stderr missing AZT-E0001:\n${missing_template_args_error}"
+	)
+endif()
+
 # --- inspect invalid --format exits 1 with AZT-E0006 ---------------------
 
 execute_process(

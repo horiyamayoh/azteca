@@ -125,7 +125,7 @@
   },
   "envelope_requirements": [
     {
-      "kind": "self_state",
+      "kind": "self-state",
       "requirement_reason": "receiver field read",
       "source": "Service::enabled_",
       "rule_id": "LR-001",
@@ -138,7 +138,7 @@
       }
     },
     {
-      "kind": "dependency_boundary",
+      "kind": "dependency-boundary",
       "requirement_reason": "dependency call is represented by transcript port",
       "source": "Notifier::send",
       "rule_id": "DEP-MEMBER-EFFECT",
@@ -151,7 +151,7 @@
       }
     },
     {
-      "kind": "dependency_boundary",
+      "kind": "dependency-boundary",
       "requirement_reason": "dependency call is represented by transcript port",
       "source": "Policy::allow",
       "rule_id": "DEP-MEMBER-QUERY",
@@ -164,7 +164,7 @@
       }
     },
     {
-      "kind": "dependency_boundary",
+      "kind": "dependency-boundary",
       "requirement_reason": "dependency call is represented by transcript port",
       "source": "Repo::exists",
       "rule_id": "DEP-MEMBER-QUERY",
@@ -344,19 +344,19 @@
     },
     {
       "rule_id": "LR-030",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "member function pointer is reported only",
       "observed": false
     },
     {
       "rule_id": "LR-031",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "constructor target is outside Phase A",
       "observed": false
     },
     {
       "rule_id": "LR-032",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "destructor target is outside Phase A",
       "observed": false
     },
@@ -392,7 +392,7 @@
     },
     {
       "rule_id": "LR-038",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "coroutines are future work",
       "observed": false
     },
@@ -404,7 +404,7 @@
     },
     {
       "rule_id": "LR-040",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "default member initializer is future work",
       "observed": false
     },
@@ -487,7 +487,7 @@
       "effects": [],
       "operations": [],
       "loop_body_observations": [],
-      "required_envelopes": ["dependency_boundary"],
+      "required_envelopes": ["dependency-boundary"],
       "conservative_reason": "",
       "rule_id": "PATH-DFS",
       "reason": "return path accumulated by DFS",
@@ -504,7 +504,7 @@
       "effects": [],
       "operations": [],
       "loop_body_observations": [],
-      "required_envelopes": ["dependency_boundary"],
+      "required_envelopes": ["dependency-boundary"],
       "conservative_reason": "",
       "rule_id": "PATH-DFS",
       "reason": "return path accumulated by DFS",
@@ -521,7 +521,7 @@
       "effects": ["notifier_send"],
       "operations": [],
       "loop_body_observations": [],
-      "required_envelopes": ["dependency_boundary"],
+      "required_envelopes": ["dependency-boundary"],
       "conservative_reason": "",
       "rule_id": "PATH-DFS",
       "reason": "return path accumulated by DFS",

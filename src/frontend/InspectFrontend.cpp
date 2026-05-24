@@ -437,7 +437,7 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 		}
 		else
 		{
-			plan_.result = "not-yet-implemented";
+			plan_.result = "invalid-plan";
 			plan_.diagnostics.add(DiagnosticSeverity::kWarning, "AZTECA_METHOD_NO_BODY",
 			    "target method has no body available");
 		}
@@ -3181,7 +3181,7 @@ class MethodLookupVisitor : public clang::RecursiveASTVisitor<MethodLookupVisito
 
 		PlanBuilder builder(context_, method);
 		auto plan = builder.build();
-		plan.result = "not-yet-implemented";
+		plan.result = "invalid-plan";
 		plan.confidence = "low";
 		plan.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_TEMPLATE_INSTANTIATION_NOT_FOUND",
 		    "matching template method has no instantiated body for the requested template "

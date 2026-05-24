@@ -107,7 +107,7 @@
   },
   "envelope_requirements": [
     {
-      "kind": "self_state",
+      "kind": "self-state",
       "requirement_reason": "receiver field read",
       "source": "SyntaxMatrix::own_",
       "rule_id": "LR-001",
@@ -120,7 +120,7 @@
       }
     },
     {
-      "kind": "macro_source_map",
+      "kind": "macro-source-map",
       "requirement_reason": "macro source mapping is required for faithful diagnostics",
       "source": "<fixture>/syntax_matrix.cpp:158:23-158:23",
       "rule_id": "LR-034",
@@ -133,7 +133,7 @@
       }
     },
     {
-      "kind": "macro_source_map",
+      "kind": "macro-source-map",
       "requirement_reason": "macro source mapping is required for faithful diagnostics",
       "source": "<fixture>/syntax_matrix.cpp:158:3-158:28",
       "rule_id": "LR-034",
@@ -146,7 +146,7 @@
       }
     },
     {
-      "kind": "macro_source_map",
+      "kind": "macro-source-map",
       "requirement_reason": "macro source mapping is required for faithful diagnostics",
       "source": "<fixture>/syntax_matrix.cpp:5:30-5:40",
       "rule_id": "LR-034",
@@ -326,19 +326,19 @@
     },
     {
       "rule_id": "LR-030",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "member function pointer is reported only",
       "observed": false
     },
     {
       "rule_id": "LR-031",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "constructor target is outside Phase A",
       "observed": false
     },
     {
       "rule_id": "LR-032",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "destructor target is outside Phase A",
       "observed": false
     },
@@ -374,7 +374,7 @@
     },
     {
       "rule_id": "LR-038",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "coroutines are future work",
       "observed": false
     },
@@ -386,7 +386,7 @@
     },
     {
       "rule_id": "LR-040",
-      "handling": "not_yet_implemented",
+      "handling": "not-yet-implemented",
       "note": "default member initializer is future work",
       "observed": false
     },

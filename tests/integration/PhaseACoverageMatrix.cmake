@@ -15,10 +15,32 @@ endif()
 # diagnostic instead of crashing or producing partial output.
 
 set(simple_source "${PROJECT_SOURCE_DIR}/tests/fixtures/phase_a/simple")
-set(simple_build "${PROJECT_BINARY_DIR}/test-work/phase_a/simple")
+set(simple_build "${PROJECT_BINARY_DIR}/test-work/phase_a/coverage_matrix_simple")
 
 set(coverage_source "${PROJECT_SOURCE_DIR}/tests/fixtures/phase_a/coverage")
 set(coverage_build "${PROJECT_BINARY_DIR}/test-work/phase_a/coverage")
+
+if(DEFINED CMAKE_CXX_COMPILER AND NOT CMAKE_CXX_COMPILER STREQUAL "")
+	set(fixture_cxx_compiler "${CMAKE_CXX_COMPILER}")
+else()
+	set(fixture_cxx_compiler "clang++-18")
+endif()
+
+execute_process(
+	COMMAND
+		${CMAKE_COMMAND}
+		-S "${simple_source}"
+		-B "${simple_build}"
+		-G Ninja
+		-DCMAKE_CXX_COMPILER=${fixture_cxx_compiler}
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	RESULT_VARIABLE _simple_cfg_result
+	OUTPUT_VARIABLE _simple_cfg_out
+	ERROR_VARIABLE _simple_cfg_err
+)
+if(NOT _simple_cfg_result EQUAL 0)
+	message(FATAL_ERROR "simple fixture configure failed:\n${_simple_cfg_out}\n${_simple_cfg_err}")
+endif()
 
 execute_process(
 	COMMAND
@@ -26,7 +48,7 @@ execute_process(
 		-S "${coverage_source}"
 		-B "${coverage_build}"
 		-G Ninja
-		-DCMAKE_CXX_COMPILER=clang++-18
+		-DCMAKE_CXX_COMPILER=${fixture_cxx_compiler}
 		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 	RESULT_VARIABLE _cfg_result
 	OUTPUT_VARIABLE _cfg_out
@@ -77,7 +99,7 @@ expect_failure_with(
 )
 
 # Coroutine body: inspect must succeed and surface the coroutine
-# not_yet_implemented diagnostic in JSON.
+# not-yet-implemented diagnostic in JSON.
 execute_process(
 	COMMAND
 		"${AZTECA_EXECUTABLE}" inspect -p "${coverage_build}" --source
@@ -101,9 +123,9 @@ string(FIND "${_coro_out}" "\"coroutine\"" _coro_idx)
 if(_coro_idx EQUAL -1)
 	message(FATAL_ERROR "coroutine inspect missing 'coroutine' construct:\n${_coro_out}")
 endif()
-string(FIND "${_coro_out}" "not_yet_implemented" _nyi_idx)
-if(_nyi_idx EQUAL -1)
-	message(FATAL_ERROR "coroutine inspect missing 'not_yet_implemented':\n${_coro_out}")
+string(FIND "${_coro_out}" "not-yet-implemented" _nyi_hyphen_idx)
+if(_nyi_hyphen_idx EQUAL -1)
+	message(FATAL_ERROR "coroutine inspect missing not-yet-implemented handling:\n${_coro_out}")
 endif()
 
 message(STATUS "Phase A coverage matrix gap-fillers: OK")

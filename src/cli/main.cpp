@@ -146,7 +146,7 @@ void cli_error(std::string_view diagnostic_id, std::string_view message)
 		{
 			if (!has_value(index, argc))
 			{
-				std::cerr << "missing value for --template-args\n";
+				cli_error("AZT-E0001", "missing value for --template-args");
 				return std::nullopt;
 			}
 			++index;

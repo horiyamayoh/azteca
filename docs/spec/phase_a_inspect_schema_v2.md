@@ -43,8 +43,12 @@ key 順序は安定とする (生成順=表示順)。クライアントは順序
 - `FieldAccess` (`receiver_state[].access`): `read` | `write` | `read-write` | `address`
 - `DependencyKind` (`*[].kind`): `query` | `effect` | `operation` | `recursive-candidate`
 - `ConstructHandling`: `supported` | `modeled` | `boundary` | `conservative` | `not-yet-implemented` | `not-meaningful`
-- `EnvelopeRequirementKind`: 14 値。`src/plan/ExtractionPlan.cpp` の `to_string`
-  と完全に一致
+- `EnvelopeRequirementKind`: `self-state` | `base-state` | `addressable-cell` |
+  `object-ref` | `dependency-boundary` | `dispatch-table` | `type-tag` |
+  `lifetime-state` | `byte-view` | `global-environment` | `exception-model` |
+  `macro-source-map`
+- `paths[].required_envelopes`: `EnvelopeRequirementKind` と
+  `conservative-control-flow`
 - `DiagnosticSeverity`: `info` | `warning` | `error`
 
 Phase A で enum 値の追加は minor、削除/意味変更は major。
@@ -52,9 +56,10 @@ Phase A で enum 値の追加は minor、削除/意味変更は major。
 ## 3. Evidence object
 
 各要素は `rule_id`, `reason`, `certainty`, `conservative`, `source_range` を
-含む `evidence` フィールドを持つ (フラット展開)。
+evidence fields としてフラットに持つ。
 
-- `rule_id`: `LR-xxx` 形式 (lowering rule の意味分類)
+- `rule_id`: `LR-*`, `DEP-*`, `PATH-*`, `CALL-*`, `MMIR-*`, `SHAPE-*`
+  形式
 - `certainty`: `certain` | `heuristic` | `conservative`
 - `conservative`: bool
 - `source_range`: `{begin: {file,line,column}, end: {file,line,column}}`

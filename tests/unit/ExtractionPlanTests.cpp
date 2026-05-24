@@ -72,6 +72,99 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 	EXPECT_NE(json.find("\"source_range\""), std::string::npos);
 }
 
+TEST(InspectReport, JsonUsesCanonicalKebabCaseValuesWithoutChangingText)
+{
+	azteca::ExtractionPlan plan;
+	plan.target.qualified_name = "Account::withdraw";
+	auto evidence = azteca::PlanEvidence{
+	    .rule_id = "LR-JSON",
+	    .reason = "constructed report coverage",
+	    .certainty = "certain",
+	    .conservative = false,
+	    .source_range = {},
+	};
+	plan.receiver_state.push_back({
+	    .name = "balance_",
+	    .type = "int",
+	    .access = azteca::FieldAccess::kReadWrite,
+	    .is_mutable = false,
+	    .access_specifier = "private",
+	    .location = {},
+	    .evidence = evidence,
+	});
+	plan.dependency_ports.push_back({
+	    .kind = azteca::DependencyKind::kRecursiveCandidate,
+	    .name = "normalize",
+	    .original_callee = "Account::normalize",
+	    .return_type = "int",
+	    .argument_types = {"int"},
+	    .location = {},
+	    .evidence = evidence,
+	});
+	plan.semantic_features.push_back({
+	    .name = "coroutine",
+	    .handling = azteca::ConstructHandling::kNotYetImplemented,
+	    .detail = "not handled in Phase A",
+	    .evidence = evidence,
+	});
+	plan.unsupported_or_modeled_constructs.push_back({
+	    .construct = "inline asm",
+	    .handling = azteca::ConstructHandling::kNotMeaningful,
+	    .reason = "cannot preserve unit semantics",
+	    .fallbacks = {},
+	    .location = {},
+	    .evidence = evidence,
+	});
+	plan.envelope_requirements.push_back({
+	    .kind = azteca::EnvelopeRequirementKind::kDependencyBoundary,
+	    .reason = "dependency call",
+	    .source = "repo",
+	    .evidence = evidence,
+	});
+	plan.envelope_requirements.push_back({
+	    .kind = azteca::EnvelopeRequirementKind::kObjectRef,
+	    .reason = "object identity",
+	    .source = "this",
+	    .evidence = evidence,
+	});
+	plan.rule_coverage.push_back({
+	    .rule_id = "LR-999",
+	    .handling = azteca::ConstructHandling::kNotYetImplemented,
+	    .note = "future rule",
+	    .observed = false,
+	});
+	plan.paths.push_back({
+	    .name = "path_1",
+	    .observations = {},
+	    .effects = {},
+	    .operations = {},
+	    .loop_body_observations = {},
+	    .required_envelopes = {"dependency_boundary", "object_ref"},
+	    .conservative_reason = {},
+	    .evidence = evidence,
+	});
+
+	auto json = azteca::render_json_report(plan);
+
+	EXPECT_NE(json.find("\"access\": \"read-write\""), std::string::npos);
+	EXPECT_NE(json.find("\"kind\": \"recursive-candidate\""), std::string::npos);
+	EXPECT_NE(json.find("\"handling\": \"not-yet-implemented\""), std::string::npos);
+	EXPECT_NE(json.find("\"handling\": \"not-meaningful\""), std::string::npos);
+	EXPECT_NE(json.find("\"kind\": \"dependency-boundary\""), std::string::npos);
+	EXPECT_NE(json.find("\"kind\": \"object-ref\""), std::string::npos);
+	EXPECT_NE(json.find("\"required_envelopes\": [\"dependency-boundary\", \"object-ref\"]"),
+	    std::string::npos);
+
+	auto text = azteca::render_text_report(plan);
+
+	EXPECT_NE(text.find("int balance_ read/write"), std::string::npos);
+	EXPECT_NE(text.find("recursive normalize(int) -> int"), std::string::npos);
+	EXPECT_NE(text.find("[not_yet_implemented]"), std::string::npos);
+	EXPECT_NE(text.find("[not_meaningful_for_unit_extraction]"), std::string::npos);
+	EXPECT_NE(text.find("dependency_boundary"), std::string::npos);
+	EXPECT_NE(text.find("object_ref"), std::string::npos);
+}
+
 TEST(InspectReport, TextShowsCoreInspectSections)
 {
 	azteca::ExtractionPlan plan;
