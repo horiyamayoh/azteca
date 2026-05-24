@@ -446,6 +446,7 @@
   "paths": [
     {
       "name": "return_virtual_score_value_own",
+      "ordered_events": [{ "kind": "query", "name": "dispatch_virtual_score" }],
       "observations": ["dispatch_virtual_score"],
       "effects": [],
       "operations": [],

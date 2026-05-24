@@ -155,9 +155,18 @@ struct RuleCoverage
 	bool observed{false};
 };
 
+struct OrderedPathEvent
+{
+	DependencyKind kind{DependencyKind::kQuery};
+	std::string name;
+
+	friend bool operator==(OrderedPathEvent const&, OrderedPathEvent const&) = default;
+};
+
 struct PathBurden
 {
 	std::string name;
+	std::vector<OrderedPathEvent> ordered_events;
 	std::vector<std::string> observations;
 	std::vector<std::string> effects;
 	std::vector<std::string> operations;

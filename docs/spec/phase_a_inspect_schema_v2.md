@@ -64,6 +64,20 @@ evidence fields としてフラットに持つ。
 - `conservative`: bool
 - `source_range`: `{begin: {file,line,column}, end: {file,line,column}}`
 
+## 3.1 Path ordered events
+
+`paths[]` は optional additive key として `ordered_events` を持ってよい。
+
+```text
+ordered_events[]:
+  kind: query | operation | effect
+  name: dependency port name
+```
+
+`observations` / `operations` / `effects` は従来通り dedup 済み burden であり、
+`ordered_events` は Google Test preview や UI が元の到達順を説明するための
+補助 transcript である。
+
 ## 4. stdout 規約
 
 - `--format json` 時、stdout は厳密に JSON 1 オブジェクトのみ

@@ -2,94 +2,102 @@
   "schema_version": 2,
   "azteca_phase": "A",
   "target": {
-    "qualified_name": "EdgeCases::noexcept_read",
-    "signature": "int() const",
-    "source_file": "<fixture>/edge_cases.cpp",
-    "line": 88
+    "qualified_name": "OrderedEvents::run",
+    "signature": "int(int)",
+    "source_file": "<fixture>/hardening.cpp",
+    "line": 66
   },
   "result": "extracted",
   "confidence": "high",
-  "receiver_state": [
+  "receiver_state": [],
+  "dependency_observations": [
     {
-      "name": "value_",
-      "type": "int",
-      "access": "read",
-      "mutable": false,
-      "access_specifier": "private",
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 110, "column": 6 },
-      "rule_id": "LR-001",
-      "reason": "receiver field read",
+      "kind": "query",
+      "name": "repo_exists",
+      "original_callee": "HardeningRepo::exists",
+      "return_type": "bool",
+      "argument_types": ["int"],
+      "location": { "file": "<fixture>/hardening.cpp", "line": 68, "column": 13 },
+      "rule_id": "DEP-MEMBER-QUERY",
+      "reason": "const non-void member object call is a query",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 10 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 16 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 68, "column": 7 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 68, "column": 23 }
       }
     }
   ],
-  "dependency_observations": [],
-  "observable_effects": [],
-  "operations": [],
+  "observable_effects": [
+    {
+      "kind": "effect",
+      "name": "notifier_send",
+      "original_callee": "HardeningNotifier::send",
+      "return_type": "void",
+      "argument_types": ["int"],
+      "location": { "file": "<fixture>/hardening.cpp", "line": 71, "column": 14 },
+      "rule_id": "DEP-MEMBER-EFFECT",
+      "reason": "void or ignored-return member object call is an effect",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 71, "column": 4 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 71, "column": 29 }
+      }
+    }
+  ],
+  "operations": [
+    {
+      "kind": "operation",
+      "name": "repo_refresh",
+      "original_callee": "HardeningRepo::refresh",
+      "return_type": "int",
+      "argument_types": ["int"],
+      "location": { "file": "<fixture>/hardening.cpp", "line": 70, "column": 27 },
+      "rule_id": "DEP-MEMBER-OPERATION",
+      "reason": "non-const non-void member object call is an operation",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 70, "column": 21 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 70, "column": 38 }
+      }
+    }
+  ],
   "recursive_helper_candidates": [],
   "shape_candidates": [],
   "object_ref_requirements": [],
   "semantic_features": [
     {
-      "name": "access_control",
-      "handling": "modeled",
-      "detail": "inspect reports non-public receiver state without #define private public",
-      "rule_id": "LR-048",
-      "reason": "private/protected receiver state is modeled without changing product access",
+      "name": "auto_type",
+      "handling": "supported",
+      "detail": "auto is reported after semantic type resolution",
+      "rule_id": "LR-043",
+      "reason": "auto type is resolved by Clang Sema",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 10 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 16 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 70, "column": 4 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 70, "column": 38 }
       }
     },
     {
-      "name": "method_qualifier",
+      "name": "local_variable",
       "handling": "supported",
-      "detail": "target method qualifiers: const",
-      "rule_id": "LR-047",
-      "reason": "target method cv/ref qualifiers are recorded",
+      "detail": "local variable declaration is part of inspect MMIR",
+      "rule_id": "LR-014",
+      "reason": "local variable declaration",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 88, "column": 2 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 91, "column": 3 }
-      }
-    },
-    {
-      "name": "noexcept",
-      "handling": "supported",
-      "detail": "target method is noexcept-compatible",
-      "rule_id": "LR-019",
-      "reason": "target method has noexcept-compatible exception specification",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 88, "column": 2 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 91, "column": 3 }
-      }
-    },
-    {
-      "name": "receiver_state",
-      "handling": "supported",
-      "detail": "receiver field read",
-      "rule_id": "LR-001",
-      "reason": "receiver field read",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 10 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 16 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 70, "column": 4 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 70, "column": 38 }
       }
     }
   ],
   "unsupported_or_modeled_constructs": [],
   "control_flow_summary": {
-    "has_if": false,
+    "has_if": true,
     "has_switch": false,
     "has_loop": false,
     "has_range_for": false,
@@ -101,16 +109,42 @@
   },
   "envelope_requirements": [
     {
-      "kind": "self-state",
-      "requirement_reason": "receiver field read",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-001",
-      "reason": "receiver field read",
+      "kind": "dependency-boundary",
+      "requirement_reason": "dependency call is represented by transcript port",
+      "source": "HardeningNotifier::send",
+      "rule_id": "DEP-MEMBER-EFFECT",
+      "reason": "void or ignored-return member object call is an effect",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 10 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 16 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 71, "column": 4 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 71, "column": 29 }
+      }
+    },
+    {
+      "kind": "dependency-boundary",
+      "requirement_reason": "dependency call is represented by transcript port",
+      "source": "HardeningRepo::exists",
+      "rule_id": "DEP-MEMBER-QUERY",
+      "reason": "const non-void member object call is a query",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 68, "column": 7 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 68, "column": 23 }
+      }
+    },
+    {
+      "kind": "dependency-boundary",
+      "requirement_reason": "dependency call is represented by transcript port",
+      "source": "HardeningRepo::refresh",
+      "rule_id": "DEP-MEMBER-OPERATION",
+      "reason": "non-const non-void member object call is an operation",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 70, "column": 21 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 70, "column": 38 }
       }
     }
   ],
@@ -119,7 +153,7 @@
       "rule_id": "LR-001",
       "handling": "supported",
       "note": "implicit data member read",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-002",
@@ -134,12 +168,12 @@
       "observed": false
     },
     { "rule_id": "LR-004", "handling": "supported", "note": "return statement", "observed": true },
-    { "rule_id": "LR-005", "handling": "supported", "note": "if statement", "observed": false },
+    { "rule_id": "LR-005", "handling": "supported", "note": "if statement", "observed": true },
     {
       "rule_id": "LR-006",
       "handling": "supported",
       "note": "built-in expression",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-007",
@@ -187,7 +221,7 @@
       "rule_id": "LR-014",
       "handling": "supported",
       "note": "local variable declaration",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-015",
@@ -217,7 +251,7 @@
       "rule_id": "LR-019",
       "handling": "supported",
       "note": "noexcept is reported from method metadata",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-020",
@@ -361,7 +395,7 @@
       "rule_id": "LR-043",
       "handling": "supported",
       "note": "auto type is recorded after semantic resolution",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-044",
@@ -385,13 +419,13 @@
       "rule_id": "LR-047",
       "handling": "supported",
       "note": "cv/ref member qualifiers are part of target metadata",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-048",
       "handling": "modeled",
       "note": "access control is reported without rewriting product visibility",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-049",
@@ -402,33 +436,65 @@
   ],
   "paths": [
     {
-      "name": "return_value",
-      "ordered_events": [],
-      "observations": [],
-      "effects": [],
-      "operations": [],
+      "name": "return_refreshed",
+      "ordered_events": [
+        { "kind": "query", "name": "repo_exists" },
+        { "kind": "operation", "name": "repo_refresh" },
+        { "kind": "effect", "name": "notifier_send" }
+      ],
+      "observations": ["repo_exists"],
+      "effects": ["notifier_send"],
+      "operations": ["repo_refresh"],
       "loop_body_observations": [],
-      "required_envelopes": [],
+      "required_envelopes": ["dependency-boundary"],
       "conservative_reason": "",
       "rule_id": "PATH-DFS",
       "reason": "return path accumulated by DFS",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 16 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 72, "column": 4 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 72, "column": 20 }
+      }
+    },
+    {
+      "name": "return_1",
+      "ordered_events": [{ "kind": "query", "name": "repo_exists" }],
+      "observations": ["repo_exists"],
+      "effects": [],
+      "operations": [],
+      "loop_body_observations": [],
+      "required_envelopes": ["dependency-boundary"],
+      "conservative_reason": "",
+      "rule_id": "PATH-DFS",
+      "reason": "return path accumulated by DFS",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 75, "column": 3 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 75, "column": 12 }
       }
     }
   ],
   "gtest_preview": {
-    "sample_test_path": "tests/edgecases_noexcept_read.sample_test.cpp",
+    "sample_test_path": "tests/orderedevents_run.sample_test.cpp",
     "lines": [
-      "TEST(edgecases_noexcept_read, return_value)",
+      "TEST(orderedevents_run, return_refreshed)",
       "{",
-      "  auto s = azteca_gen::scenario::edgecases_noexcept_read{};",
-      "  s.self.value_ = /* value */;",
+      "  auto s = azteca_gen::scenario::orderedevents_run{};",
+      "  s.when.repo_exists(/* args */).returns(/* value */);",
+      "  s.when.repo_refresh(/* args */).returns(/* value */);",
       "  auto result = s.call(/* args */);",
-      "  EXPECT_EQ(result, /* expected for return_value */);",
+      "  EXPECT_EQ(result, /* expected for return_refreshed */);",
+      "  s.effects.repo_refresh.expect_once(/* args */);",
+      "  s.effects.notifier_send.expect_once(/* args */);",
+      "}",
+      "TEST(orderedevents_run, return_1)",
+      "{",
+      "  auto s = azteca_gen::scenario::orderedevents_run{};",
+      "  s.when.repo_exists(/* args */).returns(/* value */);",
+      "  auto result = s.call(/* args */);",
+      "  EXPECT_EQ(result, /* expected for return_1 */);",
       "  s.effects.expect_none();",
       "}"
     ]

@@ -359,6 +359,7 @@
   "paths": [
     {
       "name": "return_total__loop_zero_iterations",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -376,6 +377,7 @@
     },
     {
       "name": "return_total__loop_one_or_more_iterations",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -398,6 +400,7 @@
       "TEST(edgecases_branch_controls, return_total_loop_zero_iterations)",
       "{",
       "  auto s = azteca_gen::scenario::edgecases_branch_controls{};",
+      "  // conservative path: return path includes conservative control flow",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_total__loop_zero_iterations */);",
       "  s.effects.expect_none();",
@@ -405,6 +408,7 @@
       "TEST(edgecases_branch_controls, return_total_loop_one_or_more_iterations)",
       "{",
       "  auto s = azteca_gen::scenario::edgecases_branch_controls{};",
+      "  // conservative path: return path includes conservative control flow",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_total__loop_one_or_more_iterations */);",
       "  s.effects.expect_none();",

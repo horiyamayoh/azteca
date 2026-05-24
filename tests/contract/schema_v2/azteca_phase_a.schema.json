@@ -196,6 +196,10 @@
         ],
         "properties": {
           "name": { "type": "string" },
+          "ordered_events": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/ordered_path_event" }
+          },
           "observations": { "$ref": "#/$defs/string_array" },
           "effects": { "$ref": "#/$defs/string_array" },
           "operations": { "$ref": "#/$defs/string_array" },
@@ -249,6 +253,14 @@
     },
     "dependency_kind": {
       "enum": ["query", "effect", "operation", "recursive-candidate"]
+    },
+    "ordered_path_event": {
+      "type": "object",
+      "required": ["kind", "name"],
+      "properties": {
+        "kind": { "enum": ["query", "effect", "operation"] },
+        "name": { "type": "string" }
+      }
     },
     "construct_handling": {
       "enum": [

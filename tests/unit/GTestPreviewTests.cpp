@@ -38,9 +38,15 @@ TEST(GTestPreview, BuildsNonVoidPathTestsWithReceiverPortsEffectsAndUniqueNames)
 
 	azteca::PathBurden first_path;
 	first_path.name = "success path";
+	first_path.ordered_events = {
+	    {.kind = azteca::DependencyKind::kQuery, .name = "repo_exists"},
+	    {.kind = azteca::DependencyKind::kOperation, .name = "repo_refresh"},
+	    {.kind = azteca::DependencyKind::kEffect, .name = "notifier_send"},
+	};
 	first_path.observations = {"repo_exists"};
 	first_path.effects = {"notifier_send"};
 	first_path.operations = {"repo_refresh"};
+	first_path.conservative_reason = "loop body summarized";
 	plan.paths.push_back(first_path);
 
 	azteca::PathBurden second_path;
@@ -57,12 +63,13 @@ TEST(GTestPreview, BuildsNonVoidPathTestsWithReceiverPortsEffectsAndUniqueNames)
 	        "  auto s = azteca_gen::scenario::sample_run{};",
 	        "  s.self.enabled_ = /* value */;",
 	        "  // recursive helper candidate: normalize(int) -> int",
+	        "  // conservative path: loop body summarized",
 	        "  s.when.repo_exists(/* args */).returns(/* value */);",
 	        "  s.when.repo_refresh(/* args */).returns(/* value */);",
 	        "  auto result = s.call(/* args */);",
 	        "  EXPECT_EQ(result, /* expected for success path */);",
-	        "  s.effects.notifier_send.expect_once(/* args */);",
 	        "  s.effects.repo_refresh.expect_once(/* args */);",
+	        "  s.effects.notifier_send.expect_once(/* args */);",
 	        "}",
 	        "TEST(sample_run, success_path__2)",
 	        "{",

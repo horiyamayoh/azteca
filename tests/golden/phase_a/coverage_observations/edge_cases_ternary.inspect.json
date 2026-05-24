@@ -403,6 +403,7 @@
   "paths": [
     {
       "name": "return_flag_value_0",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],

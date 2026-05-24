@@ -419,6 +419,7 @@
   "paths": [
     {
       "name": "path_1",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -436,6 +437,7 @@
     },
     {
       "name": "path_2",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],

@@ -388,6 +388,7 @@
   "paths": [
     {
       "name": "path_1",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],

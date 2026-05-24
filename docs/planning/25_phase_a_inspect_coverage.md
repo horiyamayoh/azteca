@@ -84,6 +84,18 @@ Phase A close時点の安定化ゲートは次である。
 - JSON parse validation for inspect --format json
 ```
 
+## Close score
+
+2026-05-24 時点の Phase A 自己採点は 92/100 である。release candidate 水準では
+あるが、100 点へ近づけるために次を追加の close hardening とする。
+
+- project-wide inspect で、対象と無関係な TU parse failure を `AZT-W0002` として
+  report し、matching plan が得られた場合は継続する。
+- `paths[].ordered_events` で query / operation / effect の到達順を JSON に追加する。
+- Google Test preview は ordered events を使って stub setup と effect assertion の
+  順序を安定化する。
+- conservative path は preview 内で短い comment として明示する。
+
 ## Fixture evidence
 
 上表の "pass" 行は、`tests/integration/PhaseACoverageObservations.cmake` が以下のメソッドを inspect し、各 `rule_coverage[].observed=true` をアサートしつつ golden 比較することで証明する。golden は `tests/golden/phase_a/coverage_observations/` に置く。

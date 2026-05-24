@@ -471,6 +471,7 @@
   "paths": [
     {
       "name": "return_sum__switch_case_0__loop_zero_iterations",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -488,6 +489,7 @@
     },
     {
       "name": "return_sum__switch_case_1__loop_zero_iterations",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -505,6 +507,7 @@
     },
     {
       "name": "return_sum__switch_default__loop_zero_iterations",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -522,6 +525,7 @@
     },
     {
       "name": "return_sum__switch_case_0__loop_one_or_more_iterations",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -539,6 +543,7 @@
     },
     {
       "name": "return_sum__switch_case_1__loop_one_or_more_iterations",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -556,6 +561,7 @@
     },
     {
       "name": "return_sum__switch_default__loop_one_or_more_iterations",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -580,6 +586,7 @@
       "  auto s = azteca_gen::scenario::syntaxmatrix_switch_loop{};",
       "  s.self.own_ = /* value */;",
       "  s.self.values_ = /* value */;",
+      "  // conservative path: return path includes conservative control flow",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_sum__switch_case_0__loop_zero_iterations */);",
       "  s.effects.expect_none();",
@@ -589,6 +596,7 @@
       "  auto s = azteca_gen::scenario::syntaxmatrix_switch_loop{};",
       "  s.self.own_ = /* value */;",
       "  s.self.values_ = /* value */;",
+      "  // conservative path: return path includes conservative control flow",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_sum__switch_case_1__loop_zero_iterations */);",
       "  s.effects.expect_none();",
@@ -598,6 +606,7 @@
       "  auto s = azteca_gen::scenario::syntaxmatrix_switch_loop{};",
       "  s.self.own_ = /* value */;",
       "  s.self.values_ = /* value */;",
+      "  // conservative path: return path includes conservative control flow",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_sum__switch_default__loop_zero_iterations */);",
       "  s.effects.expect_none();",
@@ -607,6 +616,7 @@
       "  auto s = azteca_gen::scenario::syntaxmatrix_switch_loop{};",
       "  s.self.own_ = /* value */;",
       "  s.self.values_ = /* value */;",
+      "  // conservative path: return path includes conservative control flow",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_sum__switch_case_0__loop_one_or_more_iterations */);",
       "  s.effects.expect_none();",
@@ -616,6 +626,7 @@
       "  auto s = azteca_gen::scenario::syntaxmatrix_switch_loop{};",
       "  s.self.own_ = /* value */;",
       "  s.self.values_ = /* value */;",
+      "  // conservative path: return path includes conservative control flow",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_sum__switch_case_1__loop_one_or_more_iterations */);",
       "  s.effects.expect_none();",
@@ -625,6 +636,7 @@
       "  auto s = azteca_gen::scenario::syntaxmatrix_switch_loop{};",
       "  s.self.own_ = /* value */;",
       "  s.self.values_ = /* value */;",
+      "  // conservative path: return path includes conservative control flow",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_sum__switch_default__loop_one_or_more_iterations */);",
       "  s.effects.expect_none();",

@@ -466,6 +466,7 @@
   "paths": [
     {
       "name": "return_disabled",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -483,6 +484,7 @@
     },
     {
       "name": "return_not_found",
+      "ordered_events": [{ "kind": "query", "name": "repo_exists" }],
       "observations": ["repo_exists"],
       "effects": [],
       "operations": [],
@@ -500,6 +502,10 @@
     },
     {
       "name": "return_denied",
+      "ordered_events": [
+        { "kind": "query", "name": "repo_exists" },
+        { "kind": "query", "name": "policy_allow" }
+      ],
       "observations": ["repo_exists", "policy_allow"],
       "effects": [],
       "operations": [],
@@ -517,6 +523,11 @@
     },
     {
       "name": "return_ok",
+      "ordered_events": [
+        { "kind": "query", "name": "repo_exists" },
+        { "kind": "query", "name": "policy_allow" },
+        { "kind": "effect", "name": "notifier_send" }
+      ],
       "observations": ["repo_exists", "policy_allow"],
       "effects": ["notifier_send"],
       "operations": [],

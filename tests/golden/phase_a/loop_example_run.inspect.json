@@ -5,7 +5,7 @@
     "qualified_name": "LoopExample::run",
     "signature": "int(int)",
     "source_file": "<fixture>/hardening.cpp",
-    "line": 79
+    "line": 99
   },
   "result": "extracted-with-conservative-notes",
   "confidence": "medium",
@@ -17,14 +17,14 @@
       "original_callee": "HardeningRepo::exists",
       "return_type": "bool",
       "argument_types": ["int"],
-      "location": { "file": "<fixture>/hardening.cpp", "line": 83, "column": 14 },
+      "location": { "file": "<fixture>/hardening.cpp", "line": 103, "column": 14 },
       "rule_id": "DEP-MEMBER-QUERY",
       "reason": "const non-void member object call is a query",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/hardening.cpp", "line": 83, "column": 8 },
-        "end": { "file": "<fixture>/hardening.cpp", "line": 83, "column": 27 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 103, "column": 8 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 103, "column": 27 }
       }
     }
   ],
@@ -35,14 +35,14 @@
       "original_callee": "HardeningNotifier::send",
       "return_type": "void",
       "argument_types": ["int"],
-      "location": { "file": "<fixture>/hardening.cpp", "line": 85, "column": 15 },
+      "location": { "file": "<fixture>/hardening.cpp", "line": 105, "column": 15 },
       "rule_id": "DEP-MEMBER-EFFECT",
       "reason": "void or ignored-return member object call is an effect",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/hardening.cpp", "line": 85, "column": 5 },
-        "end": { "file": "<fixture>/hardening.cpp", "line": 85, "column": 26 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 105, "column": 5 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 105, "column": 26 }
       }
     }
   ],
@@ -60,8 +60,8 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/hardening.cpp", "line": 81, "column": 8 },
-        "end": { "file": "<fixture>/hardening.cpp", "line": 81, "column": 21 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 101, "column": 8 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 101, "column": 21 }
       }
     },
     {
@@ -73,8 +73,8 @@
       "certainty": "conservative",
       "conservative": true,
       "source_range": {
-        "begin": { "file": "<fixture>/hardening.cpp", "line": 81, "column": 3 },
-        "end": { "file": "<fixture>/hardening.cpp", "line": 87, "column": 4 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 101, "column": 3 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 107, "column": 4 }
       }
     }
   ],
@@ -100,8 +100,8 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/hardening.cpp", "line": 85, "column": 5 },
-        "end": { "file": "<fixture>/hardening.cpp", "line": 85, "column": 26 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 105, "column": 5 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 105, "column": 26 }
       }
     },
     {
@@ -113,8 +113,8 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/hardening.cpp", "line": 83, "column": 8 },
-        "end": { "file": "<fixture>/hardening.cpp", "line": 83, "column": 27 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 103, "column": 8 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 103, "column": 27 }
       }
     }
   ],
@@ -407,6 +407,7 @@
   "paths": [
     {
       "name": "return_count__loop_zero_iterations",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -418,12 +419,16 @@
       "certainty": "conservative",
       "conservative": true,
       "source_range": {
-        "begin": { "file": "<fixture>/hardening.cpp", "line": 89, "column": 3 },
-        "end": { "file": "<fixture>/hardening.cpp", "line": 89, "column": 15 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 109, "column": 3 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 109, "column": 15 }
       }
     },
     {
       "name": "return_count__loop_one_or_more_iterations",
+      "ordered_events": [
+        { "kind": "query", "name": "repo_exists" },
+        { "kind": "effect", "name": "notifier_send" }
+      ],
       "observations": ["repo_exists"],
       "effects": ["notifier_send"],
       "operations": [],
@@ -435,8 +440,8 @@
       "certainty": "conservative",
       "conservative": true,
       "source_range": {
-        "begin": { "file": "<fixture>/hardening.cpp", "line": 89, "column": 3 },
-        "end": { "file": "<fixture>/hardening.cpp", "line": 89, "column": 15 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 109, "column": 3 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 109, "column": 15 }
       }
     }
   ],
@@ -446,6 +451,7 @@
       "TEST(loopexample_run, return_count_loop_zero_iterations)",
       "{",
       "  auto s = azteca_gen::scenario::loopexample_run{};",
+      "  // conservative path: return path includes conservative control flow",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_count__loop_zero_iterations */);",
       "  s.effects.expect_none();",
@@ -453,6 +459,7 @@
       "TEST(loopexample_run, return_count_loop_one_or_more_iterations)",
       "{",
       "  auto s = azteca_gen::scenario::loopexample_run{};",
+      "  // conservative path: return path includes conservative control flow",
       "  s.when.repo_exists(/* args */).returns(/* value */);",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_count__loop_one_or_more_iterations */);",
@@ -466,7 +473,7 @@
       "code": "AZTECA_PATH_CONSERVATIVE",
       "public_id": "AZT-W0001",
       "message": "loop statement is approximated as zero/one-or-more execution paths",
-      "location": { "file": "<fixture>/hardening.cpp", "line": 81, "column": 3 }
+      "location": { "file": "<fixture>/hardening.cpp", "line": 101, "column": 3 }
     }
   ]
 }

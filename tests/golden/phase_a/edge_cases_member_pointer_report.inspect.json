@@ -388,6 +388,7 @@
   "paths": [
     {
       "name": "return_pointer_nullptr_0_1",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],

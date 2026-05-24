@@ -437,6 +437,11 @@
   "paths": [
     {
       "name": "return_refreshed",
+      "ordered_events": [
+        { "kind": "operation", "name": "repo_refresh" },
+        { "kind": "query", "name": "repo_exists" },
+        { "kind": "effect", "name": "notifier_send" }
+      ],
       "observations": ["repo_exists"],
       "effects": ["notifier_send"],
       "operations": ["repo_refresh"],
@@ -454,6 +459,10 @@
     },
     {
       "name": "return_refreshed",
+      "ordered_events": [
+        { "kind": "operation", "name": "repo_refresh" },
+        { "kind": "query", "name": "repo_exists" }
+      ],
       "observations": ["repo_exists"],
       "effects": [],
       "operations": ["repo_refresh"],
@@ -476,18 +485,18 @@
       "TEST(dependencykinds_run, return_refreshed)",
       "{",
       "  auto s = azteca_gen::scenario::dependencykinds_run{};",
-      "  s.when.repo_exists(/* args */).returns(/* value */);",
       "  s.when.repo_refresh(/* args */).returns(/* value */);",
+      "  s.when.repo_exists(/* args */).returns(/* value */);",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_refreshed */);",
-      "  s.effects.notifier_send.expect_once(/* args */);",
       "  s.effects.repo_refresh.expect_once(/* args */);",
+      "  s.effects.notifier_send.expect_once(/* args */);",
       "}",
       "TEST(dependencykinds_run, return_refreshed__2)",
       "{",
       "  auto s = azteca_gen::scenario::dependencykinds_run{};",
-      "  s.when.repo_exists(/* args */).returns(/* value */);",
       "  s.when.repo_refresh(/* args */).returns(/* value */);",
+      "  s.when.repo_exists(/* args */).returns(/* value */);",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_refreshed */);",
       "  s.effects.repo_refresh.expect_once(/* args */);",

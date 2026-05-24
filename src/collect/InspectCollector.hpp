@@ -9,11 +9,7 @@
 namespace azteca::inspect_collect
 {
 
-struct PathEvent
-{
-	DependencyKind kind{DependencyKind::kQuery};
-	std::string name;
-};
+using PathEvent = OrderedPathEvent;
 
 struct PathState
 {

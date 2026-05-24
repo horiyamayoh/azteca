@@ -782,6 +782,18 @@ std::string render_json_report(ExtractionPlan const& plan)
 		output.begin_object();
 		output.key("name");
 		output.string(path.name);
+		output.key("ordered_events");
+		output.begin_array();
+		for (auto const& event : path.ordered_events)
+		{
+			output.begin_object();
+			output.key("kind");
+			output.string(to_json_string(event.kind));
+			output.key("name");
+			output.string(event.name);
+			output.end_object();
+		}
+		output.end_array();
 		output.key("observations");
 		append_string_array(output, path.observations);
 		output.key("effects");

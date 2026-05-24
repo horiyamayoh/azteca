@@ -492,6 +492,10 @@
   "paths": [
     {
       "name": "return_item_amount_azteca_real_project_bonus_id_item_penalty",
+      "ordered_events": [
+        { "kind": "query", "name": "repo_load" },
+        { "kind": "effect", "name": "repo_audit" }
+      ],
       "observations": ["repo_load"],
       "effects": ["repo_audit"],
       "operations": [],
@@ -509,6 +513,7 @@
     },
     {
       "name": "return_item_amount_azteca_real_project_bonus_id_item_penalty",
+      "ordered_events": [{ "kind": "query", "name": "repo_load" }],
       "observations": ["repo_load"],
       "effects": [],
       "operations": [],

@@ -468,6 +468,7 @@
   "paths": [
     {
       "name": "return_lhs_rhs_value",
+      "ordered_events": [{ "kind": "query", "name": "op_operator" }],
       "observations": ["op_operator"],
       "effects": [],
       "operations": [],

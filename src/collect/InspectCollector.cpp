@@ -238,6 +238,12 @@ PathBurden build_path_burden(std::string name, std::vector<PathEvent> const& eve
 {
 	PathBurden burden;
 	burden.name = std::move(name);
+	std::ranges::copy_if(events, std::back_inserter(burden.ordered_events),
+	    [](PathEvent const& event)
+	    {
+		    return event.kind == DependencyKind::kQuery || event.kind == DependencyKind::kEffect ||
+		        event.kind == DependencyKind::kOperation;
+	    });
 
 	for (auto const& event : events)
 	{
@@ -278,7 +284,6 @@ PathBurden build_path_burden(std::string name, std::vector<PathEvent> const& eve
 void append_events(std::vector<PathEvent>& target, std::vector<PathEvent> const& source)
 {
 	target.insert(target.end(), source.begin(), source.end());
-	deduplicate_events(target);
 }
 
 void append_events(std::vector<PathState>& states, std::vector<PathEvent> const& source)

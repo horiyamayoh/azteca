@@ -389,6 +389,7 @@
   "paths": [
     {
       "name": "return_bytes_0",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],

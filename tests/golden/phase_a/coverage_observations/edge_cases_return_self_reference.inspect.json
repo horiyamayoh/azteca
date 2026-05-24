@@ -392,6 +392,7 @@
   "paths": [
     {
       "name": "return_this",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],

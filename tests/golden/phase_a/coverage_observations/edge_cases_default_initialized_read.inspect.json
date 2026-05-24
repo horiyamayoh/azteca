@@ -419,6 +419,7 @@
   "paths": [
     {
       "name": "return_default_initialized",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],

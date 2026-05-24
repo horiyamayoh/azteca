@@ -364,6 +364,7 @@
   "paths": [
     {
       "name": "return_dependency_value_id",
+      "ordered_events": [{ "kind": "query", "name": "dependency_value" }],
       "observations": ["dependency_value"],
       "effects": [],
       "operations": [],

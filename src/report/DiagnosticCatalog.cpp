@@ -41,6 +41,10 @@ std::vector<DiagnosticInfo> const& catalog()
 	    {"AZT-W0001", "conservative construct",
 	        "A construct was handled conservatively. See `unsupported_or_modeled_constructs` and "
 	        "`control_flow_summary.conservative_reasons` in the report."},
+	    {"AZT-W0002", "unrelated translation unit skipped",
+	        "Project-wide inspect skipped an unrelated translation unit that Clang could not "
+	        "parse. "
+	        "Pass --source to inspect that translation unit directly."},
 	};
 	return kEntries;
 }
@@ -80,10 +84,11 @@ std::optional<std::string_view> public_diagnostic_id(std::string_view internal_c
 		std::string_view internal;
 		std::string_view public_id;
 	};
-	static constexpr std::array<Mapping, 22> kMap = {{
+	static constexpr std::array<Mapping, 23> kMap = {{
 	    {"AZTECA_ANONYMOUS_UNION_PARTIAL", "AZT-W0001"},
 	    {"AZTECA_BIT_FIELD_PARTIAL", "AZT-W0001"},
 	    {"AZTECA_CLANG_PARSE_FAILED", "AZT-E0007"},
+	    {"AZTECA_CLANG_PARSE_SKIPPED", "AZT-W0002"},
 	    {"AZTECA_COMPILE_DB_EMPTY", "AZT-E0007"},
 	    {"AZTECA_COMPILE_DB_LOAD_FAILED", "AZT-E0007"},
 	    {"AZTECA_COMPILE_DB_MISSING", "AZT-E0007"},

@@ -84,8 +84,42 @@ void append_recursive_notes(ExtractionPlan& plan)
 	}
 }
 
+void append_conservative_note(ExtractionPlan& plan, PathBurden const& path)
+{
+	if (!path.conservative_reason.empty())
+	{
+		plan.gtest_preview.lines.push_back("  // conservative path: " + path.conservative_reason);
+	}
+}
+
 void append_path_observations(ExtractionPlan& plan, PathBurden const& path)
 {
+	if (!path.ordered_events.empty())
+	{
+		for (auto const& event : path.ordered_events)
+		{
+			if (event.kind == DependencyKind::kQuery)
+			{
+				if (auto port = find_port(plan, DependencyKind::kQuery, event.name);
+				    port.has_value())
+				{
+					plan.gtest_preview.lines.push_back(
+					    "  s.when." + port->name + "(/* args */).returns(/* value */);");
+				}
+			}
+			else if (event.kind == DependencyKind::kOperation)
+			{
+				if (auto port = find_port(plan, DependencyKind::kOperation, event.name);
+				    port.has_value())
+				{
+					plan.gtest_preview.lines.push_back(
+					    "  s.when." + port->name + "(/* args */).returns(/* value */);");
+				}
+			}
+		}
+		return;
+	}
+
 	for (auto const& observation : path.observations)
 	{
 		if (auto port = find_port(plan, DependencyKind::kQuery, observation); port.has_value())
@@ -121,6 +155,39 @@ void append_call_and_result(ExtractionPlan& plan, PathBurden const& path, bool r
 void append_path_effects(ExtractionPlan& plan, PathBurden const& path)
 {
 	auto emitted_effect = false;
+	if (!path.ordered_events.empty())
+	{
+		for (auto const& event : path.ordered_events)
+		{
+			if (event.kind == DependencyKind::kEffect)
+			{
+				if (auto port = find_port(plan, DependencyKind::kEffect, event.name);
+				    port.has_value())
+				{
+					plan.gtest_preview.lines.push_back(
+					    "  s.effects." + port->name + ".expect_once(/* args */);");
+					emitted_effect = true;
+				}
+			}
+			else if (event.kind == DependencyKind::kOperation)
+			{
+				if (auto port = find_port(plan, DependencyKind::kOperation, event.name);
+				    port.has_value())
+				{
+					plan.gtest_preview.lines.push_back(
+					    "  s.effects." + port->name + ".expect_once(/* args */);");
+					emitted_effect = true;
+				}
+			}
+		}
+
+		if (!emitted_effect)
+		{
+			plan.gtest_preview.lines.emplace_back("  s.effects.expect_none();");
+		}
+		return;
+	}
+
 	for (auto const& effect : path.effects)
 	{
 		if (auto port = find_port(plan, DependencyKind::kEffect, effect); port.has_value())
@@ -170,6 +237,7 @@ void append_test_for_path(ExtractionPlan& plan, std::string const& target_name,
 	plan.gtest_preview.lines.push_back("  auto s = azteca_gen::scenario::" + target_name + "{};");
 	append_receiver_setup(plan);
 	append_recursive_notes(plan);
+	append_conservative_note(plan, path);
 	append_path_observations(plan, path);
 	append_call_and_result(plan, path, returns_void);
 	append_path_effects(plan, path);

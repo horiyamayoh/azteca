@@ -420,6 +420,7 @@
   "paths": [
     {
       "name": "return_base_global_limit_clamp_value",
+      "ordered_events": [{ "kind": "query", "name": "syntaxmatrix_clamp" }],
       "observations": ["syntaxmatrix_clamp"],
       "effects": [],
       "operations": [],

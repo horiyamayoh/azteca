@@ -15,6 +15,8 @@ set(fixture_source "${PROJECT_SOURCE_DIR}/tests/fixtures/phase_a/simple")
 set(fixture_build "${PROJECT_BINARY_DIR}/test-work/phase_a/simple")
 set(malformed_source "${PROJECT_SOURCE_DIR}/tests/negative/phase_a_malformed")
 set(malformed_build "${PROJECT_BINARY_DIR}/test-work/phase_a/malformed")
+set(robustness_source "${PROJECT_SOURCE_DIR}/tests/fixtures/phase_a/robustness")
+set(robustness_build "${PROJECT_BINARY_DIR}/test-work/phase_a/robustness")
 
 execute_process(
 	COMMAND
@@ -48,6 +50,23 @@ execute_process(
 
 if(NOT malformed_configure_result EQUAL 0)
 	message(FATAL_ERROR "malformed fixture configure failed:\n${malformed_configure_output}\n${malformed_configure_error}")
+endif()
+
+execute_process(
+	COMMAND
+		${CMAKE_COMMAND}
+		-S "${robustness_source}"
+		-B "${robustness_build}"
+		-G Ninja
+		-DCMAKE_CXX_COMPILER=clang++-18
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	RESULT_VARIABLE robustness_configure_result
+	OUTPUT_VARIABLE robustness_configure_output
+	ERROR_VARIABLE robustness_configure_error
+)
+
+if(NOT robustness_configure_result EQUAL 0)
+	message(FATAL_ERROR "robustness fixture configure failed:\n${robustness_configure_output}\n${robustness_configure_error}")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -212,6 +231,58 @@ execute_process(
 assert_failure_contract(
 	"malformed macro-heavy TU" 2 "AZT-E0007" ${malformed_result}
 	"${malformed_stdout}" "${malformed_stderr}" TRUE
+)
+
+# ---------------------------------------------------------------------------
+# 7b. Project-wide inspect may skip an unrelated malformed TU when a matching
+#     target is found elsewhere in the compile DB. The skipped parse is still
+#     surfaced as AZT-W0002 in JSON diagnostics.
+# ---------------------------------------------------------------------------
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${robustness_build}"
+			--method "RobustTarget::run(int)" --format json
+	RESULT_VARIABLE robust_project_result
+	OUTPUT_VARIABLE robust_project_stdout
+	ERROR_VARIABLE robust_project_stderr
+)
+if(NOT robust_project_result EQUAL 0)
+	message(
+		FATAL_ERROR
+		"project-wide inspect should skip unrelated parse failure and exit 0 but exited "
+		"${robust_project_result}:\nstdout:\n${robust_project_stdout}\nstderr:\n${robust_project_stderr}"
+	)
+endif()
+if(NOT robust_project_stderr STREQUAL "")
+	message(FATAL_ERROR "project-wide inspect success should keep stderr empty:\n${robust_project_stderr}")
+endif()
+string(JSON robust_schema ERROR_VARIABLE robust_parse_error GET "${robust_project_stdout}" "schema_version")
+if(robust_parse_error)
+	message(FATAL_ERROR "project-wide robustness output was not valid JSON:\n${robust_parse_error}\n${robust_project_stdout}")
+endif()
+if(NOT robust_schema STREQUAL "2")
+	message(FATAL_ERROR "project-wide robustness schema_version should be 2 but was ${robust_schema}")
+endif()
+string(FIND "${robust_project_stdout}" "AZTECA_CLANG_PARSE_SKIPPED" skipped_internal_index)
+if(skipped_internal_index EQUAL -1)
+	message(FATAL_ERROR "project-wide robustness output missing skipped parse diagnostic:\n${robust_project_stdout}")
+endif()
+string(FIND "${robust_project_stdout}" "AZT-W0002" skipped_public_index)
+if(skipped_public_index EQUAL -1)
+	message(FATAL_ERROR "project-wide robustness output missing AZT-W0002:\n${robust_project_stdout}")
+endif()
+
+# Directly inspecting the broken TU remains an exit-2 compile database error.
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${robustness_build}"
+			--source "${robustness_source}/broken.cpp"
+			--method "BrokenTranslationUnit::run()" --format json
+	RESULT_VARIABLE robust_source_result
+	OUTPUT_VARIABLE robust_source_stdout
+	ERROR_VARIABLE robust_source_stderr
+)
+assert_failure_contract(
+	"requested broken TU" 2 "AZT-E0007" ${robust_source_result}
+	"${robust_source_stdout}" "${robust_source_stderr}" TRUE
 )
 
 # ---------------------------------------------------------------------------

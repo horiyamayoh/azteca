@@ -433,6 +433,7 @@
   "paths": [
     {
       "name": "return_static_cast_int_sizeof_own_static_cast_int_noexcept_free_normalize_own",
+      "ordered_events": [{ "kind": "query", "name": "free_normalize" }],
       "observations": ["free_normalize"],
       "effects": [],
       "operations": [],

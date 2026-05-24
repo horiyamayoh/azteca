@@ -436,6 +436,7 @@
   "paths": [
     {
       "name": "path_1",
+      "ordered_events": [{ "kind": "effect", "name": "dispatch_~SyntaxMatrix" }],
       "observations": [],
       "effects": ["dispatch_~SyntaxMatrix"],
       "operations": [],

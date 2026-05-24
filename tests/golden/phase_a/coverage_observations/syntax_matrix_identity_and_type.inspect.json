@@ -529,6 +529,7 @@
   "paths": [
     {
       "name": "return_this_other_dynamic_cast_syntaxmatrix_this_nullptr_typeid_this_typeid_syntaxmatrix",
+      "ordered_events": [{ "kind": "query", "name": "op_std_type_info_operator" }],
       "observations": ["op_std_type_info_operator"],
       "effects": [],
       "operations": [],

@@ -4,6 +4,7 @@
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/DeclTemplate.h>
 #include <clang/AST/RecursiveASTVisitor.h>
+#include <clang/Basic/Diagnostic.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/FrontendAction.h>
 #include <clang/Tooling/CompilationDatabase.h>
@@ -238,6 +239,25 @@ class InspectActionFactory final : public clang::tooling::FrontendActionFactory
 	ToolState& state_;
 };
 
+class SilentDiagnosticConsumer final : public clang::DiagnosticConsumer
+{
+   public:
+	void HandleDiagnostic(
+	    clang::DiagnosticsEngine::Level level, clang::Diagnostic const& info) override
+	{
+		(void)info;
+		has_errors_ = has_errors_ || level >= clang::DiagnosticsEngine::Error;
+	}
+
+	[[nodiscard]] bool has_errors() const noexcept
+	{
+		return has_errors_;
+	}
+
+   private:
+	bool has_errors_{false};
+};
+
 [[nodiscard]] std::filesystem::path comparable_source_path(std::string const& path)
 {
 	std::error_code error;
@@ -290,6 +310,34 @@ class InspectActionFactory final : public clang::tooling::FrontendActionFactory
 	    ? spec.qualified_class_name
 	    : spec.qualified_class_name.substr(separator + 2);
 	return spec.method_name == class_name || spec.method_name == "~" + class_name;
+}
+
+void append_diagnostics(Diagnostics& target, Diagnostics const& source)
+{
+	for (auto const& diagnostic : source.entries())
+	{
+		target.add(diagnostic.severity, diagnostic.code, diagnostic.message, diagnostic.location);
+	}
+}
+
+void append_diagnostics(ExtractionPlan& target, Diagnostics const& source)
+{
+	append_diagnostics(target.diagnostics, source);
+}
+
+[[nodiscard]] int run_inspect_tool(clang::tooling::CompilationDatabase& database,
+    std::vector<std::string> const& files, ToolState& state)
+{
+	clang::tooling::ClangTool tool(database, files);
+	tool.appendArgumentsAdjuster(clang::tooling::getInsertArgumentAdjuster(
+	    "-Wno-unknown-warning-option", clang::tooling::ArgumentInsertPosition::END));
+	tool.setPrintErrorMessage(false);
+	SilentDiagnosticConsumer diagnostics;
+	tool.setDiagnosticConsumer(&diagnostics);
+
+	InspectActionFactory factory(state);
+	auto tool_result = tool.run(&factory);
+	return tool_result != 0 || diagnostics.has_errors() ? 1 : 0;
 }
 
 } // namespace
@@ -346,23 +394,70 @@ InspectResult inspect_method(InspectOptions const& options)
 
 	ToolState state;
 	state.spec = options.method;
-	clang::tooling::ClangTool tool(*database, files);
-	tool.appendArgumentsAdjuster(clang::tooling::getInsertArgumentAdjuster(
-	    "-Wno-unknown-warning-option", clang::tooling::ArgumentInsertPosition::END));
+	Diagnostics skipped_parse_diagnostics;
 
-	InspectActionFactory factory(state);
-	auto tool_result = tool.run(&factory);
-	if (tool_result != 0)
+	if (options.source_file.has_value())
 	{
-		result.status = InspectStatus::kCompileDatabaseError;
-		result.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_CLANG_PARSE_FAILED",
-		    "Clang failed to parse at least one translation unit");
-		return result;
+		auto tool_result = run_inspect_tool(*database, files, state);
+		if (tool_result != 0)
+		{
+			result.status = InspectStatus::kCompileDatabaseError;
+			result.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_CLANG_PARSE_FAILED",
+			    "Clang failed to parse the requested translation unit");
+			return result;
+		}
+	}
+	else
+	{
+		auto parsed_any_translation_unit = false;
+		for (auto const& file : files)
+		{
+			ToolState file_state;
+			file_state.spec = options.method;
+			file_state.selected_template_without_explicit_args =
+			    state.selected_template_without_explicit_args;
+
+			auto tool_result = run_inspect_tool(*database, {file}, file_state);
+			if (tool_result != 0)
+			{
+				skipped_parse_diagnostics.add(DiagnosticSeverity::kWarning,
+				    "AZTECA_CLANG_PARSE_SKIPPED",
+				    "skipped unrelated translation unit after Clang parse failure: " + file);
+				continue;
+			}
+
+			parsed_any_translation_unit = true;
+			state.selected_template_without_explicit_args =
+			    state.selected_template_without_explicit_args ||
+			    file_state.selected_template_without_explicit_args;
+			append_diagnostics(state.diagnostics, file_state.diagnostics);
+
+			for (auto& plan : file_state.plans)
+			{
+				state.plans.push_back(std::move(plan));
+			}
+
+			if (!state.template_fallback_plan.has_value() &&
+			    file_state.template_fallback_plan.has_value())
+			{
+				state.template_fallback_plan = std::move(file_state.template_fallback_plan);
+			}
+		}
+
+		if (!parsed_any_translation_unit)
+		{
+			result.status = InspectStatus::kCompileDatabaseError;
+			result.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_CLANG_PARSE_FAILED",
+			    "Clang failed to parse every translation unit in the compile database");
+			append_diagnostics(result.diagnostics, skipped_parse_diagnostics);
+			return result;
+		}
 	}
 
 	if (state.plans.empty() && state.template_fallback_plan.has_value())
 	{
 		result.plan = std::move(*state.template_fallback_plan);
+		append_diagnostics(*result.plan, skipped_parse_diagnostics);
 		result.status = result.plan->diagnostics.has_errors()
 		    ? InspectStatus::kExtractionPlanningError
 		    : InspectStatus::kSuccess;
@@ -381,6 +476,7 @@ InspectResult inspect_method(InspectOptions const& options)
 			result.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_METHOD_NOT_FOUND",
 			    "no CXXMethodDecl matched the requested method spec");
 		}
+		append_diagnostics(result.diagnostics, skipped_parse_diagnostics);
 		return result;
 	}
 
@@ -389,10 +485,12 @@ InspectResult inspect_method(InspectOptions const& options)
 		result.status = InspectStatus::kMethodResolutionError;
 		result.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_METHOD_AMBIGUOUS",
 		    "method matched multiple translation units; pass --source to disambiguate");
+		append_diagnostics(result.diagnostics, skipped_parse_diagnostics);
 		return result;
 	}
 
 	result.plan = std::move(state.plans.front());
+	append_diagnostics(*result.plan, skipped_parse_diagnostics);
 	if (result.plan->diagnostics.has_errors() || result.plan->result == "invalid-plan")
 	{
 		result.status = InspectStatus::kExtractionPlanningError;

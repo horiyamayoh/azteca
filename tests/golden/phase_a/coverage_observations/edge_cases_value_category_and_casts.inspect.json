@@ -401,6 +401,7 @@
   "paths": [
     {
       "name": "return_static_cast_int_moved",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],

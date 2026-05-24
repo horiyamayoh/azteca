@@ -60,6 +60,26 @@ class DependencyKinds
 	HardeningNotifier notifier_;
 };
 
+class OrderedEvents
+{
+   public:
+	int run(int id)
+	{
+		if (repo_.exists(id))
+		{
+			auto refreshed = repo_.refresh(id);
+			notifier_.send(refreshed);
+			return refreshed;
+		}
+
+		return -1;
+	}
+
+   private:
+	HardeningRepo repo_;
+	HardeningNotifier notifier_;
+};
+
 class EscapeExample;
 
 void publish(EscapeExample* example);

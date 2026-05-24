@@ -250,6 +250,11 @@ assert_phase_a_json_golden(
 	"dependency_kinds_run.inspect.json"
 )
 assert_phase_a_json_golden(
+	"${fixture_source}/hardening.cpp"
+	"OrderedEvents::run(int)"
+	"ordered_events_run.inspect.json"
+)
+assert_phase_a_json_golden(
 	"${fixture_source}/simple_scenarios.cpp"
 	"Gauge::reading() const"
 	"gauge_reading.inspect.json"

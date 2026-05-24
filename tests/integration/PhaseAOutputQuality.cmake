@@ -44,6 +44,17 @@ function(assert_not_contains haystack needle context)
 	endif()
 endfunction()
 
+function(assert_before haystack first second context)
+	string(FIND "${haystack}" "${first}" first_index)
+	string(FIND "${haystack}" "${second}" second_index)
+	if(first_index EQUAL -1 OR second_index EQUAL -1 OR NOT first_index LESS second_index)
+		message(
+			FATAL_ERROR
+			"${context} expected '${first}' before '${second}':\n${haystack}"
+		)
+	endif()
+endfunction()
+
 # ---------------------------------------------------------------------------
 # Helper: run inspect --format json and return output; fail on non-zero exit.
 # ---------------------------------------------------------------------------
@@ -113,6 +124,36 @@ string(JSON confidence GET "${service_json}" "confidence")
 if(NOT confidence STREQUAL "high")
 	message(FATAL_ERROR "Service::handle confidence should be 'high' but was '${confidence}'")
 endif()
+
+# ---------------------------------------------------------------------------
+# 1b. OrderedEvents::run — ordered event transcript stays separate from
+#     deduplicated path burden and drives Google Test preview order.
+# ---------------------------------------------------------------------------
+run_inspect_json(
+	"${fixture_source}/hardening.cpp"
+	"OrderedEvents::run(int)"
+	ordered_result ordered_json ordered_err
+)
+
+assert_contains(
+	"${ordered_json}"
+	"\"ordered_events\": [{\"kind\": \"query\", \"name\": \"repo_exists\"}, {\"kind\": \"operation\", \"name\": \"repo_refresh\"}, {\"kind\": \"effect\", \"name\": \"notifier_send\"}]"
+	"OrderedEvents ordered_events"
+)
+string(JSON ordered_preview_obj GET "${ordered_json}" "gtest_preview")
+string(JSON ordered_lines GET "${ordered_preview_obj}" "lines")
+assert_before(
+	"${ordered_lines}"
+	"s.when.repo_exists"
+	"s.when.repo_refresh"
+	"OrderedEvents gtest setup order"
+)
+assert_before(
+	"${ordered_lines}"
+	"s.effects.repo_refresh"
+	"s.effects.notifier_send"
+	"OrderedEvents effect assertion order"
+)
 
 # ---------------------------------------------------------------------------
 # 2. Gauge::reading — single-path, self_state-only method

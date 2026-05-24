@@ -54,6 +54,7 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 	});
 	plan.paths.push_back({
 	    .name = "return_ok",
+	    .ordered_events = {{.kind = azteca::DependencyKind::kQuery, .name = "repo_exists"}},
 	    .observations = {"repo_exists"},
 	    .effects = {},
 	    .operations = {},
@@ -74,6 +75,7 @@ TEST(InspectReport, JsonContainsStablePhaseASchemaKeys)
 	EXPECT_NE(json.find("\"dependency_observations\""), std::string::npos);
 	EXPECT_NE(json.find("\"observable_effects\""), std::string::npos);
 	EXPECT_NE(json.find("\"operations\""), std::string::npos);
+	EXPECT_NE(json.find("\"ordered_events\""), std::string::npos);
 	EXPECT_NE(json.find("\"loop_body_observations\""), std::string::npos);
 	EXPECT_NE(json.find("\"shape_candidates\""), std::string::npos);
 	EXPECT_NE(json.find("\"object_ref_requirements\""), std::string::npos);
@@ -152,6 +154,7 @@ TEST(InspectReport, JsonUsesCanonicalKebabCaseValuesWithoutChangingText)
 	});
 	plan.paths.push_back({
 	    .name = "path_1",
+	    .ordered_events = {},
 	    .observations = {},
 	    .effects = {},
 	    .operations = {},
@@ -200,6 +203,7 @@ TEST(InspectReport, TextShowsCoreInspectSections)
 	plan.gtest_preview.lines = {"auto result = s.call(/* args */);"};
 	plan.paths.push_back({
 	    .name = "path_1",
+	    .ordered_events = {},
 	    .observations = {},
 	    .effects = {},
 	    .operations = {},
@@ -330,6 +334,7 @@ TEST(InspectReport, TextRendersDiagnosticsAndPathConservativeReason)
 	plan.target.qualified_name = "Loop::run";
 	plan.paths.push_back({
 	    .name = "loop_path",
+	    .ordered_events = {},
 	    .observations = {},
 	    .effects = {},
 	    .operations = {},

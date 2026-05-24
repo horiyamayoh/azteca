@@ -48,6 +48,13 @@ TEST(InspectCollector, BuildsPathBurdenFromEvents)
 	EXPECT_EQ(burden.observations, std::vector<std::string>{"repo_load"});
 	EXPECT_EQ(burden.effects, std::vector<std::string>{"bus_publish"});
 	EXPECT_EQ(burden.operations, std::vector<std::string>{"repo_save"});
+	EXPECT_EQ(burden.ordered_events,
+	    (std::vector<azteca::OrderedPathEvent>{
+	        {.kind = azteca::DependencyKind::kQuery, .name = "repo_load"},
+	        {.kind = azteca::DependencyKind::kQuery, .name = "repo_load"},
+	        {.kind = azteca::DependencyKind::kEffect, .name = "bus_publish"},
+	        {.kind = azteca::DependencyKind::kOperation, .name = "repo_save"},
+	    }));
 	EXPECT_EQ(burden.loop_body_observations, std::vector<std::string>{"repo_load"});
 	EXPECT_EQ(burden.required_envelopes,
 	    (std::vector<std::string>{"dependency_boundary", "conservative_control_flow"}));

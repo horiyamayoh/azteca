@@ -5,7 +5,7 @@
     "qualified_name": "TemplateExample::target",
     "signature": "int(int)",
     "source_file": "<fixture>/hardening.cpp",
-    "line": 128
+    "line": 148
   },
   "result": "extracted",
   "confidence": "high",
@@ -26,8 +26,8 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/hardening.cpp", "line": 128, "column": 2 },
-        "end": { "file": "<fixture>/hardening.cpp", "line": 131, "column": 3 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 148, "column": 2 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 151, "column": 3 }
       }
     }
   ],
@@ -333,6 +333,7 @@
   "paths": [
     {
       "name": "return_value",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -344,8 +345,8 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/hardening.cpp", "line": 130, "column": 3 },
-        "end": { "file": "<fixture>/hardening.cpp", "line": 130, "column": 15 }
+        "begin": { "file": "<fixture>/hardening.cpp", "line": 150, "column": 3 },
+        "end": { "file": "<fixture>/hardening.cpp", "line": 150, "column": 15 }
       }
     }
   ],

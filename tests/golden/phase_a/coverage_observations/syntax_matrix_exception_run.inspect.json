@@ -373,6 +373,7 @@
   "paths": [
     {
       "name": "return_value__try_no_exception",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -390,6 +391,7 @@
     },
     {
       "name": "return_1__catch_all",
+      "ordered_events": [],
       "observations": [],
       "effects": [],
       "operations": [],
@@ -419,6 +421,7 @@
       "TEST(syntaxmatrix_exception_run, return_1_catch_all)",
       "{",
       "  auto s = azteca_gen::scenario::syntaxmatrix_exception_run{};",
+      "  // conservative path: return path includes conservative control flow",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_1__catch_all */);",
       "  s.effects.expect_none();",

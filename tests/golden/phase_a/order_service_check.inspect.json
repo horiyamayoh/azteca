@@ -391,6 +391,7 @@
   "paths": [
     {
       "name": "return_1",
+      "ordered_events": [{ "kind": "query", "name": "repo_load" }],
       "observations": ["repo_load"],
       "effects": [],
       "operations": [],
@@ -408,6 +409,7 @@
     },
     {
       "name": "return_order_amount",
+      "ordered_events": [{ "kind": "query", "name": "repo_load" }],
       "observations": ["repo_load"],
       "effects": [],
       "operations": [],
