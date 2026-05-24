@@ -66,17 +66,34 @@ if(AZTECA_PROCESSOR_COUNT EQUAL 0)
 endif()
 
 if(AZTECA_PROCESSOR_COUNT LESS 4)
-	set(AZTECA_DEFAULT_CLANG_TIDY_JOBS "${AZTECA_PROCESSOR_COUNT}")
+	set(AZTECA_PREVIOUS_DEFAULT_CLANG_TIDY_JOBS "${AZTECA_PROCESSOR_COUNT}")
 else()
-	set(AZTECA_DEFAULT_CLANG_TIDY_JOBS 4)
+	set(AZTECA_PREVIOUS_DEFAULT_CLANG_TIDY_JOBS 4)
 endif()
 
-set(
-	AZTECA_CLANG_TIDY_JOBS
-	"${AZTECA_DEFAULT_CLANG_TIDY_JOBS}"
-	CACHE STRING
-	"Number of parallel clang-tidy jobs"
+set(AZTECA_DEFAULT_CLANG_TIDY_JOBS "${AZTECA_PROCESSOR_COUNT}")
+
+if(NOT DEFINED CACHE{AZTECA_CLANG_TIDY_JOBS})
+	set(
+		AZTECA_CLANG_TIDY_JOBS
+		"${AZTECA_DEFAULT_CLANG_TIDY_JOBS}"
+		CACHE STRING
+		"Number of parallel clang-tidy jobs"
+	)
+elseif(
+	NOT DEFINED CACHE{AZTECA_CLANG_TIDY_JOBS_DEFAULT_VERSION}
+	AND "${AZTECA_CLANG_TIDY_JOBS}" STREQUAL "${AZTECA_PREVIOUS_DEFAULT_CLANG_TIDY_JOBS}"
 )
+	set(
+		AZTECA_CLANG_TIDY_JOBS
+		"${AZTECA_DEFAULT_CLANG_TIDY_JOBS}"
+		CACHE STRING
+		"Number of parallel clang-tidy jobs"
+		FORCE
+	)
+endif()
+
+set(AZTECA_CLANG_TIDY_JOBS_DEFAULT_VERSION 2 CACHE INTERNAL "" FORCE)
 
 add_compile_options(
 	-Wall
@@ -195,6 +212,8 @@ if(BUILD_TESTING)
 			${CMAKE_COMMAND}
 			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
 			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
 			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseACliSurface.cmake
 	)
 
@@ -298,6 +317,7 @@ if(BUILD_TESTING)
 			tests/unit/AssertTests.cpp
 			tests/unit/DiagnosticCatalogTests.cpp
 			tests/unit/ExtractionPlanTests.cpp
+			tests/unit/GTestPreviewTests.cpp
 			tests/unit/InspectCollectorTests.cpp
 			tests/unit/JsonWriterTests.cpp
 			tests/unit/MethodSpecTests.cpp
@@ -441,8 +461,15 @@ add_custom_target(
 add_custom_target(
 	strict-check
 	COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
-	DEPENDS ${AZTECA_TEST_DEPENDENCIES} format-check prettier-check reference-check lint
+	DEPENDS ${AZTECA_TEST_DEPENDENCIES} format-check prettier-check reference-check
 	COMMENT "Running strict quality gates"
+	VERBATIM
+)
+
+add_custom_target(
+	pre-push-check
+	DEPENDS strict-check lint
+	COMMENT "Running pre-push final quality gates"
 	VERBATIM
 )
 

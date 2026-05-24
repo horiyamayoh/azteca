@@ -313,6 +313,27 @@ endforeach()
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/real_project.cpp" --method "real::project::Runner::inspect(AliasId)"
+			--format text
+	RESULT_VARIABLE inspect_real_project_alias_result
+	OUTPUT_VARIABLE inspect_real_project_alias_output
+	ERROR_VARIABLE inspect_real_project_alias_error
+)
+
+if(NOT inspect_real_project_alias_result EQUAL 0)
+	message(
+		FATAL_ERROR
+		"real project alias inspect failed:\n"
+		"${inspect_real_project_alias_output}\n${inspect_real_project_alias_error}"
+	)
+endif()
+assert_contains(
+	"${inspect_real_project_alias_output}" "query repo_load(AliasId) -> Widget"
+	"real project alias inspect output"
+)
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
 			"${fixture_source}/account.cpp" --method "Account::withdraw(int)" --format text
 	RESULT_VARIABLE inspect_account_result
 	OUTPUT_VARIABLE inspect_account_output
@@ -920,7 +941,10 @@ if(NOT missing_method_spec_result EQUAL 1)
 		"${missing_method_spec_output}\n${missing_method_spec_error}"
 	)
 endif()
-assert_contains("${missing_method_spec_error}" "AZT-E0004" "missing method spec stderr")
+assert_contains("${missing_method_spec_error}" "AZT-E0001" "missing method spec stderr")
+assert_contains(
+	"${missing_method_spec_error}" "inspect requires --method" "missing method spec stderr"
+)
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
@@ -959,6 +983,23 @@ assert_contains(
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
+			"${fixture_source}/service.cpp" --method "Service::handle(Id)" --template-args "int"
+			--format text
+	RESULT_VARIABLE non_template_args_result
+	OUTPUT_VARIABLE non_template_args_output
+	ERROR_VARIABLE non_template_args_error
+)
+if(NOT non_template_args_result EQUAL 3)
+	message(
+		FATAL_ERROR
+		"non-template --template-args should exit 3 but exited ${non_template_args_result}:\n"
+		"${non_template_args_output}\n${non_template_args_error}"
+	)
+endif()
+assert_contains("${non_template_args_error}" "AZT-E0008" "non-template args stderr")
+
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
 			"${fixture_source}/service.cpp" --method "Service::handle(Id)" --format text --quiet
 	RESULT_VARIABLE quiet_result
 	OUTPUT_VARIABLE quiet_output
@@ -969,4 +1010,7 @@ if(NOT quiet_result EQUAL 0)
 endif()
 if(NOT "${quiet_output}" STREQUAL "")
 	message(FATAL_ERROR "quiet inspect should not write stdout:\n${quiet_output}")
+endif()
+if(NOT "${quiet_error}" STREQUAL "")
+	message(FATAL_ERROR "quiet inspect should not write stderr:\n${quiet_error}")
 endif()

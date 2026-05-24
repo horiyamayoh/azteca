@@ -4,6 +4,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "../collect/InspectCollector.hpp"
 
@@ -104,10 +105,9 @@ void append_path_observations(ExtractionPlan& plan, PathBurden const& path)
 	}
 }
 
-void append_call_and_result(
-    ExtractionPlan& plan, PathBurden const& path, clang::CXXMethodDecl const& method)
+void append_call_and_result(ExtractionPlan& plan, PathBurden const& path, bool returns_void)
 {
-	if (method.getReturnType()->isVoidType())
+	if (returns_void)
 	{
 		plan.gtest_preview.lines.emplace_back("  s.call(/* args */);");
 		return;
@@ -162,8 +162,7 @@ void append_path_effects(ExtractionPlan& plan, PathBurden const& path)
 }
 
 void append_test_for_path(ExtractionPlan& plan, std::string const& target_name,
-    PathBurden const& path, clang::CXXMethodDecl const& method,
-    std::map<std::string, unsigned>& used_names)
+    PathBurden const& path, bool returns_void, std::map<std::string, unsigned>& used_names)
 {
 	plan.gtest_preview.lines.push_back(
 	    "TEST(" + target_name + ", " + unique_test_name(path, used_names) + ")");
@@ -172,19 +171,19 @@ void append_test_for_path(ExtractionPlan& plan, std::string const& target_name,
 	append_receiver_setup(plan);
 	append_recursive_notes(plan);
 	append_path_observations(plan, path);
-	append_call_and_result(plan, path, method);
+	append_call_and_result(plan, path, returns_void);
 	append_path_effects(plan, path);
 	plan.gtest_preview.lines.emplace_back("}");
 }
 
 } // namespace
 
-void build(ExtractionPlan& plan, clang::CXXMethodDecl const& method)
+void build(ExtractionPlan& plan, std::string_view qualified_name, bool returns_void)
 {
 	using inspect_collect::replace_colons;
 	using inspect_collect::sanitize_identifier;
 
-	auto target_name = sanitize_identifier(replace_colons(plan.target.qualified_name));
+	auto target_name = sanitize_identifier(replace_colons(std::string{qualified_name}));
 	plan.gtest_preview.sample_test_path = "tests/" + target_name + ".sample_test.cpp";
 	plan.gtest_preview.lines.clear();
 
@@ -193,15 +192,20 @@ void build(ExtractionPlan& plan, clang::CXXMethodDecl const& method)
 		PathBurden fallback_path;
 		fallback_path.name = "path_1";
 		std::map<std::string, unsigned> used_names;
-		append_test_for_path(plan, target_name, fallback_path, method, used_names);
+		append_test_for_path(plan, target_name, fallback_path, returns_void, used_names);
 		return;
 	}
 
 	std::map<std::string, unsigned> used_names;
 	for (auto const& path : plan.paths)
 	{
-		append_test_for_path(plan, target_name, path, method, used_names);
+		append_test_for_path(plan, target_name, path, returns_void, used_names);
 	}
+}
+
+void build(ExtractionPlan& plan, clang::CXXMethodDecl const& method)
+{
+	build(plan, plan.target.qualified_name, method.getReturnType()->isVoidType());
 }
 
 } // namespace azteca::gtest_preview

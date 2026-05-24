@@ -45,8 +45,8 @@ jobs:
       - name: Build
         run: cmake --build --preset ci-clang --parallel
 
-      - name: Strict check
-        run: cmake --build --preset ci-clang --target strict-check
+      - name: Pre-push check
+        run: cmake --build --preset ci-clang --target pre-push-check
 
   sanitizers:
     name: ASan UBSan

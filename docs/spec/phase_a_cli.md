@@ -41,12 +41,14 @@ azteca inspect -p <build-dir> --method 'C::m(args...)' \
 - `--source <file>` (任意): TU の明示。曖昧解消に使用
 - `--format <text|json>` (既定 `text`): 出力形式
 - `--verbose`: 詳細 evidence 表示。`--format text` のみ意味あり
-- `--quiet`: 通常出力を抑制し、終了コードのみ返す
+- `--quiet`: 成功時の stdout/stderr を抑制し、終了コードのみ返す
 
 stdout / stderr 規約:
 
 - `--format text` 時: 出力は stdout、診断は stdout の末尾セクション
 - `--format json` 時: stdout は pure JSON のみ。診断は JSON `diagnostics` 配列に集約
+- `--quiet` 成功時: stdout/stderr は空。終了コードのみで成功を示す
+- `--quiet` 失敗時: stdout は空。stderr に `AZT-E*` 診断を出す
 - ユーザ向け CLI エラー (引数不正等) は stderr、`AZT-E*` で識別
 
 ## 4. `azteca explain`

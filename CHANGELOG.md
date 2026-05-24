@@ -81,6 +81,7 @@ patch bumps.
 
 - Quality gates now separate daily local checks from clang-tidy: `check`
   runs formatting, generated-reference validation, and CTest, while
-  `strict-check` preserves the full CI gate with clang-tidy.
+  `strict-check` runs strict non-lint gates and new `pre-push-check`
+  preserves the full gate by combining `strict-check` + `lint`.
 - Inspect JSON `schema_version` is now `2`; the document layout is frozen
   per the schema spec above.

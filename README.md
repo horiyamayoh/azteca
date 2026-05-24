@@ -42,6 +42,6 @@ cmake --build --preset dev-clang --target check
 
 Azteca本体はClang 18 + C++23をbaselineにします。`build/` 配下は生成物であり、既存artifactや `compile_commands.json` はsource of truthではありません。
 
-`check` は日常用の品質ゲートで、format、docs/reference 同期、CTest を実行します。clang-tidy を含む CI 相当の full gate は `cmake --build --preset dev-clang --target strict-check` です。
+`check` は日常用の品質ゲートで、format、docs/reference 同期、CTest を実行します。`strict-check` は同内容の strict gate です。clang-tidy を含むプッシュ前最終ゲートは `cmake --build --preset dev-clang --target pre-push-check` です。
 
 開発基盤と品質ゲートは [AGENTS.md](AGENTS.md) と [docs/development.md](docs/development.md) を参照してください。

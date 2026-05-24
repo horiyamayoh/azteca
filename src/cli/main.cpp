@@ -254,6 +254,12 @@ int main(int argc, char** argv)
 		return static_cast<int>(azteca::InspectStatus::kUserInputError);
 	}
 
+	if (options->method_spec.empty())
+	{
+		cli_error("AZT-E0001", "inspect requires --method");
+		return static_cast<int>(azteca::InspectStatus::kUserInputError);
+	}
+
 	auto parse_result = azteca::parse_method_spec(options->method_spec);
 	if (!parse_result.spec.has_value())
 	{
