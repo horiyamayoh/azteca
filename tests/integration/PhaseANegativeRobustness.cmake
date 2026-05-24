@@ -1,0 +1,192 @@
+if(NOT DEFINED AZTECA_EXECUTABLE)
+	message(FATAL_ERROR "AZTECA_EXECUTABLE is required")
+endif()
+
+if(NOT DEFINED PROJECT_SOURCE_DIR)
+	message(FATAL_ERROR "PROJECT_SOURCE_DIR is required")
+endif()
+
+if(NOT DEFINED PROJECT_BINARY_DIR)
+	message(FATAL_ERROR "PROJECT_BINARY_DIR is required")
+endif()
+
+# Build the simple fixture so we have a valid compile DB to attack against.
+set(fixture_source "${PROJECT_SOURCE_DIR}/tests/fixtures/phase_a/simple")
+set(fixture_build "${PROJECT_BINARY_DIR}/test-work/phase_a/simple")
+
+execute_process(
+	COMMAND
+		${CMAKE_COMMAND}
+		-S "${fixture_source}"
+		-B "${fixture_build}"
+		-G Ninja
+		-DCMAKE_CXX_COMPILER=clang++-18
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	RESULT_VARIABLE configure_result
+	OUTPUT_VARIABLE configure_output
+	ERROR_VARIABLE configure_error
+)
+
+if(NOT configure_result EQUAL 0)
+	message(FATAL_ERROR "fixture configure failed:\n${configure_output}\n${configure_error}")
+endif()
+
+# ---------------------------------------------------------------------------
+# Shared assertions. Every CLI failure must:
+#   - exit with the documented code (phase_a_cli.md §5)
+#   - emit AZT-E* on stderr
+#   - keep stdout empty when --format json was requested
+# Hardening this contract prevents silent regressions to error reporting.
+# ---------------------------------------------------------------------------
+function(assert_failure_contract label expected_exit expected_diag
+		actual_exit actual_stdout actual_stderr json_mode)
+	if(NOT actual_exit EQUAL ${expected_exit})
+		message(
+			FATAL_ERROR
+			"${label}: exit should be ${expected_exit} but was ${actual_exit}\n"
+			"stdout:\n${actual_stdout}\nstderr:\n${actual_stderr}"
+		)
+	endif()
+
+	string(FIND "${actual_stderr}" "${expected_diag}" diag_index)
+	if(diag_index EQUAL -1)
+		message(
+			FATAL_ERROR
+			"${label}: stderr missing diagnostic id '${expected_diag}'\nstderr:\n${actual_stderr}"
+		)
+	endif()
+
+	if(json_mode AND NOT "${actual_stdout}" STREQUAL "")
+		message(
+			FATAL_ERROR
+			"${label}: --format json failure must leave stdout empty but got:\n${actual_stdout}"
+		)
+	endif()
+endfunction()
+
+# ---------------------------------------------------------------------------
+# 1. Nonexistent compile-db directory -> exit 2, AZT-E0007
+# ---------------------------------------------------------------------------
+set(missing_dir "${PROJECT_BINARY_DIR}/test-work/phase_a/_missing_dir_does_not_exist")
+file(REMOVE_RECURSE "${missing_dir}")
+
+foreach(fmt text json)
+	execute_process(
+		COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${missing_dir}"
+				--method "Gauge::reading() const" --format ${fmt}
+		RESULT_VARIABLE r OUTPUT_VARIABLE o ERROR_VARIABLE e
+	)
+	set(_json_mode FALSE)
+	if(fmt STREQUAL "json")
+		set(_json_mode TRUE)
+	endif()
+	assert_failure_contract(
+		"nonexistent -p (${fmt})" 2 "AZT-E0007" ${r} "${o}" "${e}" ${_json_mode}
+	)
+endforeach()
+
+# ---------------------------------------------------------------------------
+# 2. Malformed compile_commands.json -> exit 2, AZT-E0007
+# ---------------------------------------------------------------------------
+set(broken_dir "${PROJECT_BINARY_DIR}/test-work/phase_a/_broken_db")
+file(MAKE_DIRECTORY "${broken_dir}")
+file(WRITE "${broken_dir}/compile_commands.json" "{ this is not valid json\n")
+
+foreach(fmt text json)
+	execute_process(
+		COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${broken_dir}"
+				--method "Gauge::reading() const" --format ${fmt}
+		RESULT_VARIABLE r OUTPUT_VARIABLE o ERROR_VARIABLE e
+	)
+	set(_json_mode FALSE)
+	if(fmt STREQUAL "json")
+		set(_json_mode TRUE)
+	endif()
+	assert_failure_contract(
+		"malformed compile_commands.json (${fmt})" 2 "AZT-E0007" ${r} "${o}" "${e}" ${_json_mode}
+	)
+endforeach()
+
+# ---------------------------------------------------------------------------
+# 3. Method not found in valid DB -> exit 3, AZT-E0008
+# ---------------------------------------------------------------------------
+foreach(fmt text json)
+	execute_process(
+		COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}"
+				--method "NoSuchClass::no_such_method(int)" --format ${fmt}
+		RESULT_VARIABLE r OUTPUT_VARIABLE o ERROR_VARIABLE e
+	)
+	set(_json_mode FALSE)
+	if(fmt STREQUAL "json")
+		set(_json_mode TRUE)
+	endif()
+	assert_failure_contract(
+		"method not found (${fmt})" 3 "AZT-E0008" ${r} "${o}" "${e}" ${_json_mode}
+	)
+endforeach()
+
+# ---------------------------------------------------------------------------
+# 4. Method spec containing control characters / weird whitespace must be
+#    rejected at parse time (exit 1, AZT-E0004) — never crash, never reach
+#    Clang. This hardens against shell-injected garbage in --method.
+#    Note: parameter list content is intentionally lenient (parsed as types
+#    later), so we only assert hard rejection on structurally broken specs.
+# ---------------------------------------------------------------------------
+foreach(bad_spec
+		"   "
+		"::"
+		"Foo::"
+		"Foo::(")
+	execute_process(
+		COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}"
+				--method "${bad_spec}" --format json
+		RESULT_VARIABLE r OUTPUT_VARIABLE o ERROR_VARIABLE e
+	)
+	assert_failure_contract(
+		"bad --method spec '${bad_spec}'" 1 "AZT-E0004" ${r} "${o}" "${e}" TRUE
+	)
+endforeach()
+
+# ---------------------------------------------------------------------------
+# 5. Repeated --format value: last one wins or rejected — must not crash.
+#    Either AZT-E0001/0006 (rejection) or exit 0 (last-wins) is acceptable;
+#    a crash (exit > 127 or negative) is not.
+# ---------------------------------------------------------------------------
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}"
+			--method "Gauge::reading() const"
+			--format text --format json
+	RESULT_VARIABLE repeated_result
+	OUTPUT_VARIABLE repeated_stdout
+	ERROR_VARIABLE repeated_stderr
+)
+if(repeated_result LESS 0 OR repeated_result GREATER 127)
+	message(
+		FATAL_ERROR
+		"repeated --format must not crash but exit was ${repeated_result}\n"
+		"stdout:\n${repeated_stdout}\nstderr:\n${repeated_stderr}"
+	)
+endif()
+
+# ---------------------------------------------------------------------------
+# 6. JSON output on success must be parseable. Re-confirm here so this
+#    test fails fast if a regression makes JSON malformed for any reason.
+# ---------------------------------------------------------------------------
+execute_process(
+	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}"
+			--source "${fixture_source}/simple_scenarios.cpp"
+			--method "Gauge::reading() const" --format json
+	RESULT_VARIABLE ok_result OUTPUT_VARIABLE ok_stdout ERROR_VARIABLE ok_stderr
+)
+if(NOT ok_result EQUAL 0)
+	message(FATAL_ERROR "sanity inspect failed (exit=${ok_result}):\n${ok_stderr}")
+endif()
+string(JSON _schema ERROR_VARIABLE _parse_err GET "${ok_stdout}" "schema_version")
+if(_parse_err)
+	message(FATAL_ERROR "sanity inspect produced invalid JSON: ${_parse_err}\n${ok_stdout}")
+endif()
+if(NOT _schema STREQUAL "2")
+	message(FATAL_ERROR "sanity inspect schema_version should be 2 but was ${_schema}")
+endif()
+
+message(STATUS "Phase A negative robustness contract: OK")

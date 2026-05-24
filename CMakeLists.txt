@@ -226,6 +226,26 @@ if(BUILD_TESTING)
 			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseACoverageMatrix.cmake
 	)
 
+	add_test(
+		NAME phase_a_output_quality
+		COMMAND
+			${CMAKE_COMMAND}
+			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
+			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseAOutputQuality.cmake
+	)
+
+	add_test(
+		NAME phase_a_negative_robustness
+		COMMAND
+			${CMAKE_COMMAND}
+			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
+			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseANegativeRobustness.cmake
+	)
+
 	if(GTest_FOUND)
 		add_executable(
 			azteca_unit_tests

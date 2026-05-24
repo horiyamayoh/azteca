@@ -239,6 +239,26 @@ assert_phase_a_json_golden(
 	"EscapeExample::link()"
 	"escape_example_link.inspect.json"
 )
+assert_phase_a_json_golden(
+	"${fixture_source}/account.cpp"
+	"Account::withdraw(int)"
+	"account_withdraw.inspect.json"
+)
+assert_phase_a_json_golden(
+	"${fixture_source}/hardening.cpp"
+	"DependencyKinds::run(int)"
+	"dependency_kinds_run.inspect.json"
+)
+assert_phase_a_json_golden(
+	"${fixture_source}/simple_scenarios.cpp"
+	"Gauge::reading() const"
+	"gauge_reading.inspect.json"
+)
+assert_phase_a_json_golden(
+	"${fixture_source}/simple_scenarios.cpp"
+	"Gauge::record(int)"
+	"gauge_record.inspect.json"
+)
 
 execute_process(
 	COMMAND "${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}" --source
