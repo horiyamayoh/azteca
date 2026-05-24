@@ -29,6 +29,8 @@ Goldens are normally frozen and must only be regenerated with
 ## Verification
 
 - [ ] `cmake --build --preset dev-clang --target check` passes locally.
+- [ ] `cmake --build --preset dev-clang --target strict-check` passes locally
+      for C++ changes, or CI is being used for the full clang-tidy gate.
 - [ ] `cmake --build --preset dev-clang --target release-check` passes locally.
 - [ ] ASan/UBSan build (`ctest --preset asan-clang`) passes locally for
       anything touching the runtime/CLI surface.

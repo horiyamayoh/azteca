@@ -45,8 +45,8 @@ jobs:
       - name: Build
         run: cmake --build --preset ci-clang --parallel
 
-      - name: Check
-        run: cmake --build --preset ci-clang --target check
+      - name: Strict check
+        run: cmake --build --preset ci-clang --target strict-check
 
   sanitizers:
     name: ASan UBSan
@@ -61,7 +61,6 @@ jobs:
           sudo apt-get install -y \
             clang-18 \
             clang-format-18 \
-            clang-tidy-18 \
             llvm-18-dev \
             libclang-18-dev \
             libgtest-dev \
@@ -95,7 +94,6 @@ jobs:
           sudo apt-get install -y \
             clang-18 \
             clang-format-18 \
-            clang-tidy-18 \
             llvm-18-dev \
             libclang-18-dev \
             libgtest-dev \

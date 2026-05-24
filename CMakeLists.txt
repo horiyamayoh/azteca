@@ -101,13 +101,18 @@ include(CTest)
 
 find_program(GIT_EXECUTABLE git REQUIRED)
 find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format-18 clang-format REQUIRED)
-find_program(CLANG_TIDY_EXECUTABLE NAMES clang-tidy-18 clang-tidy REQUIRED)
+find_program(CLANG_TIDY_EXECUTABLE NAMES clang-tidy-18 clang-tidy)
 find_program(RUN_CLANG_TIDY_EXECUTABLE NAMES run-clang-tidy-18 run-clang-tidy)
 find_program(LLVM_CONFIG_EXECUTABLE NAMES llvm-config-18 llvm-config REQUIRED)
 find_program(NPM_EXECUTABLE npm REQUIRED)
 
 require_tool_major_version("clang-format" "${CLANG_FORMAT_EXECUTABLE}" 18)
-require_tool_major_version("clang-tidy" "${CLANG_TIDY_EXECUTABLE}" 18)
+
+if(CLANG_TIDY_EXECUTABLE)
+	require_tool_major_version("clang-tidy" "${CLANG_TIDY_EXECUTABLE}" 18)
+else()
+	message(STATUS "clang-tidy 18 was not found; lint targets will fail until it is installed.")
+endif()
 
 execute_process(
 	COMMAND ${LLVM_CONFIG_EXECUTABLE} --cmakedir
@@ -344,39 +349,40 @@ add_custom_target(
 	VERBATIM
 )
 
-add_custom_target(
-	lint
-	COMMAND
-		${CMAKE_COMMAND}
-		-DCLANG_TIDY_EXECUTABLE=${CLANG_TIDY_EXECUTABLE}
-		-DRUN_CLANG_TIDY_EXECUTABLE=${RUN_CLANG_TIDY_EXECUTABLE}
-		-DGIT_EXECUTABLE=${GIT_EXECUTABLE}
-		-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
-		-DCOMPILE_COMMANDS_DIR=${CMAKE_BINARY_DIR}
-		-DCLANG_TIDY_JOBS=${AZTECA_CLANG_TIDY_JOBS}
-		-DCLANG_TIDY_PROFILE=full
-		-P ${PROJECT_SOURCE_DIR}/cmake/ClangTidy.cmake
-	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-	COMMENT "Running clang-tidy"
-	VERBATIM
-)
+function(add_azteca_lint_target target_name profile comment)
+	if(CLANG_TIDY_EXECUTABLE)
+		add_custom_target(
+			${target_name}
+			COMMAND
+				${CMAKE_COMMAND}
+				-DCLANG_TIDY_EXECUTABLE=${CLANG_TIDY_EXECUTABLE}
+				-DRUN_CLANG_TIDY_EXECUTABLE=${RUN_CLANG_TIDY_EXECUTABLE}
+				-DGIT_EXECUTABLE=${GIT_EXECUTABLE}
+				-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+				-DCOMPILE_COMMANDS_DIR=${CMAKE_BINARY_DIR}
+				-DCLANG_TIDY_JOBS=${AZTECA_CLANG_TIDY_JOBS}
+				-DCLANG_TIDY_PROFILE=${profile}
+				-P ${PROJECT_SOURCE_DIR}/cmake/ClangTidy.cmake
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+			COMMENT "${comment}"
+			VERBATIM
+		)
+	else()
+		add_custom_target(
+			${target_name}
+			COMMAND
+				${CMAKE_COMMAND} -E echo
+				"clang-tidy 18 was not found at configure time; install clang-tidy-18 and re-run CMake to use ${target_name}."
+			COMMAND ${CMAKE_COMMAND} -E false
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+			COMMENT "${comment}"
+			VERBATIM
+		)
+	endif()
+endfunction()
 
-add_custom_target(
-	lint-fast
-	COMMAND
-		${CMAKE_COMMAND}
-		-DCLANG_TIDY_EXECUTABLE=${CLANG_TIDY_EXECUTABLE}
-		-DRUN_CLANG_TIDY_EXECUTABLE=${RUN_CLANG_TIDY_EXECUTABLE}
-		-DGIT_EXECUTABLE=${GIT_EXECUTABLE}
-		-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
-		-DCOMPILE_COMMANDS_DIR=${CMAKE_BINARY_DIR}
-		-DCLANG_TIDY_JOBS=${AZTECA_CLANG_TIDY_JOBS}
-		-DCLANG_TIDY_PROFILE=fast
-		-P ${PROJECT_SOURCE_DIR}/cmake/ClangTidy.cmake
-	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-	COMMENT "Running clang-tidy fast profile"
-	VERBATIM
-)
+add_azteca_lint_target(lint full "Running clang-tidy")
+add_azteca_lint_target(lint-fast fast "Running clang-tidy fast profile")
 
 add_custom_target(
 	quick-check
@@ -389,8 +395,16 @@ add_custom_target(
 add_custom_target(
 	check
 	COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
+	DEPENDS ${AZTECA_TEST_DEPENDENCIES} format-check prettier-check reference-check
+	COMMENT "Running daily local quality gates"
+	VERBATIM
+)
+
+add_custom_target(
+	strict-check
+	COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
 	DEPENDS ${AZTECA_TEST_DEPENDENCIES} format-check prettier-check reference-check lint
-	COMMENT "Running all local quality gates"
+	COMMENT "Running strict quality gates"
 	VERBATIM
 )
 

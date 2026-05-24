@@ -23,10 +23,16 @@ cmake --build --preset dev-clang --target quick-check
 cmake --build --preset dev-clang --target quick-check
 ```
 
-CI 相当の確認は `check` を使います。
+日常の標準確認は `check` を使います。`check` は build 依存、C++ format、Prettier、生成 reference の同期、CTest をまとめて実行し、重い clang-tidy は含めません。
 
 ```bash
 cmake --build --preset dev-clang --target check
+```
+
+CI 相当の full gate は `strict-check` を使います。これは `check` 相当の内容に full clang-tidy を加えた target です。
+
+```bash
+cmake --build --preset dev-clang --target strict-check
 ```
 
 個別ゲート:
@@ -39,7 +45,7 @@ cmake --build --preset dev-clang --target lint
 ctest --preset dev-clang
 ```
 
-`lint-fast` は `clang-analyzer-*` を除いたローカル向け clang-tidy profile です。`lint` は analyzer を含む full profile で、`check` は format、Prettier、reference、full clang-tidy、CTest をまとめて実行します。通常の build は CI で `check` の前に実行します。
+`lint-fast` は `clang-analyzer-*` を除いた clang-tidy profile です。full `lint` より軽いものの、Clang AST を読むため日常 gate には含めません。`lint` は analyzer を含む full profile で、CI の `strict-check` で必須にします。通常の build は CI で `strict-check` の前に実行します。
 
 `asan-clang` の test preset は `ASAN_OPTIONS=allow_user_poisoning=0` を設定します。Azteca 側の ASan/UBSan instrumentation は有効なまま、Clang Tooling が内部で使う LLVM allocator poison による外部ライブラリ由来の false positive を避けるためです。
 
