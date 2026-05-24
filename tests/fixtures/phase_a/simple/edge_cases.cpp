@@ -85,12 +85,30 @@ class EdgeCases
 		return value_;
 	}
 
+	int noexcept_read() const noexcept
+	{
+		return value_;
+	}
+
+	EdgeCases& return_self_reference()
+	{
+		return *this;
+	}
+
+	int default_initialized_read() const
+	{
+		return default_initialized_;
+	}
+
    private:
+	static int default_seed();
+
 	int helper(int value) const;
 	int helper(double value) const;
 	int pointer_target(int value) const;
 
 	int value_{0};
+	int default_initialized_ = default_seed();
 	EdgeDependency dependency_;
 };
 

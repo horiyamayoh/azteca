@@ -64,8 +64,8 @@ patch bumps.
   24 LR-\* rules to specific fixture methods and golden files under
   `tests/golden/phase_a/coverage_observations/` to evidence the coverage
   matrix in `docs/planning/25_phase_a_inspect_coverage.md`.
-- New unit tests in `tests/unit/ExtractionPlanTests.cpp` for error-result
-  JSON rendering (`result: "error"` + diagnostics + schema keys) and
+- New unit tests in `tests/unit/ExtractionPlanTests.cpp` for invalid-plan
+  JSON rendering (`result: "invalid-plan"` + diagnostics + schema keys) and
   text rendering of diagnostics and per-path `conservative reason`.
 - Strict `.clang-tidy`: `cert-*` and `cppcoreguidelines-*` are now
   warnings-as-errors; documented per-check exclusions only for known

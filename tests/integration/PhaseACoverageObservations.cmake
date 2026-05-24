@@ -24,6 +24,8 @@ endif()
 
 set(fixture_source "${PROJECT_SOURCE_DIR}/tests/fixtures/phase_a/simple")
 set(fixture_build "${PROJECT_BINARY_DIR}/test-work/phase_a/coverage_observations")
+set(coverage_source "${PROJECT_SOURCE_DIR}/tests/fixtures/phase_a/coverage")
+set(coverage_build "${PROJECT_BINARY_DIR}/test-work/phase_a/coverage_observations_extra")
 set(golden_root "${PROJECT_SOURCE_DIR}/tests/golden/phase_a/coverage_observations")
 
 if(DEFINED CMAKE_CXX_COMPILER AND NOT CMAKE_CXX_COMPILER STREQUAL "")
@@ -48,16 +50,33 @@ if(NOT _cfg_result EQUAL 0)
 	message(FATAL_ERROR "coverage observations fixture configure failed:\n${_cfg_out}\n${_cfg_err}")
 endif()
 
+execute_process(
+	COMMAND
+		${CMAKE_COMMAND}
+		-S "${coverage_source}"
+		-B "${coverage_build}"
+		-G Ninja
+		-DCMAKE_CXX_COMPILER=${fixture_cxx_compiler}
+		-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	RESULT_VARIABLE _coverage_cfg_result
+	OUTPUT_VARIABLE _coverage_cfg_out
+	ERROR_VARIABLE _coverage_cfg_err
+)
+if(NOT _coverage_cfg_result EQUAL 0)
+	message(FATAL_ERROR
+		"coverage observations extra fixture configure failed:\n${_coverage_cfg_out}\n${_coverage_cfg_err}")
+endif()
+
 # Run inspect, freeze a golden, and assert each requested LR-* id is
 # observed=true in the JSON rule_coverage. Goldens are byte-compared after
 # replacing the absolute fixture path with the <fixture> placeholder so the
 # repo can host them.
-function(observe source method golden_name)
+function(observe_with_context build_dir source_root source method golden_name)
 	set(required_rules ${ARGN})
 
 	execute_process(
 		COMMAND
-			"${AZTECA_EXECUTABLE}" inspect -p "${fixture_build}"
+			"${AZTECA_EXECUTABLE}" inspect -p "${build_dir}"
 			--source "${source}" --method "${method}" --format json
 		RESULT_VARIABLE _rc
 		OUTPUT_VARIABLE _out
@@ -104,7 +123,7 @@ function(observe source method golden_name)
 		endif()
 	endforeach()
 
-	string(REPLACE "${fixture_source}" "<fixture>" _normalized "${_out}")
+	string(REPLACE "${source_root}" "<fixture>" _normalized "${_out}")
 	set(_golden_path "${golden_root}/${golden_name}")
 	if(DEFINED ENV{AZTECA_ACCEPT_GOLDEN} AND NOT "$ENV{AZTECA_ACCEPT_GOLDEN}" STREQUAL "")
 		file(WRITE "${_golden_path}" "${_normalized}")
@@ -120,6 +139,12 @@ function(observe source method golden_name)
 				"golden mismatch for ${method} (${golden_name}):\n${_normalized}")
 		endif()
 	endif()
+endfunction()
+
+function(observe source method golden_name)
+	observe_with_context(
+		"${fixture_build}" "${fixture_source}" "${source}" "${method}" "${golden_name}" ${ARGN}
+	)
 endfunction()
 
 # --- EdgeCases (edge_cases.cpp) ---
@@ -152,6 +177,21 @@ observe(
 	"${fixture_source}/edge_cases.cpp" "EdgeCases::field_address()"
 	"edge_cases_field_address.inspect.json"
 	"LR-029"
+)
+observe(
+	"${fixture_source}/edge_cases.cpp" "EdgeCases::noexcept_read() const"
+	"edge_cases_noexcept_read.inspect.json"
+	"LR-019"
+)
+observe(
+	"${fixture_source}/edge_cases.cpp" "EdgeCases::return_self_reference()"
+	"edge_cases_return_self_reference.inspect.json"
+	"LR-021" "LR-022"
+)
+observe(
+	"${fixture_source}/edge_cases.cpp" "EdgeCases::default_initialized_read() const"
+	"edge_cases_default_initialized_read.inspect.json"
+	"LR-040"
 )
 observe(
 	"${fixture_source}/edge_cases.cpp" "outer::Container::Inner::run() const"
@@ -210,12 +250,29 @@ observe(
 	"syntax_matrix_reset_in_place.inspect.json"
 	"LR-027" "LR-028" "LR-049"
 )
+observe(
+	"${fixture_source}/syntax_matrix.cpp" "SyntaxMatrix::structured()"
+	"syntax_matrix_structured.inspect.json"
+	"LR-037"
+)
+observe(
+	"${fixture_source}/syntax_matrix.cpp" "SyntaxMatrix::unevaluated()"
+	"syntax_matrix_unevaluated.inspect.json"
+	"LR-039"
+)
 
 # --- TemplateExample (hardening.cpp) ---
 observe(
 	"${fixture_source}/hardening.cpp" "TemplateExample::target<int>(int)"
 	"template_example_target.inspect.json"
 	"LR-033"
+)
+
+# --- Coroutine extra fixture (coverage/coroutine.cpp) ---
+observe_with_context(
+	"${coverage_build}" "${coverage_source}" "${coverage_source}/coroutine.cpp" "CoroHost::run(int)"
+	"coro_host_run.inspect.json"
+	"LR-038"
 )
 
 message(STATUS "Phase A coverage observations: OK")

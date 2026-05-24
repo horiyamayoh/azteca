@@ -8870,6 +8870,7 @@ not_yet_implemented:
 | operator target method                 | not_yet_implemented                                | future       | `operator methods are not supported`           |
 | const/volatile/ref-qualified target    | supported                                          | pass         | `method_qualifier`, `LR-047`                   |
 | default argument                       | supported                                          | pass         | `default_argument`, `LR-042`                   |
+| default member initializer             | not_yet_implemented                                | future       | `default_member_initializer`, `LR-040`         |
 | constructor call in body               | conservative                                       | conservative | `constructor_call`, `lifetime_state`, `LR-049` |
 | destructor target                      | not_yet_implemented                                | future       | target diagnostic                              |
 | explicit destructor call               | modeled                                            | pass         | `lifetime_state`, `LR-027`                     |
@@ -8933,6 +8934,9 @@ Phase A close時点の安定化ゲートは次である。
 | LR-014  | `SyntaxMatrix::reset_in_place()`           | `syntax_matrix_reset_in_place.inspect.json`        |
 | LR-015  | `SyntaxMatrix::switch_loop(int)`           | `syntax_matrix_switch_loop.inspect.json`           |
 | LR-017  | `SyntaxMatrix::lambda_run()`               | `syntax_matrix_lambda_run.inspect.json`            |
+| LR-019  | `EdgeCases::noexcept_read() const`         | `edge_cases_noexcept_read.inspect.json`            |
+| LR-021  | `EdgeCases::return_self_reference()`       | `edge_cases_return_self_reference.inspect.json`    |
+| LR-022  | `EdgeCases::return_self_reference()`       | `edge_cases_return_self_reference.inspect.json`    |
 | LR-023  | `SyntaxMatrix::identity_and_type() const`  | `syntax_matrix_identity_and_type.inspect.json`     |
 | LR-024  | `SyntaxMatrix::identity_and_type() const`  | `syntax_matrix_identity_and_type.inspect.json`     |
 | LR-025  | `SyntaxMatrix::first_byte() const`         | `syntax_matrix_first_byte.inspect.json`            |
@@ -8942,13 +8946,21 @@ Phase A close時点の安定化ゲートは次である。
 | LR-034  | `SyntaxMatrix::base_global_static(int)`    | `syntax_matrix_base_global_static.inspect.json`    |
 | LR-035  | `SyntaxMatrix::exception_run()`            | `syntax_matrix_exception_run.inspect.json`         |
 | LR-036  | `SyntaxMatrix::exception_run()`            | `syntax_matrix_exception_run.inspect.json`         |
+| LR-037  | `SyntaxMatrix::structured()`               | `syntax_matrix_structured.inspect.json`            |
+| LR-038  | `CoroHost::run(int)`                       | `coro_host_run.inspect.json`                       |
+| LR-039  | `SyntaxMatrix::unevaluated()`              | `syntax_matrix_unevaluated.inspect.json`           |
+| LR-040  | `EdgeCases::default_initialized_read()`    | `edge_cases_default_initialized_read.inspect.json` |
 | LR-041  | `EdgeCases::ternary(int)`                  | `edge_cases_ternary.inspect.json`                  |
 | LR-042  | `EdgeCases::default_argument()`            | `edge_cases_default_argument.inspect.json`         |
 | LR-043  | `EdgeCases::value_category_and_casts(int)` | `edge_cases_value_category_and_casts.inspect.json` |
 | LR-044  | `EdgeCases::value_category_and_casts(int)` | `edge_cases_value_category_and_casts.inspect.json` |
 | LR-048  | `EdgeCases::explicit_this_read() const`    | `edge_cases_explicit_this_read.inspect.json`       |
 
-その他の "pass" 行 (LR-003/004/007/008/010/011/016/018/045/046/047/049 ほか) は既存 `PhaseAInspect.cmake` の goldens で観測される。
+LR-031/LR-032 は plan JSON を生成しない target-level rejection として
+`PhaseACoverageMatrix.cmake` が `AZT-E0010` と exit code 3 を検証する。
+
+その他の "pass" 行 (LR-003/004/007/018/043/045/046/047/049 ほか) は既存
+`PhaseAInspect.cmake` の goldens で観測される。
 
 ---
 

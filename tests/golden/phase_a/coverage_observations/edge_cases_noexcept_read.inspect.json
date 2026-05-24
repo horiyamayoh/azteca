@@ -2,10 +2,10 @@
   "schema_version": 2,
   "azteca_phase": "A",
   "target": {
-    "qualified_name": "EdgeCases::field_address",
-    "signature": "int()",
+    "qualified_name": "EdgeCases::noexcept_read",
+    "signature": "int() const",
     "source_file": "<fixture>/edge_cases.cpp",
-    "line": 65
+    "line": 88
   },
   "result": "extracted",
   "confidence": "high",
@@ -13,17 +13,17 @@
     {
       "name": "value_",
       "type": "int",
-      "access": "address",
+      "access": "read",
       "mutable": false,
       "access_specifier": "private",
       "location": { "file": "<fixture>/edge_cases.cpp", "line": 110, "column": 6 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 10 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 16 }
       }
     }
   ],
@@ -43,67 +43,51 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 10 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 16 }
       }
     },
     {
-      "name": "auto_type",
+      "name": "method_qualifier",
       "handling": "supported",
-      "detail": "auto is reported after semantic type resolution",
-      "rule_id": "LR-043",
-      "reason": "auto type is resolved by Clang Sema",
+      "detail": "target method qualifiers: const",
+      "rule_id": "LR-047",
+      "reason": "target method cv/ref qualifiers are recorded",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 88, "column": 2 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 91, "column": 3 }
       }
     },
     {
-      "name": "local_variable",
+      "name": "noexcept",
       "handling": "supported",
-      "detail": "local variable declaration is part of inspect MMIR",
-      "rule_id": "LR-014",
-      "reason": "local variable declaration",
+      "detail": "target method is noexcept-compatible",
+      "rule_id": "LR-019",
+      "reason": "target method has noexcept-compatible exception specification",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 88, "column": 2 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 91, "column": 3 }
       }
     },
     {
       "name": "receiver_state",
       "handling": "supported",
-      "detail": "receiver field address taken",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "detail": "receiver field read",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 10 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 16 }
       }
     }
   ],
-  "unsupported_or_modeled_constructs": [
-    {
-      "construct": "field address taking",
-      "handling": "modeled",
-      "construct_reason": "field address is unit-testable through addressable cell modeling",
-      "fallbacks": ["model field as azteca::cell", "avoid exposing a fake product object address"],
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    }
-  ],
+  "unsupported_or_modeled_constructs": [],
   "control_flow_summary": {
     "has_if": false,
     "has_switch": false,
@@ -118,28 +102,15 @@
   "envelope_requirements": [
     {
       "kind": "self-state",
-      "requirement_reason": "receiver field address taken",
+      "requirement_reason": "receiver field read",
       "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    },
-    {
-      "kind": "addressable-cell",
-      "requirement_reason": "address-taken field must be represented as a cell",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 10 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 16 }
       }
     }
   ],
@@ -148,7 +119,7 @@
       "rule_id": "LR-001",
       "handling": "supported",
       "note": "implicit data member read",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-002",
@@ -168,7 +139,7 @@
       "rule_id": "LR-006",
       "handling": "supported",
       "note": "built-in expression",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-007",
@@ -216,7 +187,7 @@
       "rule_id": "LR-014",
       "handling": "supported",
       "note": "local variable declaration",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-015",
@@ -246,7 +217,7 @@
       "rule_id": "LR-019",
       "handling": "supported",
       "note": "noexcept is reported from method metadata",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-020",
@@ -306,7 +277,7 @@
       "rule_id": "LR-029",
       "handling": "modeled",
       "note": "field address requires addressable cell",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-030",
@@ -390,7 +361,7 @@
       "rule_id": "LR-043",
       "handling": "supported",
       "note": "auto type is recorded after semantic resolution",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-044",
@@ -414,7 +385,7 @@
       "rule_id": "LR-047",
       "handling": "supported",
       "note": "cv/ref member qualifiers are part of target metadata",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-048",
@@ -443,17 +414,17 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 16 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 3 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 90, "column": 16 }
       }
     }
   ],
   "gtest_preview": {
-    "sample_test_path": "tests/edgecases_field_address.sample_test.cpp",
+    "sample_test_path": "tests/edgecases_noexcept_read.sample_test.cpp",
     "lines": [
-      "TEST(edgecases_field_address, return_value)",
+      "TEST(edgecases_noexcept_read, return_value)",
       "{",
-      "  auto s = azteca_gen::scenario::edgecases_field_address{};",
+      "  auto s = azteca_gen::scenario::edgecases_noexcept_read{};",
       "  s.self.value_ = /* value */;",
       "  auto result = s.call(/* args */);",
       "  EXPECT_EQ(result, /* expected for return_value */);",

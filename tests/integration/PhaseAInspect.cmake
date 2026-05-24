@@ -697,13 +697,14 @@ execute_process(
 	ERROR_VARIABLE operator_spec_error
 )
 
-if(NOT operator_spec_result EQUAL 1)
+if(NOT operator_spec_result EQUAL 3)
 	message(
 		FATAL_ERROR
-		"operator spec should exit 1 but exited ${operator_spec_result}:\n"
+		"operator spec should exit 3 but exited ${operator_spec_result}:\n"
 		"${operator_spec_output}\n${operator_spec_error}"
 	)
 endif()
+assert_contains("${operator_spec_error}" "AZT-E0010" "operator spec stderr")
 assert_contains("${operator_spec_error}" "operator methods are not supported" "operator spec stderr")
 
 execute_process(

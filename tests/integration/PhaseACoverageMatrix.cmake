@@ -58,7 +58,7 @@ if(NOT _cfg_result EQUAL 0)
 	message(FATAL_ERROR "coverage fixture configure failed:\n${_cfg_out}\n${_cfg_err}")
 endif()
 
-function(expect_failure_with phrase id source method context)
+function(expect_failure_with phrase id expected_exit source method context)
 	execute_process(
 		COMMAND
 			"${AZTECA_EXECUTABLE}" inspect -p "${simple_build}" --source "${source}"
@@ -70,6 +70,10 @@ function(expect_failure_with phrase id source method context)
 	if(_rc EQUAL 0)
 		message(FATAL_ERROR "${context}: expected non-zero exit, got 0\nstdout:\n${_out}\nstderr:\n${_err}")
 	endif()
+	if(NOT _rc EQUAL ${expected_exit})
+		message(FATAL_ERROR
+			"${context}: expected exit ${expected_exit}, got ${_rc}\nstdout:\n${_out}\nstderr:\n${_err}")
+	endif()
 	string(FIND "${_err}" "${id}" _id_idx)
 	if(_id_idx EQUAL -1)
 		message(FATAL_ERROR "${context}: stderr missing '${id}':\n${_err}")
@@ -80,19 +84,31 @@ function(expect_failure_with phrase id source method context)
 	endif()
 endfunction()
 
-# operator method target -> parse-time rejection (AZT-E0004)
+# operator method target -> unsupported target (AZT-E0010)
 expect_failure_with(
 	"operator methods are not supported"
-	"AZT-E0004"
+	"AZT-E0010"
+	3
 	"${simple_source}/syntax_matrix.cpp"
 	"SyntaxMatrix::operator+(SyntaxMatrix)"
 	"operator method target"
+)
+
+# constructor target -> unsupported target (AZT-E0010)
+expect_failure_with(
+	"constructors and destructors are outside Phase A inspect scope"
+	"AZT-E0010"
+	3
+	"${simple_source}/syntax_matrix.cpp"
+	"SyntaxMatrix::SyntaxMatrix()"
+	"constructor target"
 )
 
 # destructor target -> unsupported target (AZT-E0010)
 expect_failure_with(
 	"constructors and destructors are outside Phase A inspect scope"
 	"AZT-E0010"
+	3
 	"${simple_source}/syntax_matrix.cpp"
 	"SyntaxMatrix::~SyntaxMatrix()"
 	"destructor target"

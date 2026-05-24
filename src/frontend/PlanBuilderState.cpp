@@ -12,6 +12,30 @@
 #include "PlanBuilder.hpp"
 #include "PlanBuilderAst.hpp"
 
+namespace
+{
+
+[[nodiscard]] bool contains_nontrivial_default_initializer(clang::Stmt const* statement)
+{
+	if (statement == nullptr)
+	{
+		return false;
+	}
+
+	if (llvm::isa<clang::CallExpr>(statement))
+	{
+		return true;
+	}
+
+	return std::ranges::any_of(statement->children(),
+	    [](clang::Stmt const* child)
+	    {
+		    return contains_nontrivial_default_initializer(child);
+	    });
+}
+
+} // namespace
+
 namespace azteca
 {
 
@@ -345,6 +369,7 @@ void PlanBuilder::add_receiver_field(
 		    .location = source_location(context_, field.getLocation()),
 		    .evidence = std::move(evidence),
 		});
+		record_default_member_initializer_if_needed(field);
 		return;
 	}
 
@@ -355,6 +380,25 @@ void PlanBuilder::add_receiver_field(
 		existing.evidence.reason = "receiver field read/write";
 		existing.evidence.rule_id = "LR-003";
 	}
+}
+
+void PlanBuilder::record_default_member_initializer_if_needed(clang::FieldDecl const& field)
+{
+	auto const* initializer = field.getInClassInitializer();
+	if (initializer == nullptr || !contains_nontrivial_default_initializer(initializer))
+	{
+		return;
+	}
+
+	auto evidence = make_evidence("LR-040",
+	    "non-trivial default member initializer requires construction-aware receiver setup",
+	    initializer->getSourceRange(), true, "conservative");
+	add_semantic_feature("default_member_initializer", ConstructHandling::kNotYetImplemented,
+	    "receiver default member initializer is not lowered in Phase A", evidence);
+	add_construct("default member initializer", ConstructHandling::kNotYetImplemented,
+	    "receiver default member initializer requires future construction-aware lowering",
+	    {"explicit self setup", "future construction-aware self model"}, field.getLocation(),
+	    evidence);
 }
 
 void PlanBuilder::remove_dependency_object_fields()

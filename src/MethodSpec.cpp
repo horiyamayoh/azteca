@@ -95,10 +95,12 @@ namespace
 	return value.find('<') != std::string_view::npos || value.find('>') != std::string_view::npos;
 }
 
-[[nodiscard]] MethodSpecParseResult parse_error(std::string message)
+[[nodiscard]] MethodSpecParseResult parse_error(
+    std::string message, MethodSpecParseErrorKind kind = MethodSpecParseErrorKind::kSyntax)
 {
 	MethodSpecParseResult result;
 	result.error = std::move(message);
+	result.error_kind = kind;
 	return result;
 }
 
@@ -192,7 +194,8 @@ MethodSpecParseResult parse_method_spec(std::string_view input)
 		auto const kNext = static_cast<unsigned char>(spec.method_name[8]);
 		if (std::isalnum(kNext) == 0 && spec.method_name[8] != '_')
 		{
-			return parse_error("operator methods are not supported by Phase A inspect");
+			return parse_error("operator methods are not supported by Phase A inspect",
+			    MethodSpecParseErrorKind::kUnsupportedTarget);
 		}
 	}
 

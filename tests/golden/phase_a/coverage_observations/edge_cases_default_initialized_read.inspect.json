@@ -2,28 +2,28 @@
   "schema_version": 2,
   "azteca_phase": "A",
   "target": {
-    "qualified_name": "EdgeCases::field_address",
-    "signature": "int()",
+    "qualified_name": "EdgeCases::default_initialized_read",
+    "signature": "int() const",
     "source_file": "<fixture>/edge_cases.cpp",
-    "line": 65
+    "line": 98
   },
-  "result": "extracted",
-  "confidence": "high",
+  "result": "extracted-with-conservative-notes",
+  "confidence": "low",
   "receiver_state": [
     {
-      "name": "value_",
+      "name": "default_initialized_",
       "type": "int",
-      "access": "address",
+      "access": "read",
       "mutable": false,
       "access_specifier": "private",
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 110, "column": 6 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "location": { "file": "<fixture>/edge_cases.cpp", "line": 111, "column": 6 },
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 100, "column": 10 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 100, "column": 30 }
       }
     }
   ],
@@ -43,64 +43,64 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 100, "column": 10 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 100, "column": 30 }
       }
     },
     {
-      "name": "auto_type",
-      "handling": "supported",
-      "detail": "auto is reported after semantic type resolution",
-      "rule_id": "LR-043",
-      "reason": "auto type is resolved by Clang Sema",
-      "certainty": "certain",
-      "conservative": false,
+      "name": "default_member_initializer",
+      "handling": "not-yet-implemented",
+      "detail": "receiver default member initializer is not lowered in Phase A",
+      "rule_id": "LR-040",
+      "reason": "non-trivial default member initializer requires construction-aware receiver setup",
+      "certainty": "conservative",
+      "conservative": true,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 111, "column": 29 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 111, "column": 43 }
       }
     },
     {
-      "name": "local_variable",
+      "name": "method_qualifier",
       "handling": "supported",
-      "detail": "local variable declaration is part of inspect MMIR",
-      "rule_id": "LR-014",
-      "reason": "local variable declaration",
+      "detail": "target method qualifiers: const",
+      "rule_id": "LR-047",
+      "reason": "target method cv/ref qualifiers are recorded",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 98, "column": 2 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 101, "column": 3 }
       }
     },
     {
       "name": "receiver_state",
       "handling": "supported",
-      "detail": "receiver field address taken",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "detail": "receiver field read",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 100, "column": 10 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 100, "column": 30 }
       }
     }
   ],
   "unsupported_or_modeled_constructs": [
     {
-      "construct": "field address taking",
-      "handling": "modeled",
-      "construct_reason": "field address is unit-testable through addressable cell modeling",
-      "fallbacks": ["model field as azteca::cell", "avoid exposing a fake product object address"],
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
+      "construct": "default member initializer",
+      "handling": "not-yet-implemented",
+      "construct_reason": "receiver default member initializer requires future construction-aware lowering",
+      "fallbacks": ["explicit self setup", "future construction-aware self model"],
+      "location": { "file": "<fixture>/edge_cases.cpp", "line": 111, "column": 6 },
+      "rule_id": "LR-040",
+      "reason": "non-trivial default member initializer requires construction-aware receiver setup",
+      "certainty": "conservative",
+      "conservative": true,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 111, "column": 29 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 111, "column": 43 }
       }
     }
   ],
@@ -118,28 +118,15 @@
   "envelope_requirements": [
     {
       "kind": "self-state",
-      "requirement_reason": "receiver field address taken",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "requirement_reason": "receiver field read",
+      "source": "EdgeCases::default_initialized_",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    },
-    {
-      "kind": "addressable-cell",
-      "requirement_reason": "address-taken field must be represented as a cell",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 100, "column": 10 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 100, "column": 30 }
       }
     }
   ],
@@ -148,7 +135,7 @@
       "rule_id": "LR-001",
       "handling": "supported",
       "note": "implicit data member read",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-002",
@@ -168,7 +155,7 @@
       "rule_id": "LR-006",
       "handling": "supported",
       "note": "built-in expression",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-007",
@@ -216,7 +203,7 @@
       "rule_id": "LR-014",
       "handling": "supported",
       "note": "local variable declaration",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-015",
@@ -306,7 +293,7 @@
       "rule_id": "LR-029",
       "handling": "modeled",
       "note": "field address requires addressable cell",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-030",
@@ -372,7 +359,7 @@
       "rule_id": "LR-040",
       "handling": "not-yet-implemented",
       "note": "default member initializer is future work",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-041",
@@ -390,7 +377,7 @@
       "rule_id": "LR-043",
       "handling": "supported",
       "note": "auto type is recorded after semantic resolution",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-044",
@@ -414,7 +401,7 @@
       "rule_id": "LR-047",
       "handling": "supported",
       "note": "cv/ref member qualifiers are part of target metadata",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-048",
@@ -431,7 +418,7 @@
   ],
   "paths": [
     {
-      "name": "return_value",
+      "name": "return_default_initialized",
       "observations": [],
       "effects": [],
       "operations": [],
@@ -443,23 +430,31 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 16 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 100, "column": 3 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 100, "column": 30 }
       }
     }
   ],
   "gtest_preview": {
-    "sample_test_path": "tests/edgecases_field_address.sample_test.cpp",
+    "sample_test_path": "tests/edgecases_default_initialized_read.sample_test.cpp",
     "lines": [
-      "TEST(edgecases_field_address, return_value)",
+      "TEST(edgecases_default_initialized_read, return_default_initialized)",
       "{",
-      "  auto s = azteca_gen::scenario::edgecases_field_address{};",
-      "  s.self.value_ = /* value */;",
+      "  auto s = azteca_gen::scenario::edgecases_default_initialized_read{};",
+      "  s.self.default_initialized_ = /* value */;",
       "  auto result = s.call(/* args */);",
-      "  EXPECT_EQ(result, /* expected for return_value */);",
+      "  EXPECT_EQ(result, /* expected for return_default_initialized */);",
       "  s.effects.expect_none();",
       "}"
     ]
   },
-  "diagnostics": []
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "AZTECA_UNSUPPORTED_CONSTRUCT",
+      "public_id": "AZT-W0001",
+      "message": "default member initializer: receiver default member initializer requires future construction-aware lowering",
+      "location": { "file": "<fixture>/edge_cases.cpp", "line": 111, "column": 6 }
+    }
+  ]
 }

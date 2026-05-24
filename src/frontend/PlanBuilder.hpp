@@ -176,6 +176,8 @@ class PlanBuilder : public clang::RecursiveASTVisitor<PlanBuilder>
 	void add_receiver_field(
 	    clang::FieldDecl const& field, FieldAccess access, PlanEvidence evidence);
 
+	void record_default_member_initializer_if_needed(clang::FieldDecl const& field);
+
 	void remove_dependency_object_fields();
 
 	void record_dependency_local(clang::VarDecl const& variable);

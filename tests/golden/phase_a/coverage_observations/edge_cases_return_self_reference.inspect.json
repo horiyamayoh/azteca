@@ -2,105 +2,78 @@
   "schema_version": 2,
   "azteca_phase": "A",
   "target": {
-    "qualified_name": "EdgeCases::field_address",
-    "signature": "int()",
+    "qualified_name": "EdgeCases::return_self_reference",
+    "signature": "EdgeCases &()",
     "source_file": "<fixture>/edge_cases.cpp",
-    "line": 65
+    "line": 93
   },
   "result": "extracted",
   "confidence": "high",
-  "receiver_state": [
-    {
-      "name": "value_",
-      "type": "int",
-      "access": "address",
-      "mutable": false,
-      "access_specifier": "private",
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 110, "column": 6 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    }
-  ],
+  "receiver_state": [],
   "dependency_observations": [],
   "observable_effects": [],
   "operations": [],
   "recursive_helper_candidates": [],
   "shape_candidates": [],
-  "object_ref_requirements": [],
+  "object_ref_requirements": [
+    {
+      "requirement_reason": "return this",
+      "expression": "return *this",
+      "location": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 3 },
+      "rule_id": "LR-021",
+      "reason": "this identity is observable and requires object_ref",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 3 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 15 }
+      }
+    }
+  ],
   "semantic_features": [
     {
-      "name": "access_control",
+      "name": "object_identity",
       "handling": "modeled",
-      "detail": "inspect reports non-public receiver state without #define private public",
-      "rule_id": "LR-048",
-      "reason": "private/protected receiver state is modeled without changing product access",
+      "detail": "this identity is represented by object_ref",
+      "rule_id": "LR-021",
+      "reason": "this identity is observable and requires object_ref",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    },
-    {
-      "name": "auto_type",
-      "handling": "supported",
-      "detail": "auto is reported after semantic type resolution",
-      "rule_id": "LR-043",
-      "reason": "auto type is resolved by Clang Sema",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    },
-    {
-      "name": "local_variable",
-      "handling": "supported",
-      "detail": "local variable declaration is part of inspect MMIR",
-      "rule_id": "LR-014",
-      "reason": "local variable declaration",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    },
-    {
-      "name": "receiver_state",
-      "handling": "supported",
-      "detail": "receiver field address taken",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 3 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 15 }
       }
     }
   ],
   "unsupported_or_modeled_constructs": [
     {
-      "construct": "field address taking",
+      "construct": "return *this",
       "handling": "modeled",
-      "construct_reason": "field address is unit-testable through addressable cell modeling",
-      "fallbacks": ["model field as azteca::cell", "avoid exposing a fake product object address"],
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "construct_reason": "receiver reference is mapped to self view instead of a fake C reference",
+      "fallbacks": ["self reference view", "live validation for API-level reference behavior"],
+      "location": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 3 },
+      "rule_id": "LR-022",
+      "reason": "return *this requires self reference modeling",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 3 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 15 }
+      }
+    },
+    {
+      "construct": "return this",
+      "handling": "modeled",
+      "construct_reason": "receiver identity is returned as object_ref instead of a fake C pointer",
+      "fallbacks": ["object_ref return", "live validation for API-level pointer behavior"],
+      "location": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 3 },
+      "rule_id": "LR-021",
+      "reason": "return this or return *this requires object_ref modeling",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 3 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 15 }
       }
     }
   ],
@@ -117,29 +90,16 @@
   },
   "envelope_requirements": [
     {
-      "kind": "self-state",
-      "requirement_reason": "receiver field address taken",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "kind": "object-ref",
+      "requirement_reason": "this identity is unit-observable",
+      "source": "return *this",
+      "rule_id": "LR-021",
+      "reason": "this identity is observable and requires object_ref",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    },
-    {
-      "kind": "addressable-cell",
-      "requirement_reason": "address-taken field must be represented as a cell",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 3 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 15 }
       }
     }
   ],
@@ -216,7 +176,7 @@
       "rule_id": "LR-014",
       "handling": "supported",
       "note": "local variable declaration",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-015",
@@ -258,13 +218,13 @@
       "rule_id": "LR-021",
       "handling": "modeled",
       "note": "return this requires object_ref",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-022",
       "handling": "modeled",
       "note": "return *this requires object_ref/self view",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-023",
@@ -306,7 +266,7 @@
       "rule_id": "LR-029",
       "handling": "modeled",
       "note": "field address requires addressable cell",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-030",
@@ -390,7 +350,7 @@
       "rule_id": "LR-043",
       "handling": "supported",
       "note": "auto type is recorded after semantic resolution",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-044",
@@ -420,7 +380,7 @@
       "rule_id": "LR-048",
       "handling": "modeled",
       "note": "access control is reported without rewriting product visibility",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-049",
@@ -431,7 +391,7 @@
   ],
   "paths": [
     {
-      "name": "return_value",
+      "name": "return_this",
       "observations": [],
       "effects": [],
       "operations": [],
@@ -443,20 +403,19 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 16 }
+        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 3 },
+        "end": { "file": "<fixture>/edge_cases.cpp", "line": 95, "column": 15 }
       }
     }
   ],
   "gtest_preview": {
-    "sample_test_path": "tests/edgecases_field_address.sample_test.cpp",
+    "sample_test_path": "tests/edgecases_return_self_reference.sample_test.cpp",
     "lines": [
-      "TEST(edgecases_field_address, return_value)",
+      "TEST(edgecases_return_self_reference, return_this)",
       "{",
-      "  auto s = azteca_gen::scenario::edgecases_field_address{};",
-      "  s.self.value_ = /* value */;",
+      "  auto s = azteca_gen::scenario::edgecases_return_self_reference{};",
       "  auto result = s.call(/* args */);",
-      "  EXPECT_EQ(result, /* expected for return_value */);",
+      "  EXPECT_EQ(result, /* expected for return_this */);",
       "  s.effects.expect_none();",
       "}"
     ]

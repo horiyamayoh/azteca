@@ -2,31 +2,14 @@
   "schema_version": 2,
   "azteca_phase": "A",
   "target": {
-    "qualified_name": "EdgeCases::field_address",
-    "signature": "int()",
-    "source_file": "<fixture>/edge_cases.cpp",
-    "line": 65
+    "qualified_name": "CoroHost::run",
+    "signature": "CoroTask(int)",
+    "source_file": "<fixture>/coroutine.cpp",
+    "line": 34
   },
-  "result": "extracted",
-  "confidence": "high",
-  "receiver_state": [
-    {
-      "name": "value_",
-      "type": "int",
-      "access": "address",
-      "mutable": false,
-      "access_specifier": "private",
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 110, "column": 6 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    }
-  ],
+  "result": "extracted-with-conservative-notes",
+  "confidence": "low",
+  "receiver_state": [],
   "dependency_observations": [],
   "observable_effects": [],
   "operations": [],
@@ -35,29 +18,29 @@
   "object_ref_requirements": [],
   "semantic_features": [
     {
-      "name": "access_control",
-      "handling": "modeled",
-      "detail": "inspect reports non-public receiver state without #define private public",
-      "rule_id": "LR-048",
-      "reason": "private/protected receiver state is modeled without changing product access",
+      "name": "cast_expression",
+      "handling": "supported",
+      "detail": "cast expression is represented from resolved AST type information",
+      "rule_id": "LR-044",
+      "reason": "cast expression is resolved by Clang Sema",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/coroutine.cpp", "line": 38, "column": 13 },
+        "end": { "file": "<fixture>/coroutine.cpp", "line": 38, "column": 34 }
       }
     },
     {
-      "name": "auto_type",
-      "handling": "supported",
-      "detail": "auto is reported after semantic type resolution",
-      "rule_id": "LR-043",
-      "reason": "auto type is resolved by Clang Sema",
-      "certainty": "certain",
-      "conservative": false,
+      "name": "coroutine",
+      "handling": "not-yet-implemented",
+      "detail": "coroutine lowering requires a dedicated state model",
+      "rule_id": "LR-038",
+      "reason": "coroutine frame and suspension semantics are not implemented in Phase A",
+      "certainty": "conservative",
+      "conservative": true,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/coroutine.cpp", "line": 35, "column": 2 },
+        "end": { "file": "<fixture>/coroutine.cpp", "line": 40, "column": 3 }
       }
     },
     {
@@ -69,80 +52,53 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/coroutine.cpp", "line": 36, "column": 8 },
+        "end": { "file": "<fixture>/coroutine.cpp", "line": 36, "column": 17 }
       }
     },
     {
-      "name": "receiver_state",
-      "handling": "supported",
-      "detail": "receiver field address taken",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
+      "name": "loop_control_flow",
+      "handling": "conservative",
+      "detail": "loop body dependencies are summarized on a conservative path",
+      "rule_id": "LR-015",
+      "reason": "for loop is a conservative path region in Phase A",
+      "certainty": "conservative",
+      "conservative": true,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/coroutine.cpp", "line": 36, "column": 3 },
+        "end": { "file": "<fixture>/coroutine.cpp", "line": 39, "column": 4 }
       }
     }
   ],
   "unsupported_or_modeled_constructs": [
     {
-      "construct": "field address taking",
-      "handling": "modeled",
-      "construct_reason": "field address is unit-testable through addressable cell modeling",
-      "fallbacks": ["model field as azteca::cell", "avoid exposing a fake product object address"],
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
+      "construct": "coroutine",
+      "handling": "not-yet-implemented",
+      "construct_reason": "coroutine frame and suspend/resume semantics require a future model",
+      "fallbacks": ["live validation", "extract a pure helper from the coroutine body"],
+      "location": { "file": "<fixture>/coroutine.cpp", "line": 35, "column": 2 },
+      "rule_id": "LR-038",
+      "reason": "coroutine frame and suspension semantics are not implemented in Phase A",
+      "certainty": "conservative",
+      "conservative": true,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/coroutine.cpp", "line": 35, "column": 2 },
+        "end": { "file": "<fixture>/coroutine.cpp", "line": 40, "column": 3 }
       }
     }
   ],
   "control_flow_summary": {
     "has_if": false,
     "has_switch": false,
-    "has_loop": false,
+    "has_loop": true,
     "has_range_for": false,
     "has_try": false,
     "has_throw": false,
-    "has_return": true,
-    "conservative": false,
-    "conservative_reasons": []
+    "has_return": false,
+    "conservative": true,
+    "conservative_reasons": ["for loop is represented conservatively in Phase A"]
   },
-  "envelope_requirements": [
-    {
-      "kind": "self-state",
-      "requirement_reason": "receiver field address taken",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    },
-    {
-      "kind": "addressable-cell",
-      "requirement_reason": "address-taken field must be represented as a cell",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    }
-  ],
+  "envelope_requirements": [],
   "rule_coverage": [
     {
       "rule_id": "LR-001",
@@ -162,7 +118,7 @@
       "note": "data member mutation",
       "observed": false
     },
-    { "rule_id": "LR-004", "handling": "supported", "note": "return statement", "observed": true },
+    { "rule_id": "LR-004", "handling": "supported", "note": "return statement", "observed": false },
     { "rule_id": "LR-005", "handling": "supported", "note": "if statement", "observed": false },
     {
       "rule_id": "LR-006",
@@ -222,7 +178,7 @@
       "rule_id": "LR-015",
       "handling": "conservative",
       "note": "loops are conservative paths in Phase A",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-016",
@@ -306,7 +262,7 @@
       "rule_id": "LR-029",
       "handling": "modeled",
       "note": "field address requires addressable cell",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-030",
@@ -360,7 +316,7 @@
       "rule_id": "LR-038",
       "handling": "not-yet-implemented",
       "note": "coroutines are future work",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-039",
@@ -390,13 +346,13 @@
       "rule_id": "LR-043",
       "handling": "supported",
       "note": "auto type is recorded after semantic resolution",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-044",
       "handling": "supported",
       "note": "casts and std::move/std::forward are resolved expressions",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-045",
@@ -420,7 +376,7 @@
       "rule_id": "LR-048",
       "handling": "modeled",
       "note": "access control is reported without rewriting product visibility",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-049",
@@ -431,7 +387,7 @@
   ],
   "paths": [
     {
-      "name": "return_value",
+      "name": "path_1",
       "observations": [],
       "effects": [],
       "operations": [],
@@ -439,27 +395,34 @@
       "required_envelopes": [],
       "conservative_reason": "",
       "rule_id": "PATH-DFS",
-      "reason": "return path accumulated by DFS",
+      "reason": "fallthrough path accumulated by DFS",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 16 }
+        "begin": { "file": "<fixture>/coroutine.cpp", "line": 35, "column": 2 },
+        "end": { "file": "<fixture>/coroutine.cpp", "line": 40, "column": 3 }
       }
     }
   ],
   "gtest_preview": {
-    "sample_test_path": "tests/edgecases_field_address.sample_test.cpp",
+    "sample_test_path": "tests/corohost_run.sample_test.cpp",
     "lines": [
-      "TEST(edgecases_field_address, return_value)",
+      "TEST(corohost_run, path_1)",
       "{",
-      "  auto s = azteca_gen::scenario::edgecases_field_address{};",
-      "  s.self.value_ = /* value */;",
+      "  auto s = azteca_gen::scenario::corohost_run{};",
       "  auto result = s.call(/* args */);",
-      "  EXPECT_EQ(result, /* expected for return_value */);",
+      "  EXPECT_EQ(result, /* expected for path_1 */);",
       "  s.effects.expect_none();",
       "}"
     ]
   },
-  "diagnostics": []
+  "diagnostics": [
+    {
+      "severity": "warning",
+      "code": "AZTECA_UNSUPPORTED_CONSTRUCT",
+      "public_id": "AZT-W0001",
+      "message": "coroutine: coroutine frame and suspend/resume semantics require a future model",
+      "location": { "file": "<fixture>/coroutine.cpp", "line": 35, "column": 2 }
+    }
+  ]
 }

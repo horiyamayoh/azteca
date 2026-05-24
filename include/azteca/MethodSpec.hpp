@@ -16,6 +16,13 @@ enum class RefQualifier : std::uint8_t
 	kRValue,
 };
 
+enum class MethodSpecParseErrorKind : std::uint8_t
+{
+	kNone,
+	kSyntax,
+	kUnsupportedTarget,
+};
+
 struct MethodSpec
 {
 	std::string original;
@@ -32,6 +39,7 @@ struct MethodSpecParseResult
 {
 	std::optional<MethodSpec> spec;
 	std::string error;
+	MethodSpecParseErrorKind error_kind{MethodSpecParseErrorKind::kNone};
 };
 
 struct TemplateArgumentParseResult

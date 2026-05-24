@@ -57,10 +57,22 @@ TEST(MethodSpecParser, RejectsOperatorOverloadButAllowsOperatorPrefixIdentifier)
 	auto rejected = azteca::parse_method_spec("C::operator+(C const&) const");
 	EXPECT_FALSE(rejected.spec.has_value());
 	EXPECT_NE(rejected.error.find("operator"), std::string::npos);
+	EXPECT_EQ(rejected.error_kind, azteca::MethodSpecParseErrorKind::kUnsupportedTarget);
 
 	auto accepted = azteca::parse_method_spec("C::operator_path()");
 	ASSERT_TRUE(accepted.spec.has_value()) << accepted.error;
 	EXPECT_EQ(accepted.spec->method_name, "operator_path");
+}
+
+TEST(MethodSpecParser, SeparatesSyntaxErrorsFromUnsupportedTargets)
+{
+	auto syntax = azteca::parse_method_spec("not-a-method");
+	EXPECT_FALSE(syntax.spec.has_value());
+	EXPECT_EQ(syntax.error_kind, azteca::MethodSpecParseErrorKind::kSyntax);
+
+	auto unsupported = azteca::parse_method_spec("C::operator[](int)");
+	EXPECT_FALSE(unsupported.spec.has_value());
+	EXPECT_EQ(unsupported.error_kind, azteca::MethodSpecParseErrorKind::kUnsupportedTarget);
 }
 
 TEST(MethodSpecParser, NormalizesTypeForMatching)

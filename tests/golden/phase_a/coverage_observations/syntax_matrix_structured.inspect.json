@@ -2,28 +2,28 @@
   "schema_version": 2,
   "azteca_phase": "A",
   "target": {
-    "qualified_name": "EdgeCases::field_address",
+    "qualified_name": "SyntaxMatrix::structured",
     "signature": "int()",
-    "source_file": "<fixture>/edge_cases.cpp",
-    "line": 65
+    "source_file": "<fixture>/syntax_matrix.cpp",
+    "line": 150
   },
   "result": "extracted",
   "confidence": "high",
   "receiver_state": [
     {
-      "name": "value_",
-      "type": "int",
-      "access": "address",
+      "name": "pair_",
+      "type": "MatrixPair",
+      "access": "read",
       "mutable": false,
       "access_specifier": "private",
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 110, "column": 6 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "location": { "file": "<fixture>/syntax_matrix.cpp", "line": 166, "column": 13 },
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 24 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 29 }
       }
     }
   ],
@@ -31,7 +31,21 @@
   "observable_effects": [],
   "operations": [],
   "recursive_helper_candidates": [],
-  "shape_candidates": [],
+  "shape_candidates": [
+    {
+      "name": "MatrixPairShape",
+      "source_dependency": "SyntaxMatrix::pair_",
+      "observed_members": ["left", "right"],
+      "rule_id": "LR-037",
+      "reason": "structured binding exposes fields from a visible record definition",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 3 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 29 }
+      }
+    }
+  ],
   "object_ref_requirements": [],
   "semantic_features": [
     {
@@ -43,8 +57,8 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 24 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 29 }
       }
     },
     {
@@ -56,8 +70,8 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 3 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 29 }
       }
     },
     {
@@ -69,41 +83,38 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 3 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 29 }
       }
     },
     {
       "name": "receiver_state",
       "handling": "supported",
-      "detail": "receiver field address taken",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "detail": "receiver field read",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 24 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 29 }
       }
-    }
-  ],
-  "unsupported_or_modeled_constructs": [
+    },
     {
-      "construct": "field address taking",
-      "handling": "modeled",
-      "construct_reason": "field address is unit-testable through addressable cell modeling",
-      "fallbacks": ["model field as azteca::cell", "avoid exposing a fake product object address"],
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "name": "structured_binding",
+      "handling": "supported",
+      "detail": "structured binding fields are represented as shape observations",
+      "rule_id": "LR-037",
+      "reason": "structured binding fields are expanded from resolved Clang bindings",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 3 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 29 }
       }
     }
   ],
+  "unsupported_or_modeled_constructs": [],
   "control_flow_summary": {
     "has_if": false,
     "has_switch": false,
@@ -118,28 +129,15 @@
   "envelope_requirements": [
     {
       "kind": "self-state",
-      "requirement_reason": "receiver field address taken",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "requirement_reason": "receiver field read",
+      "source": "SyntaxMatrix::pair_",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    },
-    {
-      "kind": "addressable-cell",
-      "requirement_reason": "address-taken field must be represented as a cell",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 24 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 152, "column": 29 }
       }
     }
   ],
@@ -148,7 +146,7 @@
       "rule_id": "LR-001",
       "handling": "supported",
       "note": "implicit data member read",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-002",
@@ -306,7 +304,7 @@
       "rule_id": "LR-029",
       "handling": "modeled",
       "note": "field address requires addressable cell",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-030",
@@ -354,7 +352,7 @@
       "rule_id": "LR-037",
       "handling": "supported",
       "note": "structured binding field expansion when bindings resolve to record fields",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-038",
@@ -431,7 +429,7 @@
   ],
   "paths": [
     {
-      "name": "return_value",
+      "name": "return_left_right",
       "observations": [],
       "effects": [],
       "operations": [],
@@ -443,20 +441,20 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 16 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 153, "column": 3 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 153, "column": 22 }
       }
     }
   ],
   "gtest_preview": {
-    "sample_test_path": "tests/edgecases_field_address.sample_test.cpp",
+    "sample_test_path": "tests/syntaxmatrix_structured.sample_test.cpp",
     "lines": [
-      "TEST(edgecases_field_address, return_value)",
+      "TEST(syntaxmatrix_structured, return_left_right)",
       "{",
-      "  auto s = azteca_gen::scenario::edgecases_field_address{};",
-      "  s.self.value_ = /* value */;",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_structured{};",
+      "  s.self.pair_ = /* value */;",
       "  auto result = s.call(/* args */);",
-      "  EXPECT_EQ(result, /* expected for return_value */);",
+      "  EXPECT_EQ(result, /* expected for return_left_right */);",
       "  s.effects.expect_none();",
       "}"
     ]

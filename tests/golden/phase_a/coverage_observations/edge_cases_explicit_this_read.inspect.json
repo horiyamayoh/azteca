@@ -16,7 +16,7 @@
       "access": "read",
       "mutable": false,
       "access_specifier": "private",
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 93, "column": 6 },
+      "location": { "file": "<fixture>/edge_cases.cpp", "line": 110, "column": 6 },
       "rule_id": "LR-002",
       "reason": "explicit this receiver field read",
       "certainty": "certain",

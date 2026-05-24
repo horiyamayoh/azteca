@@ -300,7 +300,7 @@ InspectResult inspect_method(InspectOptions const& options)
 
 	if (looks_like_constructor_or_destructor(options.method))
 	{
-		result.status = InspectStatus::kUserInputError;
+		result.status = InspectStatus::kMethodResolutionError;
 		result.diagnostics.add(DiagnosticSeverity::kError, "AZTECA_UNSUPPORTED_TARGET",
 		    "constructors and destructors are outside Phase A inspect scope");
 		return result;

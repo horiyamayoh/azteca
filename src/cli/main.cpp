@@ -257,6 +257,11 @@ int main(int argc, char** argv)
 	auto parse_result = azteca::parse_method_spec(options->method_spec);
 	if (!parse_result.spec.has_value())
 	{
+		if (parse_result.error_kind == azteca::MethodSpecParseErrorKind::kUnsupportedTarget)
+		{
+			cli_error("AZT-E0010", std::string{"unsupported target: "} + parse_result.error);
+			return static_cast<int>(azteca::InspectStatus::kMethodResolutionError);
+		}
 		cli_error("AZT-E0004", std::string{"invalid --method: "} + parse_result.error);
 		return static_cast<int>(azteca::InspectStatus::kUserInputError);
 	}

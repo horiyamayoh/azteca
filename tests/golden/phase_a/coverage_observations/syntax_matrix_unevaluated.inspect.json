@@ -2,32 +2,49 @@
   "schema_version": 2,
   "azteca_phase": "A",
   "target": {
-    "qualified_name": "EdgeCases::field_address",
+    "qualified_name": "SyntaxMatrix::unevaluated",
     "signature": "int()",
-    "source_file": "<fixture>/edge_cases.cpp",
-    "line": 65
+    "source_file": "<fixture>/syntax_matrix.cpp",
+    "line": 145
   },
   "result": "extracted",
   "confidence": "high",
   "receiver_state": [
     {
-      "name": "value_",
+      "name": "own_",
       "type": "int",
-      "access": "address",
+      "access": "read",
       "mutable": false,
       "access_specifier": "private",
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 110, "column": 6 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "location": { "file": "<fixture>/syntax_matrix.cpp", "line": 162, "column": 6 },
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 34 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 38 }
       }
     }
   ],
-  "dependency_observations": [],
+  "dependency_observations": [
+    {
+      "kind": "query",
+      "name": "free_normalize",
+      "original_callee": "free_normalize",
+      "return_type": "int",
+      "argument_types": ["int"],
+      "location": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 69 },
+      "rule_id": "LR-009",
+      "reason": "non-void free function call is a query boundary",
+      "certainty": "certain",
+      "conservative": false,
+      "source_range": {
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 69 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 89 }
+      }
+    }
+  ],
   "observable_effects": [],
   "operations": [],
   "recursive_helper_candidates": [],
@@ -43,67 +60,51 @@
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 34 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 38 }
       }
     },
     {
-      "name": "auto_type",
+      "name": "cast_expression",
       "handling": "supported",
-      "detail": "auto is reported after semantic type resolution",
-      "rule_id": "LR-043",
-      "reason": "auto type is resolved by Clang Sema",
+      "detail": "cast expression is represented from resolved AST type information",
+      "rule_id": "LR-044",
+      "reason": "cast expression is resolved by Clang Sema",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
-      }
-    },
-    {
-      "name": "local_variable",
-      "handling": "supported",
-      "detail": "local variable declaration is part of inspect MMIR",
-      "rule_id": "LR-014",
-      "reason": "local variable declaration",
-      "certainty": "certain",
-      "conservative": false,
-      "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 10 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 40 }
       }
     },
     {
       "name": "receiver_state",
       "handling": "supported",
-      "detail": "receiver field address taken",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "detail": "receiver field read",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 34 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 38 }
       }
-    }
-  ],
-  "unsupported_or_modeled_constructs": [
+    },
     {
-      "construct": "field address taking",
-      "handling": "modeled",
-      "construct_reason": "field address is unit-testable through addressable cell modeling",
-      "fallbacks": ["model field as azteca::cell", "avoid exposing a fake product object address"],
-      "location": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "name": "unevaluated_context",
+      "handling": "supported",
+      "detail": "sizeof/alignof style expression is tracked without creating effects",
+      "rule_id": "LR-039",
+      "reason": "unevaluated type/value context is tracked without dependency effects",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 27 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 39 }
       }
     }
   ],
+  "unsupported_or_modeled_constructs": [],
   "control_flow_summary": {
     "has_if": false,
     "has_switch": false,
@@ -118,28 +119,28 @@
   "envelope_requirements": [
     {
       "kind": "self-state",
-      "requirement_reason": "receiver field address taken",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "requirement_reason": "receiver field read",
+      "source": "SyntaxMatrix::own_",
+      "rule_id": "LR-001",
+      "reason": "receiver field read",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 34 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 38 }
       }
     },
     {
-      "kind": "addressable-cell",
-      "requirement_reason": "address-taken field must be represented as a cell",
-      "source": "EdgeCases::value_",
-      "rule_id": "LR-029",
-      "reason": "receiver field address taken",
+      "kind": "dependency-boundary",
+      "requirement_reason": "function call is represented by transcript port",
+      "source": "free_normalize",
+      "rule_id": "LR-009",
+      "reason": "non-void free function call is a query boundary",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 18 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 67, "column": 24 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 69 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 89 }
       }
     }
   ],
@@ -148,7 +149,7 @@
       "rule_id": "LR-001",
       "handling": "supported",
       "note": "implicit data member read",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-002",
@@ -186,7 +187,7 @@
       "rule_id": "LR-009",
       "handling": "boundary",
       "note": "free function calls are boundary candidates",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-010",
@@ -216,7 +217,7 @@
       "rule_id": "LR-014",
       "handling": "supported",
       "note": "local variable declaration",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-015",
@@ -306,7 +307,7 @@
       "rule_id": "LR-029",
       "handling": "modeled",
       "note": "field address requires addressable cell",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-030",
@@ -366,7 +367,7 @@
       "rule_id": "LR-039",
       "handling": "supported",
       "note": "unevaluated contexts are tracked without effects",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-040",
@@ -390,13 +391,13 @@
       "rule_id": "LR-043",
       "handling": "supported",
       "note": "auto type is recorded after semantic resolution",
-      "observed": true
+      "observed": false
     },
     {
       "rule_id": "LR-044",
       "handling": "supported",
       "note": "casts and std::move/std::forward are resolved expressions",
-      "observed": false
+      "observed": true
     },
     {
       "rule_id": "LR-045",
@@ -431,32 +432,33 @@
   ],
   "paths": [
     {
-      "name": "return_value",
-      "observations": [],
+      "name": "return_static_cast_int_sizeof_own_static_cast_int_noexcept_free_normalize_own",
+      "observations": ["free_normalize"],
       "effects": [],
       "operations": [],
       "loop_body_observations": [],
-      "required_envelopes": [],
+      "required_envelopes": ["dependency-boundary"],
       "conservative_reason": "",
       "rule_id": "PATH-DFS",
       "reason": "return path accumulated by DFS",
       "certainty": "certain",
       "conservative": false,
       "source_range": {
-        "begin": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 3 },
-        "end": { "file": "<fixture>/edge_cases.cpp", "line": 68, "column": 16 }
+        "begin": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 3 },
+        "end": { "file": "<fixture>/syntax_matrix.cpp", "line": 147, "column": 91 }
       }
     }
   ],
   "gtest_preview": {
-    "sample_test_path": "tests/edgecases_field_address.sample_test.cpp",
+    "sample_test_path": "tests/syntaxmatrix_unevaluated.sample_test.cpp",
     "lines": [
-      "TEST(edgecases_field_address, return_value)",
+      "TEST(syntaxmatrix_unevaluated, return_static_cast_int_sizeof_own_static_cast_int_noexcept_free_normalize_own)",
       "{",
-      "  auto s = azteca_gen::scenario::edgecases_field_address{};",
-      "  s.self.value_ = /* value */;",
+      "  auto s = azteca_gen::scenario::syntaxmatrix_unevaluated{};",
+      "  s.self.own_ = /* value */;",
+      "  s.when.free_normalize(/* args */).returns(/* value */);",
       "  auto result = s.call(/* args */);",
-      "  EXPECT_EQ(result, /* expected for return_value */);",
+      "  EXPECT_EQ(result, /* expected for return_static_cast_int_sizeof_own_static_cast_int_noexcept_free_normalize_own */);",
       "  s.effects.expect_none();",
       "}"
     ]

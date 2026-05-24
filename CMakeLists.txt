@@ -379,7 +379,7 @@ add_custom_target(
 		${CMAKE_COMMAND}
 		-E env AZTECA_ACCEPT_GOLDEN=1
 		${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
-		-R "^phase_a_(inspect_fixture|cli_surface)$"
+		-R "^phase_a_(inspect_fixture|cli_surface|coverage_observations)$"
 	COMMAND ${NPM_EXECUTABLE} run format:phase-a-goldens
 	DEPENDS azteca
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}

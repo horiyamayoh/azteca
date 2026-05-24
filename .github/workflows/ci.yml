@@ -124,17 +124,29 @@ jobs:
       - name: Phase A — schema v2
         run: ctest --preset dev-clang --output-on-failure -R "^phase_a_schema_v2_check$"
 
+      - name: Phase A — schema v2 golden validation
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_schema_v2_validate$"
+
       - name: Phase A — inspect fixtures
         run: ctest --preset dev-clang --output-on-failure -R "^phase_a_inspect_fixture$"
 
       - name: Phase A — coverage matrix
         run: ctest --preset dev-clang --output-on-failure -R "^phase_a_coverage_matrix$"
 
+      - name: Phase A — coverage observations
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_coverage_observations$"
+
       - name: Phase A — output quality
         run: ctest --preset dev-clang --output-on-failure -R "^phase_a_output_quality$"
 
       - name: Phase A — encoding robustness
         run: ctest --preset dev-clang --output-on-failure -R "^phase_a_encoding_robustness$"
+
+      - name: Phase A — negative suite
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_negative_suite$"
+
+      - name: Phase A — negative robustness
+        run: ctest --preset dev-clang --output-on-failure -R "^phase_a_negative_robustness$"
 
       - name: Phase A — diagnostic id catalog
         run: ctest --preset dev-clang --output-on-failure -R "DiagnosticCatalog|InspectReport"
