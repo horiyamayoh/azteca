@@ -1,16 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(azteca_phase_a_simple_fixture LANGUAGES CXX)
+project(azteca_phase_a_negative_fixture LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# When clang lives under a conda/micromamba prefix, the activation scripts inject
-# --sysroot/-resource-dir via CXXFLAGS. If this CMakeLists is configured from a
-# shell that did not activate the clang toolchain (only gcc), those flags are
-# missing and clang fails to locate <stddef.h>. Detect and inject them so the
-# fixture compiles regardless of which conda toolchain is currently active.
+# Mirror simple/CMakeLists.txt: inject clang sysroot/resource-dir when needed so
+# this fixture builds even when only gxx_linux-64 conda env is active.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	get_filename_component(_azt_clang_bin_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
 	get_filename_component(_azt_clang_prefix "${_azt_clang_bin_dir}" DIRECTORY)
@@ -30,16 +27,4 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 	endif()
 endif()
 
-add_library(
-	phase_a_simple_fixture
-	STATIC
-	account.cpp
-	ambiguous_a.cpp
-	ambiguous_b.cpp
-	edge_cases.cpp
-	hardening.cpp
-	order_service.cpp
-	service.cpp
-	simple_scenarios.cpp
-	syntax_matrix.cpp
-)
+add_library(phase_a_negative_fixture STATIC declaration_only.cpp)

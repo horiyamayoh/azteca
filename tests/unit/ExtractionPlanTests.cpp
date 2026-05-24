@@ -273,4 +273,53 @@ TEST(MmirValidation, AcceptsClassifiedBoundaryCall)
 	EXPECT_TRUE(diagnostics.entries().empty());
 }
 
+TEST(InspectReport, JsonErrorResultEmitsDiagnosticsAndPreservesSchemaKeys)
+{
+	azteca::ExtractionPlan plan;
+	plan.target.qualified_name = "Missing::method";
+	plan.target.signature = "void()";
+	plan.result = "error";
+	plan.confidence = "low";
+	plan.diagnostics.add(
+	    azteca::DiagnosticSeverity::kError, "AZT-E0008", "method not found in any TU");
+
+	auto json = azteca::render_json_report(plan);
+
+	EXPECT_NE(json.find("\"result\": \"error\""), std::string::npos);
+	EXPECT_NE(json.find("\"confidence\": \"low\""), std::string::npos);
+	EXPECT_NE(json.find("\"AZT-E0008\""), std::string::npos);
+	EXPECT_NE(json.find("\"severity\": \"error\""), std::string::npos);
+	EXPECT_NE(json.find("\"schema_version\": 2"), std::string::npos);
+	// Failures still expose the stable Phase A schema keys so downstream tools
+	// do not need to branch on success vs error when parsing.
+	EXPECT_NE(json.find("\"receiver_state\""), std::string::npos);
+	EXPECT_NE(json.find("\"diagnostics\""), std::string::npos);
+}
+
+TEST(InspectReport, TextRendersDiagnosticsAndPathConservativeReason)
+{
+	azteca::ExtractionPlan plan;
+	plan.target.qualified_name = "Loop::run";
+	plan.paths.push_back({
+	    .name = "loop_path",
+	    .observations = {},
+	    .effects = {},
+	    .operations = {},
+	    .loop_body_observations = {"repo_load"},
+	    .required_envelopes = {"conservative_control_flow"},
+	    .conservative_reason = "loop is conservatively summarised",
+	    .evidence = {},
+	});
+	plan.diagnostics.add(
+	    azteca::DiagnosticSeverity::kWarning, "AZT-W0001", "coroutine path summarised");
+
+	auto text = azteca::render_text_report(plan);
+
+	EXPECT_NE(text.find("Diagnostics:"), std::string::npos);
+	EXPECT_NE(text.find("AZT-W0001"), std::string::npos);
+	EXPECT_NE(
+	    text.find("conservative reason: loop is conservatively summarised"), std::string::npos);
+	EXPECT_NE(text.find("loop body observations: repo_load"), std::string::npos);
+}
+
 } // namespace

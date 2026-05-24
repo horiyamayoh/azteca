@@ -105,14 +105,30 @@ if(NOT _schema STREQUAL "2")
 	message(FATAL_ERROR "perf smoke schema_version=${_schema}")
 endif()
 
-# Non-blocking baseline: warn (do not fail) above an extremely generous
-# threshold so regressions are visible in CI logs without blocking PRs.
-# H6 will promote this to a hard threshold after a stable baseline lands.
-set(_warn_threshold_seconds 30)
+# Non-blocking baseline: warn (do not fail) above the documented baseline by
+# the configured ratio so regressions are visible in CI logs without blocking
+# PRs. Promote to a hard threshold in a later phase once the baseline is
+# tracked across CI runs.
+set(_baseline_path "${CMAKE_CURRENT_LIST_DIR}/baseline.json")
+if(EXISTS "${_baseline_path}")
+	file(READ "${_baseline_path}" _baseline_json)
+	string(JSON _baseline_seconds GET "${_baseline_json}" baseline_seconds)
+	string(JSON _warn_ratio_percent GET "${_baseline_json}" warn_ratio_percent)
+	math(EXPR _warn_threshold_seconds "(${_baseline_seconds} * ${_warn_ratio_percent}) / 100")
+else()
+	set(_baseline_seconds 0)
+	set(_warn_threshold_seconds 30)
+endif()
+
+message(
+	STATUS
+	"phase_a_perf_smoke: elapsed=${_elapsed}s baseline=${_baseline_seconds}s warn>${_warn_threshold_seconds}s tu=${_tu_count}"
+)
+
 if(_elapsed GREATER ${_warn_threshold_seconds})
 	message(
 		WARNING
-		"phase_a_perf_smoke took ${_elapsed}s with ${_tu_count} filler TUs (warn>${_warn_threshold_seconds}s)"
+		"phase_a_perf_smoke took ${_elapsed}s (baseline=${_baseline_seconds}s, warn>${_warn_threshold_seconds}s)"
 	)
 endif()
 

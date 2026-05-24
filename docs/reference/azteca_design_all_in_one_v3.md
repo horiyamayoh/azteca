@@ -8917,6 +8917,39 @@ Phase A close時点の安定化ゲートは次である。
 - JSON parse validation for inspect --format json
 ```
 
+## Fixture evidence
+
+上表の "pass" 行は、`tests/integration/PhaseACoverageObservations.cmake` が以下のメソッドを inspect し、各 `rule_coverage[].observed=true` をアサートしつつ golden 比較することで証明する。golden は `tests/golden/phase_a/coverage_observations/` に置く。
+
+| LR rule | observed via                               | golden                                             |
+| ------- | ------------------------------------------ | -------------------------------------------------- |
+| LR-001  | `OuterContainer::Inner::run() const`       | `outer_container_inner_run.inspect.json`           |
+| LR-002  | `EdgeCases::explicit_this_read() const`    | `edge_cases_explicit_this_read.inspect.json`       |
+| LR-005  | `EdgeCases::branch_controls(int)`          | `edge_cases_branch_controls.inspect.json`          |
+| LR-006  | `SyntaxMatrix::first_byte() const`         | `syntax_matrix_first_byte.inspect.json`            |
+| LR-009  | `SyntaxMatrix::base_global_static(int)`    | `syntax_matrix_base_global_static.inspect.json`    |
+| LR-012  | `SyntaxMatrix::dispatch()`                 | `syntax_matrix_dispatch.inspect.json`              |
+| LR-013  | `SyntaxMatrix::operator_path()`            | `syntax_matrix_operator_path.inspect.json`         |
+| LR-014  | `SyntaxMatrix::reset_in_place()`           | `syntax_matrix_reset_in_place.inspect.json`        |
+| LR-015  | `SyntaxMatrix::switch_loop(int)`           | `syntax_matrix_switch_loop.inspect.json`           |
+| LR-017  | `SyntaxMatrix::lambda_run()`               | `syntax_matrix_lambda_run.inspect.json`            |
+| LR-023  | `SyntaxMatrix::identity_and_type() const`  | `syntax_matrix_identity_and_type.inspect.json`     |
+| LR-024  | `SyntaxMatrix::identity_and_type() const`  | `syntax_matrix_identity_and_type.inspect.json`     |
+| LR-025  | `SyntaxMatrix::first_byte() const`         | `syntax_matrix_first_byte.inspect.json`            |
+| LR-027  | `SyntaxMatrix::release()`                  | `syntax_matrix_release.inspect.json`               |
+| LR-029  | `EdgeCases::field_address()`               | `edge_cases_field_address.inspect.json`            |
+| LR-033  | `TemplateExample::target(int)`             | `template_example_target.inspect.json`             |
+| LR-034  | `SyntaxMatrix::base_global_static(int)`    | `syntax_matrix_base_global_static.inspect.json`    |
+| LR-035  | `SyntaxMatrix::exception_run()`            | `syntax_matrix_exception_run.inspect.json`         |
+| LR-036  | `SyntaxMatrix::exception_run()`            | `syntax_matrix_exception_run.inspect.json`         |
+| LR-041  | `EdgeCases::ternary(int)`                  | `edge_cases_ternary.inspect.json`                  |
+| LR-042  | `EdgeCases::default_argument()`            | `edge_cases_default_argument.inspect.json`         |
+| LR-043  | `EdgeCases::value_category_and_casts(int)` | `edge_cases_value_category_and_casts.inspect.json` |
+| LR-044  | `EdgeCases::value_category_and_casts(int)` | `edge_cases_value_category_and_casts.inspect.json` |
+| LR-048  | `EdgeCases::explicit_this_read() const`    | `edge_cases_explicit_this_read.inspect.json`       |
+
+その他の "pass" 行 (LR-003/004/007/008/010/011/016/018/045/046/047/049 ほか) は既存 `PhaseAInspect.cmake` の goldens で観測される。
+
 ---
 
 # File: docs/review/24_total_review_and_self_verification.md

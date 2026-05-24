@@ -39,6 +39,26 @@ patch bumps.
   `docs/planning/25_phase_a_inspect_coverage.md`).
 - New baseline test: `phase_a_perf_smoke` (50 filler TUs, warns above a
   generous wall-time threshold; non-blocking baseline for H5).
+- Perf baseline file `tests/perf/phase_a/baseline.json` (`baseline_seconds`
+  and `warn_ratio_percent`) drives the `phase_a_perf_smoke` warn threshold
+  and is logged on every run for trend tracking.
+- New contract test `phase_a_schema_v2_validate` runs `ajv` against
+  `tests/contract/schema_v2/azteca_phase_a.schema.json` for every Phase A
+  golden under `tests/golden/phase_a/**/*.inspect.json`. Wired into
+  `release-check`; backed by `npm run validate:phase-a-json` and a new
+  `scripts/validate-phase-a-json.mjs` driver.
+- New negative integration suite `phase_a_negative_suite` covering
+  AZT-E0007 (empty compile-commands), AZT-E0009 (ambiguous target without
+  `--source`, plus disambiguation), and AZT-E0010 (declaration-only
+  method) in both text and JSON output; fixture under
+  `tests/negative/phase_a/`.
+- New coverage observation harness `phase_a_coverage_observations` maps
+  24 LR-\* rules to specific fixture methods and golden files under
+  `tests/golden/phase_a/coverage_observations/` to evidence the coverage
+  matrix in `docs/planning/25_phase_a_inspect_coverage.md`.
+- New unit tests in `tests/unit/ExtractionPlanTests.cpp` for error-result
+  JSON rendering (`result: "error"` + diagnostics + schema keys) and
+  text rendering of diagnostics and per-path `conservative reason`.
 - Strict `.clang-tidy`: `cert-*` and `cppcoreguidelines-*` are now
   warnings-as-errors; documented per-check exclusions only for known
   noise (visitor-pattern reference members, libTooling const_cast,

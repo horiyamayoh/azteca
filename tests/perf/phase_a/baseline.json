@@ -1,0 +1,6 @@
+{
+  "comment": "Phase A perf smoke baseline. Wall-clock seconds for inspect over (1 target + N filler TUs). Update by recording a 3-run median on the reference machine; bump tu_count and seconds together when fixtures scale up.",
+  "tu_count": 50,
+  "baseline_seconds": 10,
+  "warn_ratio_percent": 300
+}

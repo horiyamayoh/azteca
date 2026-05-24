@@ -204,6 +204,16 @@ if(BUILD_TESTING)
 			-P ${PROJECT_SOURCE_DIR}/tests/contract/schema_v2/PhaseASchemaV2.cmake
 	)
 
+	find_program(AZTECA_NPM_EXECUTABLE NAMES npm)
+	if(AZTECA_NPM_EXECUTABLE)
+		add_test(
+			NAME phase_a_schema_v2_validate
+			COMMAND
+				${AZTECA_NPM_EXECUTABLE} run --silent validate:phase-a-json
+			WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+		)
+	endif()
+
 	add_test(
 		NAME phase_a_encoding_robustness
 		COMMAND
@@ -236,6 +246,17 @@ if(BUILD_TESTING)
 	)
 
 	add_test(
+		NAME phase_a_coverage_observations
+		COMMAND
+			${CMAKE_COMMAND}
+			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
+			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseACoverageObservations.cmake
+	)
+
+	add_test(
 		NAME phase_a_output_quality
 		COMMAND
 			${CMAKE_COMMAND}
@@ -253,6 +274,17 @@ if(BUILD_TESTING)
 			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
 			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
 			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseANegativeRobustness.cmake
+	)
+
+	add_test(
+		NAME phase_a_negative_suite
+		COMMAND
+			${CMAKE_COMMAND}
+			-DAZTECA_EXECUTABLE=$<TARGET_FILE:azteca>
+			-DPROJECT_SOURCE_DIR=${PROJECT_SOURCE_DIR}
+			-DPROJECT_BINARY_DIR=${CMAKE_BINARY_DIR}
+			-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+			-P ${PROJECT_SOURCE_DIR}/tests/integration/PhaseANegativeSuite.cmake
 	)
 
 	if(GTest_FOUND)
@@ -415,7 +447,7 @@ add_custom_target(
 	release-check
 	COMMAND
 		${CMAKE_CTEST_COMMAND} --output-on-failure --test-dir ${CMAKE_BINARY_DIR}
-		-R "phase_a_(cli_surface|schema_v2_check|inspect_fixture|encoding_robustness|coverage_matrix)|DiagnosticCatalog|InspectReport"
+		-R "phase_a_(cli_surface|schema_v2_check|schema_v2_validate|inspect_fixture|encoding_robustness|coverage_matrix|coverage_observations|negative_suite|negative_robustness)|DiagnosticCatalog|InspectReport"
 	DEPENDS ${AZTECA_TEST_DEPENDENCIES} format-check prettier-check
 	COMMENT "Running Phase A release contract gates"
 	VERBATIM
